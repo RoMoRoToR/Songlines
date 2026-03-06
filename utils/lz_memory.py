@@ -3,7 +3,6 @@ import json
 import os
 from collections import deque
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -222,7 +221,14 @@ class LZMapMemory:
         with open(os.path.join(env_dir, "metrics.json"), "w") as f:
             json.dump(metrics, f, indent=2)
 
-        if len(self.nodes) > 0:
+        plt = None
+        try:
+            import matplotlib.pyplot as plt_mod
+            plt = plt_mod
+        except Exception:
+            plt = None
+
+        if plt is not None and len(self.nodes) > 0:
             lengths = [len(node["phrase"]) for node in self.nodes.values()]
             plt.figure(figsize=(5, 3))
             plt.hist(lengths, bins=min(20, max(1, len(set(lengths)))))
@@ -233,7 +239,7 @@ class LZMapMemory:
             plt.savefig(os.path.join(env_dir, "phrase_length_hist.png"))
             plt.close()
 
-        if len(self.node_growth) > 0:
+        if plt is not None and len(self.node_growth) > 0:
             plt.figure(figsize=(6, 3))
             plt.plot(self.node_growth, label="nodes")
             plt.plot(self.edge_growth, label="edges")
@@ -257,7 +263,7 @@ class LZMapMemory:
             for src, dsts in self.edges.items():
                 for dst, w in dsts.items():
                     g.add_edge(src, dst, weight=w)
-            if g.number_of_nodes() > 0:
+            if plt is not None and g.number_of_nodes() > 0:
                 plt.figure(figsize=(7, 5))
                 pos = nx.spring_layout(g, seed=7)
                 nx.draw_networkx_edges(g, pos, alpha=0.4, arrows=True)
