@@ -61,6 +61,19 @@ def get_args():
     parser.add_argument('--print_images', type=int, default=0,
                         help='1: save visualization as images')
     parser.add_argument('--save_trajectory_data', type=str, default="0")
+    parser.add_argument('--lz_mode', type=int, default=0,
+                        help='0: baseline planner, 1: enable LZ graph memory')
+    parser.add_argument('--lz_update_every', type=int, default=1,
+                        help='update symbolic memory every N steps')
+    parser.add_argument('--lz_suggest_every', type=int, default=25,
+                        help='try graph subgoal every N local steps')
+    parser.add_argument('--lz_min_goal_visits', type=int, default=3,
+                        help='minimum phrase visits before subgoal proposal')
+    parser.add_argument('--lz_topk_goals', type=int, default=5,
+                        help='top-k goal phrases considered for planning')
+    parser.add_argument('--tokenizer_mode', type=str, default='argmax',
+                        choices=['argmax', 'hash_sign'])
+    parser.add_argument('--tokenizer_proj_dim', type=int, default=32)
 
     # Environment, dataset and episode specifications
     parser.add_argument('-efw', '--env_frame_width', type=int, default=256,

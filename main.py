@@ -15,6 +15,7 @@ from arguments import get_args
 from env import make_vec_envs
 from utils.storage import GlobalRolloutStorage, FIFOMemory
 from utils.optimization import get_optimizer
+from utils.lz_memory import LZMapMemory, SymbolicTokenizer
 from model import RL_Policy, Local_IL_Policy, Neural_SLAM_Module
 
 import algo
@@ -72,6 +73,8 @@ def main():
 
     if not os.path.exists("{}/images/".format(dump_dir)):
         os.makedirs("{}/images/".format(dump_dir))
+    if args.lz_mode and not os.path.exists("{}/lz/".format(dump_dir)):
+        os.makedirs("{}/lz/".format(dump_dir))
 
     logging.basicConfig(
         filename=log_dir + 'train.log',
@@ -181,6 +184,21 @@ def main():
                             torch.from_numpy(origins[e]).to(device).float()
 
     init_map_and_pose()
+
+    lz_tokenizer = None
+    lz_memories = None
+    lz_pending_eval = None
+    if args.lz_mode:
+        lz_tokenizer = SymbolicTokenizer(
+            mode=args.tokenizer_mode,
+            proj_dim=args.tokenizer_proj_dim,
+            seed=args.seed
+        )
+        lz_memories = [
+            LZMapMemory(min_goal_visits=args.lz_min_goal_visits)
+            for _ in range(num_scenes)
+        ]
+        lz_pending_eval = [False for _ in range(num_scenes)]
 
     # Global policy observation space
     g_observation_space = gym.spaces.Box(0, 1,
@@ -333,6 +351,19 @@ def main():
             eval_g_step = step // args.num_local_steps + 1
             l_step = step % args.num_local_steps
 
+            if args.lz_mode and (total_num_steps % args.lz_update_every == 0):
+                embeddings = nslam_module.get_visual_embedding(obs)
+                embeddings = embeddings.detach().cpu().numpy()
+                for e in range(num_scenes):
+                    token = lz_tokenizer.encode(embeddings[e])
+                    lz_memories[e].update_token(token, total_num_steps)
+                    lz_memories[e].observe(
+                        total_num_steps,
+                        pose_xy=planner_pose_inputs[e][:2],
+                        goal_xy=global_goals[e] if len(global_goals) > e else None,
+                        reward=None
+                    )
+
             # ------------------------------------------------------------------
             # Local Policy
             del last_obs
@@ -469,6 +500,20 @@ def main():
                     [infos[env_idx]['exp_reward'] for env_idx
                      in range(num_scenes)])
                 ).float().to(device)
+                if args.lz_mode:
+                    g_reward_cpu = g_reward.cpu().numpy()
+                    for e in range(num_scenes):
+                        lz_memories[e].observe(
+                            total_num_steps,
+                            pose_xy=planner_pose_inputs[e][:2],
+                            goal_xy=global_goals[e],
+                            reward=float(g_reward_cpu[e])
+                        )
+                        if lz_pending_eval[e]:
+                            lz_memories[e].record_plan_outcome(
+                                float(g_reward_cpu[e]) > 0.0
+                            )
+                            lz_pending_eval[e] = False
 
                 if args.eval:
                     g_reward = g_reward*50.0 # Convert reward to area in m2
@@ -517,6 +562,22 @@ def main():
                 global_goals = [[int(action[0] * local_w),
                                  int(action[1] * local_h)]
                                 for action in cpu_actions]
+
+                if args.lz_mode and (step + 1) % args.lz_suggest_every == 0:
+                    for e in range(num_scenes):
+                        proposal = lz_memories[e].suggest_subgoal(
+                            top_k=args.lz_topk_goals
+                        )
+                        if proposal is None:
+                            continue
+                        gx = int(np.clip(
+                            int(round(proposal["goal_xy"][0])), 0, local_w - 1
+                        ))
+                        gy = int(np.clip(
+                            int(round(proposal["goal_xy"][1])), 0, local_h - 1
+                        ))
+                        global_goals[e] = [gx, gy]
+                        lz_pending_eval[e] = True
 
                 g_reward = 0
                 g_masks = torch.ones(num_scenes).float().to(device)
@@ -763,6 +824,33 @@ def main():
 
         print(log)
         logging.info(log)
+
+    if args.lz_mode:
+        lz_dir = "{}/lz/".format(dump_dir)
+        for e in range(num_scenes):
+            lz_memories[e].export(lz_dir, e)
+        lz_log = "LZ summary: "
+        lz_log += "nodes={} ".format(
+            int(np.mean([len(m.nodes) for m in lz_memories]))
+        )
+        lz_log += "edges={} ".format(
+            int(np.mean([sum(len(v) for v in m.edges.values())
+                         for m in lz_memories]))
+        )
+        lz_log += "intervention_rate={:.3f} ".format(
+            float(np.mean([
+                0.0 if m.intervention_attempts == 0 else
+                m.interventions / m.intervention_attempts for m in lz_memories
+            ]))
+        )
+        lz_log += "plan_hit_rate={:.3f}".format(
+            float(np.mean([
+                0.0 if m.plan_total == 0 else m.plan_hits / m.plan_total
+                for m in lz_memories
+            ]))
+        )
+        print(lz_log)
+        logging.info(lz_log)
 
 
 if __name__ == "__main__":

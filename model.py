@@ -154,6 +154,13 @@ class Neural_SLAM_Module(nn.Module):
                                       self.map_size_cm // self.resolution
                                       ).float().to(self.device)
 
+    def get_visual_embedding(self, obs):
+        with torch.no_grad():
+            resnet_output = self.resnet_l5(obs[:, :3, :, :])
+            conv_output = self.conv(resnet_output)
+            embedding = conv_output.mean(dim=(2, 3))
+        return embedding
+
     def forward(self, obs_last, obs, poses, maps, explored, current_poses,
             build_maps=True):
 
