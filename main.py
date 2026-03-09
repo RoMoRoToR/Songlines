@@ -15,7 +15,6 @@ from arguments import get_args
 from env import make_vec_envs
 from utils.storage import GlobalRolloutStorage, FIFOMemory
 from utils.optimization import get_optimizer
-from utils.lz_memory import LZMapMemory, SymbolicTokenizer
 from model import RL_Policy, Local_IL_Policy, Neural_SLAM_Module
 
 import algo
@@ -189,6 +188,8 @@ def main():
     lz_memories = None
     lz_pending_eval = None
     if args.lz_mode:
+        # Keep baseline path independent from optional LZ dependencies.
+        from utils.lz_memory import LZMapMemory, SymbolicTokenizer
         lz_tokenizer = SymbolicTokenizer(
             mode=args.tokenizer_mode,
             proj_dim=args.tokenizer_proj_dim,

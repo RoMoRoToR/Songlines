@@ -9,8 +9,23 @@ else:
     matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-import seaborn as sns
 import skimage
+
+try:
+    import seaborn as sns
+except Exception:
+    sns = None
+
+
+def _color_palette(name=None):
+    if sns is not None:
+        if name is None:
+            return sns.color_palette()
+        return sns.color_palette(name)
+
+    if name == "Paired":
+        return [tuple(c[:3]) for c in plt.get_cmap("Paired").colors]
+    return [tuple(c[:3]) for c in plt.get_cmap("tab10").colors]
 
 
 def visualize(fig, ax, img, grid, pos, gt_pos, dump_dir, rank, ep_no, t,
@@ -96,7 +111,7 @@ def get_colored_map(mat, collision_map, visited, visited_gt, goal,
                     explored, gt_map, gt_map_explored):
     m, n = mat.shape
     colored = np.zeros((m, n, 3))
-    pal = sns.color_palette("Paired")
+    pal = _color_palette("Paired")
 
     current_palette = [(0.9, 0.9, 0.9)]
     colored = fill_color(colored, gt_map, current_palette[0])
@@ -104,7 +119,6 @@ def get_colored_map(mat, collision_map, visited, visited_gt, goal,
     current_palette = [(235. / 255., 243. / 255., 1.)]
     colored = fill_color(colored, explored, current_palette[0])
 
-    green_palette = sns.light_palette("green")
     colored = fill_color(colored, mat, pal[2])
 
     current_palette = [(0.6, 0.6, 0.6)]
@@ -112,15 +126,13 @@ def get_colored_map(mat, collision_map, visited, visited_gt, goal,
 
     colored = fill_color(colored, mat * gt_map_explored, pal[3])
 
-    red_palette = sns.light_palette("red")
-
     colored = fill_color(colored, visited_gt, current_palette[0])
     colored = fill_color(colored, visited, pal[4])
     colored = fill_color(colored, visited * visited_gt, pal[5])
 
     colored = fill_color(colored, collision_map, pal[2])
 
-    current_palette = sns.color_palette()
+    current_palette = _color_palette()
 
     selem = skimage.morphology.disk(4)
     goal_mat = np.zeros((m, n))
@@ -130,7 +142,7 @@ def get_colored_map(mat, collision_map, visited, visited_gt, goal,
 
     colored = fill_color(colored, goal_mat, current_palette[0])
 
-    current_palette = sns.color_palette("Paired")
+    current_palette = _color_palette("Paired")
 
     colored = 1 - colored
     colored *= 255
