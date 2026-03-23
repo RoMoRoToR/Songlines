@@ -1,14 +1,20 @@
 import argparse
+import csv
 import json
 import os
-from collections import deque
 
 import gymnasium as gym
 import matplotlib.pyplot as plt
 import minigrid
 import numpy as np
 
-from utils.lz_memory import LZMapMemory, SymbolicTokenizer
+from songline_drive.graph_memory import DynamicSonglineGraph
+from songline_drive.graph_rollout import GraphRolloutPlanner
+from songline_drive.maneuver_selector import ManeuverSelector
+from songline_drive.scene_encoder import MiniGridSceneEncoder
+from songline_drive.scene_tokenizer import SceneTokenizer
+from songline_drive.trajectory_planner import TrajectoryPlanner
+from utils.lz_memory import SymbolicTokenizer
 
 
 def ensure_dir(path: str):
@@ -64,40 +70,13 @@ def local_symbolic_observation(env, radius=1):
     return obs_vec.astype(np.float32)
 
 
+def scene_token_to_int(scene_token):
+    token_name = str(scene_token.token_type)
+    return sum((idx + 1) * ord(ch) for idx, ch in enumerate(token_name))
+
+
 def manhattan(a, b):
     return int(abs(int(a[0]) - int(b[0])) + abs(int(a[1]) - int(b[1])))
-
-
-def choose_action_toward(env, target_xy):
-    """
-    Простой локальный контроллер:
-    поворачивает агента к target_xy, затем идёт вперёд.
-    """
-    unwrapped = env.unwrapped
-    ax, ay = unwrapped.agent_pos
-    agent_dir = unwrapped.agent_dir
-
-    tx, ty = int(target_xy[0]), int(target_xy[1])
-    dx = tx - ax
-    dy = ty - ay
-
-    if dx == 0 and dy == 0:
-        return 2  # forward
-
-    if abs(dx) >= abs(dy):
-        desired_dir = 0 if dx > 0 else 2
-    else:
-        desired_dir = 1 if dy > 0 else 3
-
-    if desired_dir == agent_dir:
-        return 2  # forward
-
-    right_turns = (desired_dir - agent_dir) % 4
-    left_turns = (agent_dir - desired_dir) % 4
-
-    if left_turns <= right_turns:
-        return 0  # left
-    return 1  # right
 
 
 def random_safe_action(rng):
@@ -137,13 +116,29 @@ def get_mean_xy(node, key_prefix):
 
 
 def build_memory(args):
-    tokenizer = SymbolicTokenizer(
-        mode=args.tokenizer_mode,
-        proj_dim=args.tokenizer_proj_dim,
-        seed=args.seed,
-    )
-    memory = LZMapMemory(min_goal_visits=args.min_goal_visits)
-    return tokenizer, memory
+    tokenizer = None
+    encoder = None
+    if args.token_source == "symbolic_hash":
+        tokenizer = SymbolicTokenizer(
+            mode=args.tokenizer_mode,
+            proj_dim=args.tokenizer_proj_dim,
+            seed=args.seed,
+        )
+    elif args.token_source == "scene_semantic":
+        encoder = MiniGridSceneEncoder(radius=args.scene_radius)
+        tokenizer = SceneTokenizer(mode="semantic")
+    elif args.token_source == "scene_patch_hash":
+        encoder = MiniGridSceneEncoder(radius=args.scene_radius)
+        tokenizer = SceneTokenizer(mode="patch_hash")
+    else:
+        raise ValueError(f"Unknown token_source: {args.token_source}")
+    memory = DynamicSonglineGraph(min_goal_visits=args.min_goal_visits)
+    planner = GraphRolloutPlanner()
+    return tokenizer, encoder, memory, planner
+
+
+def build_local_planner(args):
+    return ManeuverSelector(), TrajectoryPlanner(commit_to_corridor=args.commit_to_corridor)
 
 
 def build_episode_memory():
@@ -206,94 +201,110 @@ def current_phrase_node(memory):
     return memory.current_phrase_id
 
 
-def remember_graph_path(memory, src, dst):
-    if memory is None or src is None or dst is None:
-        return None
-    if src == dst:
-        return [src]
-
-    parents = {src: None}
-    q = deque([src])
-    while q:
-        cur = q.popleft()
-        for nxt in memory.edges.get(cur, {}):
-            if nxt in parents:
-                continue
-            parents[nxt] = cur
-            if nxt == dst:
-                path = [dst]
-                while parents[path[-1]] is not None:
-                    path.append(parents[path[-1]])
-                path.reverse()
-                return path
-            q.append(nxt)
-    return None
+def _cell_code(env, x, y):
+    grid = env.unwrapped.grid
+    if x < 0 or y < 0 or x >= grid.width or y >= grid.height:
+        return 99
+    cell = grid.get(x, y)
+    if cell is None:
+        return 0
+    if cell.type == "wall":
+        return 1
+    if cell.type == "goal":
+        return 2
+    if cell.type == "lava":
+        return 3
+    if cell.type == "door":
+        return 4
+    return 8
 
 
-def choose_songline_target_node(memory, top_k):
-    if memory is None or memory.current_phrase_id is None:
-        return None
-
-    scored = []
-    for node_id, node in memory.nodes.items():
-        if node["visits"] < memory.min_goal_visits:
-            continue
-        goal_xy = get_mean_xy(node, "goal")
-        pose_xy = get_mean_xy(node, "pose")
-        if goal_xy is None or pose_xy is None:
-            continue
-        mean_reward = node["reward_sum"] / max(1, node["reward_count"])
-        visit_bonus = np.log1p(node["visits"])
-        goal_alignment = -manhattan(np.rint(pose_xy).astype(np.int32), np.rint(goal_xy).astype(np.int32))
-        score = (2.0 * mean_reward) + (0.15 * visit_bonus) + (0.05 * goal_alignment)
-        scored.append((score, node_id))
-
-    if not scored:
-        return None
-
-    scored.sort(reverse=True)
-    candidate_ids = [node_id for _, node_id in scored[:top_k]]
-    src = current_phrase_node(memory)
-    best = None
-    for node_id in candidate_ids:
-        path = remember_graph_path(memory, src, node_id)
-        if path is None:
-            continue
-        path_len = max(0, len(path) - 1)
-        node = memory.nodes[node_id]
-        mean_reward = node["reward_sum"] / max(1, node["reward_count"])
-        score = scored[[nid for _, nid in scored].index(node_id)][0]
-        candidate = {
-            "node_id": node_id,
-            "path": path,
-            "path_len": path_len,
-            "score": float(score),
-            "mean_reward": float(mean_reward),
-        }
-        if best is None or candidate["score"] > best["score"]:
-            best = candidate
-
-    return best
-
-
-def select_graph_waypoint(memory, top_k):
-    target = choose_songline_target_node(memory, top_k=top_k)
-    if target is None:
-        return None
-
-    path = target["path"]
-    next_node_id = path[1] if len(path) > 1 else path[0]
-    node = memory.nodes[next_node_id]
-    pose_xy = get_mean_xy(node, "pose")
-    if pose_xy is None:
-        return None
-
-    waypoint = np.rint(pose_xy).astype(np.int32)
+def _dir_to_delta(agent_dir):
     return {
-        "waypoint_xy": waypoint,
-        "target_node_id": int(target["node_id"]),
-        "next_node_id": int(next_node_id),
-        "graph_path_length": int(target["path_len"]),
+        0: (1, 0),
+        1: (0, 1),
+        2: (-1, 0),
+        3: (0, -1),
+    }[int(agent_dir)]
+
+
+def _hazard_aware_waypoint(env, current_token_label, plan_waypoint_xy, goal_xy):
+    if current_token_label not in {"hazard_front", "gap_search"}:
+        return None
+
+    unwrapped = env.unwrapped
+    ax, ay = [int(v) for v in unwrapped.agent_pos]
+    agent_dir = int(unwrapped.agent_dir)
+    target_xy = goal_xy if goal_xy is not None else plan_waypoint_xy
+    if target_xy is None:
+        return None
+
+    candidates = []
+    for dir_idx in range(4):
+        dx, dy = _dir_to_delta(dir_idx)
+        nx, ny = ax + dx, ay + dy
+        code = _cell_code(env, nx, ny)
+        if code not in (0, 2):
+            continue
+
+        left_dir = (dir_idx - 1) % 4
+        right_dir = (dir_idx + 1) % 4
+        ldx, ldy = _dir_to_delta(left_dir)
+        rdx, rdy = _dir_to_delta(right_dir)
+        left_code = _cell_code(env, nx + ldx, ny + ldy)
+        right_code = _cell_code(env, nx + rdx, ny + rdy)
+        lateral_hazard = float(left_code == 3 or right_code == 3)
+        lateral_blocked = float(left_code in (1, 3, 99) or right_code in (1, 3, 99))
+        goal_dx = int(target_xy[0]) - nx
+        goal_dy = int(target_xy[1]) - ny
+        norm = float(max(1e-6, (goal_dx * goal_dx + goal_dy * goal_dy) ** 0.5))
+        heading_alignment = ((dx * goal_dx) + (dy * goal_dy)) / norm
+        goal_progress = -manhattan(np.array([nx, ny]), np.asarray(target_xy))
+        score = (2.5 * heading_alignment) + (1.5 * lateral_hazard) + (0.75 * lateral_blocked) + (0.1 * goal_progress)
+        candidates.append((score, np.array([nx, ny], dtype=np.int32)))
+
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    return candidates[0][1]
+
+
+def select_graph_waypoint(memory, planner, selector, top_k, rollout_horizon, current_token_label=None, env=None, goal_xy=None):
+    plans = planner.rollout(
+        graph=memory,
+        current_node_id=current_phrase_node(memory),
+        horizon=rollout_horizon,
+        top_k=top_k,
+    )
+    if not plans:
+        return None
+
+    plan = plans[0]
+    command = selector.select(plan, current_token=current_token_label)
+    if command.get("waypoint_xy") is None:
+        return None
+
+    waypoint_xy = np.asarray(command["waypoint_xy"], dtype=np.int32)
+    hazard_waypoint = None
+    if env is not None:
+        hazard_waypoint = _hazard_aware_waypoint(
+            env,
+            current_token_label=current_token_label,
+            plan_waypoint_xy=waypoint_xy,
+            goal_xy=goal_xy,
+        )
+    if hazard_waypoint is not None:
+        waypoint_xy = hazard_waypoint
+        command["waypoint_xy"] = tuple(int(v) for v in waypoint_xy)
+
+    return {
+        "waypoint_xy": waypoint_xy,
+        "target_node_id": command.get("target_node_id"),
+        "next_node_id": int(plan.metadata["next_node_id"]),
+        "graph_path_length": int(command.get("graph_path_length", plan.graph_path_length)),
+        "utility": float(plan.utility),
+        "token_sequence": list(plan.token_sequence),
+        "maneuver_command": command,
     }
 
 
@@ -301,6 +312,15 @@ def make_method_name(agent_mode, songline_policy):
     if agent_mode == "songline":
         return f"songline_{songline_policy}"
     return agent_mode
+
+
+def apply_milestone_mode(args):
+    if getattr(args, "milestone_mode", "none") == "semantic_handoff_v1":
+        args.agent_mode = "songline"
+        args.songline_policy = "graph_path"
+        args.token_source = "scene_semantic"
+        args.early_hazard_intervention = True
+    return args
 
 
 def export_run_summary(out_dir, run_summary):
@@ -341,6 +361,48 @@ def export_run_summary(out_dir, run_summary):
     plt.close()
 
 
+def export_debug_trace(out_dir, trace_rows):
+    if not trace_rows:
+        return
+    trace_dir = os.path.join(out_dir, "traces")
+    ensure_dir(trace_dir)
+
+    json_path = os.path.join(trace_dir, "step_trace.json")
+    with open(json_path, "w") as f:
+        json.dump(trace_rows, f, indent=2)
+
+    csv_path = os.path.join(trace_dir, "step_trace.csv")
+    fieldnames = list(trace_rows[0].keys())
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in trace_rows:
+            writer.writerow(row)
+
+
+def is_hazard_phase_token(token_label):
+    return token_label in {"hazard_front", "gap_search", "gap_aligned", "safe_crossing"}
+
+
+def should_run_graph_intervention(args, step, token_label, active_subgoal_key, hazard_phase_intervened):
+    scheduled = (step % args.suggest_every == 0)
+    if args.songline_policy != "graph_path":
+        return scheduled
+    if not args.early_hazard_intervention:
+        return scheduled
+    hazard_trigger = is_hazard_phase_token(token_label) and active_subgoal_key is None and not hazard_phase_intervened
+    return scheduled or hazard_trigger
+
+
+def should_activate_hazard_commit(scene, hazard_phase_active, subgoal_xy):
+    if not hazard_phase_active or scene is None or subgoal_xy is None:
+        return False
+    risk = scene.risk_features
+    front_safe = int(risk.get("front_safe", 0.0)) == 1
+    goal_alignment = float(risk.get("goal_heading_alignment", 0.0))
+    return bool(front_safe and goal_alignment >= 0.35)
+
+
 def summarise_run(run_summary, memory):
     final_nodes = 0 if memory is None else int(len(memory.nodes))
     final_edges = 0 if memory is None else int(sum(len(v) for v in memory.edges.values()))
@@ -377,6 +439,24 @@ def summarise_run(run_summary, memory):
         ),
         "new_nodes_per_episode": float(np.mean(run_summary["new_nodes_per_episode"])) if run_summary["new_nodes_per_episode"] else 0.0,
         "graph_path_length": float(np.mean(run_summary["graph_path_length"])) if run_summary["graph_path_length"] else 0.0,
+        "fraction_gap_aligned": float(np.mean(run_summary["has_gap_aligned"])) if run_summary["has_gap_aligned"] else 0.0,
+        "fraction_safe_crossing": float(np.mean(run_summary["has_safe_crossing"])) if run_summary["has_safe_crossing"] else 0.0,
+        "fraction_post_hazard": float(np.mean(run_summary["has_post_hazard"])) if run_summary["has_post_hazard"] else 0.0,
+        "fraction_final_exit_maneuver": float(np.mean(run_summary["has_final_exit_maneuver"])) if run_summary["has_final_exit_maneuver"] else 0.0,
+        "fraction_resume_to_goal": float(np.mean(run_summary["has_resume_to_goal"])) if run_summary["has_resume_to_goal"] else 0.0,
+        "fraction_post_hazard_progress": float(np.mean(run_summary["has_post_hazard_progress"])) if run_summary["has_post_hazard_progress"] else 0.0,
+        "fraction_resume_to_goal_progress": float(np.mean(run_summary["has_resume_to_goal_progress"])) if run_summary["has_resume_to_goal_progress"] else 0.0,
+        "fraction_post_hazard_to_success": float(np.mean(run_summary["post_hazard_to_success"])) if run_summary["post_hazard_to_success"] else 0.0,
+        "fraction_resume_to_goal_to_success": float(np.mean(run_summary["resume_to_goal_to_success"])) if run_summary["resume_to_goal_to_success"] else 0.0,
+        "conditional_post_hazard_success": safe_rate(
+            float(np.sum(run_summary["post_hazard_to_success"])),
+            float(np.sum(run_summary["has_post_hazard"])),
+        ),
+        "conditional_resume_to_goal_success": safe_rate(
+            float(np.sum(run_summary["resume_to_goal_to_success"])),
+            float(np.sum(run_summary["has_resume_to_goal"])),
+        ),
+        "mean_max_phase_depth": float(np.mean(run_summary["max_phase_depth"])) if run_summary["max_phase_depth"] else 0.0,
         "final_nodes": final_nodes,
         "final_edges": final_edges,
     }
@@ -384,6 +464,7 @@ def summarise_run(run_summary, memory):
 
 
 def run_songline_experiment(args, export_outputs=True, verbose=True):
+    args = apply_milestone_mode(args)
     ensure_dir(args.out_dir)
 
     env = gym.make(args.env_id, render_mode="rgb_array")
@@ -391,9 +472,16 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
     method_name = make_method_name(args.agent_mode, args.songline_policy)
 
     tokenizer = None
+    scene_encoder = None
     memory = None
+    rollout_planner = None
+    maneuver_selector = None
+    trajectory_planner = None
     if args.agent_mode == "songline":
-        tokenizer, memory = build_memory(args)
+        tokenizer, scene_encoder, memory, rollout_planner = build_memory(args)
+        maneuver_selector, trajectory_planner = build_local_planner(args)
+    else:
+        _, trajectory_planner = build_local_planner(args)
 
     run_summary = {
         "env_id": args.env_id,
@@ -416,15 +504,30 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "node_reuse_rate": [],
         "new_nodes_per_episode": [],
         "graph_path_length": [],
+        "has_gap_aligned": [],
+        "has_safe_crossing": [],
+        "has_post_hazard": [],
+        "has_final_exit_maneuver": [],
+        "has_resume_to_goal": [],
+        "has_post_hazard_progress": [],
+        "has_resume_to_goal_progress": [],
+        "post_hazard_to_success": [],
+        "resume_to_goal_to_success": [],
+        "max_phase_depth": [],
         "episode_metrics": [],
     }
 
     total_step_idx = 0
     seen_songline_nodes = set()
+    debug_trace_rows = []
 
     for ep in range(args.episodes):
         obs, info = env.reset(seed=args.seed + ep)
         del obs, info
+        if tokenizer is not None and hasattr(tokenizer, "reset"):
+            tokenizer.reset()
+        if trajectory_planner is not None and hasattr(trajectory_planner, "reset"):
+            trajectory_planner.reset()
 
         goal_xy = get_goal_position(env)
         episode_return = 0.0
@@ -443,16 +546,55 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         new_nodes_start = 0 if memory is None else len(memory.nodes)
         ep_memory = build_episode_memory() if args.agent_mode == "greedy_episodic" else None
         no_override_suggestions = 0
+        previous_token_label = None
+        active_target_node_id = None
+        active_next_node_id = None
+        hazard_phase_active = False
+        hazard_phase_intervened = False
+        active_maneuver_command = None
+        active_maneuver_command_type = None
+        hazard_commit_active = False
+        hazard_commit_dir = None
+        hazard_commit_steps_left = 0
+        exit_hazard_commit_active = False
+        exit_hazard_commit_dir = None
+        exit_hazard_commit_steps_left = 0
+        final_exit_active = False
+        final_exit_dir = None
+        final_exit_steps_left = 0
+        resume_to_goal_active = False
+        resume_to_goal_steps_left = 0
+        phase_flags = {
+            "gap_aligned": 0,
+            "safe_crossing": 0,
+            "post_hazard": 0,
+            "final_exit_maneuver": 0,
+            "resume_to_goal": 0,
+        }
+        post_hazard_armed = 0
+        resume_to_goal_armed = 0
+        has_post_hazard_progress = 0
+        has_resume_to_goal_progress = 0
 
         for step in range(args.max_steps):
             step_count = step + 1
             unwrapped = env.unwrapped
             agent_xy = np.array(unwrapped.agent_pos, dtype=np.int32)
             distance_before = None if goal_xy is None else manhattan(agent_xy, goal_xy)
+            scene = None
+            scene_token = None
+            token_label = None
 
             if args.agent_mode == "songline":
-                obs_vec = local_symbolic_observation(env, radius=1)
-                token = tokenizer.encode(obs_vec)
+                if args.token_source == "symbolic_hash":
+                    obs_vec = local_symbolic_observation(env, radius=args.scene_radius)
+                    token = tokenizer.encode(obs_vec)
+                    token_label = str(token)
+                else:
+                    scene = scene_encoder.encode(env)
+                    scene_token = tokenizer.tokenize(scene)
+                    token = scene_token_to_int(scene_token)
+                    token_label = str(scene_token.token_type)
                 is_new_node = memory.update_token(token, total_step_idx)
                 if is_new_node and memory.current_phrase_id is not None:
                     unique_songline_nodes_this_episode.add(memory.current_phrase_id)
@@ -467,7 +609,39 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     reward=0.0,
                 )
 
-                if step % args.suggest_every == 0:
+                hazard_phase_active = is_hazard_phase_token(token_label)
+                post_exit_pending = bool(
+                    (final_exit_active and final_exit_steps_left > 0)
+                    or (resume_to_goal_active and resume_to_goal_steps_left > 0)
+                )
+                if not hazard_phase_active and not post_exit_pending:
+                    hazard_phase_intervened = False
+                    hazard_commit_active = False
+                    hazard_commit_dir = None
+                    hazard_commit_steps_left = 0
+                    exit_hazard_commit_active = False
+                    exit_hazard_commit_dir = None
+                    exit_hazard_commit_steps_left = 0
+                    final_exit_active = False
+                    final_exit_dir = None
+                    final_exit_steps_left = 0
+
+                if token_label == "safe_crossing":
+                    exit_hazard_commit_active = True
+                    exit_hazard_commit_dir = int(env.unwrapped.agent_dir)
+                    exit_hazard_commit_steps_left = max(exit_hazard_commit_steps_left, 2)
+                elif token_label == "post_hazard":
+                    final_exit_active = True
+                    final_exit_dir = int(env.unwrapped.agent_dir)
+                    final_exit_steps_left = max(final_exit_steps_left, 2)
+
+                if should_run_graph_intervention(
+                    args,
+                    step=step,
+                    token_label=token_label,
+                    active_subgoal_key=active_subgoal_key,
+                    hazard_phase_intervened=hazard_phase_intervened,
+                ):
                     proposal = memory.suggest_subgoal(top_k=args.top_k_goals)
                     if proposal is not None:
                         no_override_suggestions += 1
@@ -482,20 +656,61 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                         active_intervention_distance = distance_before
                         active_subgoal_key = (int(subgoal_xy[0]), int(subgoal_xy[1]))
                         active_graph_path_length = 0
+                        active_target_node_id = int(proposal["node_id"])
+                        active_next_node_id = int(proposal["node_id"])
+                        if hazard_phase_active:
+                            hazard_phase_intervened = True
 
                     if args.songline_policy == "graph_path":
-                        path_plan = select_graph_waypoint(memory, top_k=args.top_k_goals)
-                        if path_plan is not None:
-                            subgoal_xy = path_plan["waypoint_xy"].copy()
-                            interventions_this_episode += 1
-                            active_intervention_distance = distance_before
-                            active_subgoal_key = (int(subgoal_xy[0]), int(subgoal_xy[1]))
-                            active_graph_path_length = int(path_plan["graph_path_length"])
-                            graph_path_lengths.append(active_graph_path_length)
+                        preserve_commit = bool(
+                            (hazard_commit_active and hazard_commit_steps_left > 0 and hazard_phase_active)
+                            or (exit_hazard_commit_active and exit_hazard_commit_steps_left > 0)
+                            or (final_exit_active and final_exit_steps_left > 0)
+                            or (resume_to_goal_active and resume_to_goal_steps_left > 0)
+                        )
+                        if not preserve_commit:
+                            path_plan = select_graph_waypoint(
+                                memory,
+                                rollout_planner,
+                                maneuver_selector,
+                                top_k=args.top_k_goals,
+                                rollout_horizon=args.graph_rollout_horizon,
+                                current_token_label=token_label,
+                                env=env,
+                                goal_xy=goal_xy,
+                            )
+                            if path_plan is not None:
+                                subgoal_xy = path_plan["waypoint_xy"].copy()
+                                interventions_this_episode += 1
+                                active_intervention_distance = distance_before
+                                active_subgoal_key = (int(subgoal_xy[0]), int(subgoal_xy[1]))
+                                active_graph_path_length = int(path_plan["graph_path_length"])
+                                graph_path_lengths.append(active_graph_path_length)
+                                active_target_node_id = None if path_plan["target_node_id"] is None else int(path_plan["target_node_id"])
+                                active_next_node_id = int(path_plan["next_node_id"])
+                                active_maneuver_command = dict(path_plan["maneuver_command"])
+                                active_maneuver_command_type = str(active_maneuver_command.get("command_type"))
+                                if hazard_phase_active:
+                                    hazard_phase_intervened = True
+
+                if (
+                    args.commit_to_corridor
+                    and args.agent_mode == "songline"
+                    and not hazard_commit_active
+                    and should_activate_hazard_commit(
+                        scene=scene,
+                        hazard_phase_active=hazard_phase_active,
+                        subgoal_xy=subgoal_xy,
+                    )
+                ):
+                    hazard_commit_active = True
+                    hazard_commit_dir = int(env.unwrapped.agent_dir)
+                    hazard_commit_steps_left = max(hazard_commit_steps_left, 3)
 
             action = random_safe_action(rng)
             if args.agent_mode == "greedy":
-                action = choose_action_toward(env, goal_xy) if goal_xy is not None else random_safe_action(rng)
+                command = {"command_type": "go_to_waypoint", "waypoint_xy": goal_xy}
+                action = trajectory_planner.next_action(env, command) if goal_xy is not None else random_safe_action(rng)
             elif args.agent_mode == "greedy_episodic":
                 episodic_target = None
                 if step % args.suggest_every == 0:
@@ -508,28 +723,95 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     episodic_target = ep_memory["active_waypoint"]["pos"]
                 if episodic_target is not None and rng.rand() > args.epsilon:
                     subgoal_xy = episodic_target.copy()
-                    action = choose_action_toward(env, subgoal_xy)
+                    action = trajectory_planner.next_action(
+                        env,
+                        {"command_type": "go_to_waypoint", "waypoint_xy": subgoal_xy},
+                    )
                 else:
-                    action = choose_action_toward(env, goal_xy) if goal_xy is not None else random_safe_action(rng)
+                    action = trajectory_planner.next_action(
+                        env,
+                        {"command_type": "go_to_waypoint", "waypoint_xy": goal_xy},
+                    ) if goal_xy is not None else random_safe_action(rng)
             elif args.agent_mode == "songline":
                 if args.songline_policy == "no_override":
-                    action = choose_action_toward(env, goal_xy) if goal_xy is not None else random_safe_action(rng)
+                    action = trajectory_planner.next_action(
+                        env,
+                        {"command_type": "go_to_waypoint", "waypoint_xy": goal_xy},
+                    ) if goal_xy is not None else random_safe_action(rng)
                 elif args.songline_policy == "subgoal_controller":
                     if subgoal_xy is not None and rng.rand() > args.epsilon:
-                        action = choose_action_toward(env, subgoal_xy)
+                        action = trajectory_planner.next_action(
+                            env,
+                            {"command_type": "go_to_waypoint", "waypoint_xy": subgoal_xy},
+                        )
                     elif goal_xy is not None and rng.rand() > 0.5:
-                        action = choose_action_toward(env, goal_xy)
+                        action = trajectory_planner.next_action(
+                            env,
+                            {"command_type": "go_to_waypoint", "waypoint_xy": goal_xy},
+                        )
                     else:
                         action = random_safe_action(rng)
                 elif args.songline_policy == "graph_path":
-                    if subgoal_xy is not None and rng.rand() > args.epsilon:
-                        action = choose_action_toward(env, subgoal_xy)
+                    if resume_to_goal_active and resume_to_goal_steps_left > 0:
+                        command = {
+                            "command_type": "resume_to_goal",
+                            "waypoint_xy": goal_xy if goal_xy is not None else subgoal_xy,
+                            "final_exit_mode": args.final_exit_mode,
+                        }
+                        active_maneuver_command_type = str(command.get("command_type"))
+                        action = trajectory_planner.next_action(env, command)
+                    elif final_exit_active and final_exit_steps_left > 0:
+                        command = {
+                            "command_type": "final_exit_maneuver",
+                            "waypoint_xy": goal_xy if goal_xy is not None else subgoal_xy,
+                            "hazard_commit_dir": final_exit_dir,
+                            "final_exit_mode": args.final_exit_mode,
+                        }
+                        active_maneuver_command_type = str(command.get("command_type"))
+                        action = trajectory_planner.next_action(env, command)
+                    elif exit_hazard_commit_active and exit_hazard_commit_steps_left > 0:
+                        command = {
+                            "command_type": "exit_hazard_commit",
+                            "waypoint_xy": goal_xy if goal_xy is not None else subgoal_xy,
+                            "hazard_commit_dir": exit_hazard_commit_dir,
+                        }
+                        active_maneuver_command_type = str(command.get("command_type"))
+                        action = trajectory_planner.next_action(env, command)
+                    elif subgoal_xy is not None and rng.rand() > args.epsilon:
+                        if hazard_commit_active and hazard_commit_steps_left > 0:
+                            command = {
+                                "command_type": "committed_corridor_cross",
+                                "waypoint_xy": subgoal_xy,
+                                "hazard_commit_dir": hazard_commit_dir,
+                            }
+                        else:
+                            command = active_maneuver_command or {"command_type": "follow_graph_path", "waypoint_xy": subgoal_xy}
+                        active_maneuver_command_type = str(command.get("command_type"))
+                        action = trajectory_planner.next_action(env, command)
                     elif goal_xy is not None:
-                        action = choose_action_toward(env, goal_xy)
+                        active_maneuver_command_type = "go_to_waypoint"
+                        action = trajectory_planner.next_action(
+                            env,
+                            {"command_type": "go_to_waypoint", "waypoint_xy": goal_xy},
+                        )
                     else:
+                        active_maneuver_command_type = "random"
                         action = random_safe_action(rng)
                 else:
                     raise ValueError(f"Unknown songline policy: {args.songline_policy}")
+
+            if token_label == "gap_aligned":
+                phase_flags["gap_aligned"] = 1
+            elif token_label == "safe_crossing":
+                phase_flags["safe_crossing"] = 1
+            elif token_label == "post_hazard":
+                phase_flags["post_hazard"] = 1
+                post_hazard_armed = 1
+            if active_maneuver_command_type == "final_exit_maneuver":
+                phase_flags["final_exit_maneuver"] = 1
+            elif active_maneuver_command_type == "resume_to_goal":
+                phase_flags["resume_to_goal"] = 1
+                resume_to_goal_armed = 1
 
             obs, reward, terminated, truncated, info = env.step(action)
             del obs, info
@@ -538,6 +820,15 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             episode_return += float(reward)
             agent_xy_new = np.array(env.unwrapped.agent_pos, dtype=np.int32)
             distance_after = None if goal_xy is None else manhattan(agent_xy_new, goal_xy)
+            delta_distance = None
+            if distance_before is not None and distance_after is not None:
+                delta_distance = float(distance_before - distance_after)
+                if post_hazard_armed and delta_distance > 0.0:
+                    has_post_hazard_progress = 1
+                    post_hazard_armed = 0
+                if resume_to_goal_armed and delta_distance > 0.0:
+                    has_resume_to_goal_progress = 1
+                    resume_to_goal_armed = 0
 
             if args.agent_mode == "songline":
                 if previous_goal_distance is not None and distance_after is not None:
@@ -551,6 +842,70 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     reward=float(reward),
                 )
 
+            if hazard_commit_active:
+                still_hazard = hazard_phase_active
+                front_safe_now = False
+                if args.agent_mode == "songline" and scene_encoder is not None:
+                    post_scene = scene_encoder.encode(env)
+                    post_risk = post_scene.risk_features
+                    still_hazard = bool(
+                        int(post_risk.get("hazard_front", 0.0)) == 1
+                        or int(post_risk.get("hazard_near", 0.0)) == 1
+                    )
+                    front_safe_now = int(post_scene.risk_features.get("front_safe", 0.0)) == 1
+                if still_hazard and front_safe_now and hazard_commit_steps_left > 0:
+                    hazard_commit_steps_left -= 1
+                else:
+                    hazard_commit_active = False
+                    hazard_commit_dir = None
+                    hazard_commit_steps_left = 0
+                if hazard_commit_steps_left <= 0:
+                    hazard_commit_active = False
+                    hazard_commit_dir = None
+
+            if exit_hazard_commit_active:
+                still_hazard = hazard_phase_active
+                if args.agent_mode == "songline" and scene_encoder is not None:
+                    post_scene = scene_encoder.encode(env)
+                    post_risk = post_scene.risk_features
+                    still_hazard = bool(
+                        int(post_risk.get("hazard_front", 0.0)) == 1
+                        or int(post_risk.get("hazard_near", 0.0)) == 1
+                    )
+                if still_hazard and exit_hazard_commit_steps_left > 0:
+                    exit_hazard_commit_steps_left -= 1
+                else:
+                    exit_hazard_commit_active = False
+                    exit_hazard_commit_dir = None
+                    exit_hazard_commit_steps_left = 0
+                if exit_hazard_commit_steps_left <= 0:
+                    exit_hazard_commit_active = False
+                    exit_hazard_commit_dir = None
+
+            if final_exit_active:
+                maintained_progress = True
+                if distance_before is not None and distance_after is not None:
+                    maintained_progress = distance_after <= distance_before
+                if maintained_progress and final_exit_steps_left > 0:
+                    final_exit_steps_left -= 1
+                else:
+                    final_exit_active = False
+                    final_exit_dir = None
+                    final_exit_steps_left = 0
+                if final_exit_steps_left <= 0:
+                    if maintained_progress:
+                        resume_to_goal_active = True
+                        # Give the bridge one full future action-selection step to fire.
+                        resume_to_goal_steps_left = max(resume_to_goal_steps_left, 2)
+                    final_exit_active = False
+                    final_exit_dir = None
+
+            if resume_to_goal_active:
+                if resume_to_goal_steps_left > 0:
+                    resume_to_goal_steps_left -= 1
+                if resume_to_goal_steps_left <= 0:
+                    resume_to_goal_active = False
+
             if args.agent_mode == "greedy_episodic":
                 episodic_observe(ep_memory, agent_xy_new, distance_before, distance_after)
 
@@ -561,14 +916,101 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                         distance_delta_sum += float(active_intervention_distance - distance_after)
                     active_subgoal_key = None
                     active_intervention_distance = None
+                    active_target_node_id = None
+                    active_next_node_id = None
+                    active_maneuver_command = None
+                    active_maneuver_command_type = None
+                    hazard_commit_active = False
+                    hazard_commit_dir = None
+                    hazard_commit_steps_left = 0
+                    exit_hazard_commit_active = False
+                    exit_hazard_commit_dir = None
+                    exit_hazard_commit_steps_left = 0
+                    final_exit_active = False
+                    final_exit_dir = None
+                    final_exit_steps_left = 0
+                    resume_to_goal_active = False
+                    resume_to_goal_steps_left = 0
                     if args.agent_mode == "greedy_episodic" and ep_memory["active_waypoint"] is not None:
                         ep_memory["active_waypoint"] = None
                 elif active_intervention_distance is not None and distance_after is not None:
                     if distance_after > active_intervention_distance + args.intervention_patience:
                         active_subgoal_key = None
                         active_intervention_distance = None
+                        active_target_node_id = None
+                        active_next_node_id = None
+                        active_maneuver_command = None
+                        active_maneuver_command_type = None
+                        hazard_commit_active = False
+                        hazard_commit_dir = None
+                        hazard_commit_steps_left = 0
+                        exit_hazard_commit_active = False
+                        exit_hazard_commit_dir = None
+                        exit_hazard_commit_steps_left = 0
+                        final_exit_active = False
+                        final_exit_dir = None
+                        final_exit_steps_left = 0
+                        resume_to_goal_active = False
+                        resume_to_goal_steps_left = 0
                         if args.agent_mode == "greedy_episodic" and ep_memory["active_waypoint"] is not None:
                             ep_memory["active_waypoint"] = None
+
+            if args.debug_trace and args.agent_mode == "songline":
+                trace_enabled = args.debug_trace_env_filter in ("", args.env_id)
+                if trace_enabled:
+                    risk = {} if scene is None else scene.risk_features
+                    planner_debug = trajectory_planner.debug_state() if hasattr(trajectory_planner, "debug_state") else {
+                        "corridor_commit_active": 0,
+                        "corridor_commit_dir": None,
+                        "corridor_commit_steps_left": 0,
+                    }
+                    debug_trace_rows.append(
+                        {
+                            "episode": int(ep + 1),
+                            "step": int(step + 1),
+                            "token": token_label,
+                            "prev_token": previous_token_label,
+                            "action": int(action),
+                            "pos_x": int(agent_xy[0]),
+                            "pos_y": int(agent_xy[1]),
+                            "next_pos_x": int(agent_xy_new[0]),
+                            "next_pos_y": int(agent_xy_new[1]),
+                            "front_cell": int(risk.get("front_cell", -1)),
+                            "left_cell": int(risk.get("left_cell", -1)),
+                            "right_cell": int(risk.get("right_cell", -1)),
+                            "back_cell": int(risk.get("back_cell", -1)),
+                            "distance_before": -1 if distance_before is None else int(distance_before),
+                            "distance_after": -1 if distance_after is None else int(distance_after),
+                            "delta_distance": 0.0 if delta_distance is None else float(delta_distance),
+                            "subgoal_x": None if subgoal_xy is None else int(subgoal_xy[0]),
+                            "subgoal_y": None if subgoal_xy is None else int(subgoal_xy[1]),
+                            "intervention_active": int(active_subgoal_key is not None),
+                            "reward": float(reward),
+                            "graph_node_id": None if memory.current_phrase_id is None else int(memory.current_phrase_id),
+                            "target_node_id": active_target_node_id,
+                            "next_graph_node_id": active_next_node_id,
+                            "maneuver_command_type": active_maneuver_command_type,
+                            "goal_visible": int(risk.get("goal_visible", 0.0)),
+                            "hazard_front": int(risk.get("hazard_front", 0.0)),
+                            "hazard_near": int(risk.get("hazard_near", 0.0)),
+                            "front_safe": int(risk.get("front_safe", 0.0)),
+                            "narrow_safe_channel": int(risk.get("narrow_safe_channel", 0.0)),
+                            "goal_heading_alignment": float(risk.get("goal_heading_alignment", 0.0)),
+                            "hazard_phase_active": int(hazard_phase_active),
+                            "corridor_commit_active": int(hazard_commit_active),
+                            "corridor_commit_dir": hazard_commit_dir,
+                            "corridor_commit_steps_left": int(hazard_commit_steps_left),
+                            "exit_hazard_commit_active": int(exit_hazard_commit_active),
+                            "exit_hazard_commit_dir": exit_hazard_commit_dir,
+                            "exit_hazard_commit_steps_left": int(exit_hazard_commit_steps_left),
+                            "final_exit_active": int(final_exit_active),
+                            "final_exit_dir": final_exit_dir,
+                            "final_exit_steps_left": int(final_exit_steps_left),
+                            "resume_to_goal_active": int(resume_to_goal_active),
+                            "resume_to_goal_steps_left": int(resume_to_goal_steps_left),
+                        }
+                    )
+                    previous_token_label = token_label
 
             if distance_after is not None:
                 previous_goal_distance = distance_after
@@ -601,6 +1043,17 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         graph_path_length_mean = float(np.mean(graph_path_lengths)) if graph_path_lengths else 0.0
         subgoal_reach_rate = safe_rate(subgoal_hits_this_episode, interventions_this_episode)
         distance_delta_per_intervention = safe_rate(distance_delta_sum, interventions_this_episode)
+        max_phase_depth = 0
+        if phase_flags["gap_aligned"]:
+            max_phase_depth = 1
+        if phase_flags["safe_crossing"]:
+            max_phase_depth = 2
+        if phase_flags["post_hazard"]:
+            max_phase_depth = 3
+        if phase_flags["final_exit_maneuver"]:
+            max_phase_depth = 4
+        if phase_flags["resume_to_goal"]:
+            max_phase_depth = 5
 
         episode_metrics = {
             "episode": ep + 1,
@@ -623,6 +1076,16 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "node_reuse_rate": float(node_reuse_rate),
             "new_nodes_per_episode": int(new_nodes),
             "graph_path_length": float(graph_path_length_mean),
+            "has_gap_aligned": int(phase_flags["gap_aligned"]),
+            "has_safe_crossing": int(phase_flags["safe_crossing"]),
+            "has_post_hazard": int(phase_flags["post_hazard"]),
+            "has_final_exit_maneuver": int(phase_flags["final_exit_maneuver"]),
+            "has_resume_to_goal": int(phase_flags["resume_to_goal"]),
+            "has_post_hazard_progress": int(has_post_hazard_progress),
+            "has_resume_to_goal_progress": int(has_resume_to_goal_progress),
+            "post_hazard_to_success": int(phase_flags["post_hazard"] and success),
+            "resume_to_goal_to_success": int(phase_flags["resume_to_goal"] and success),
+            "max_phase_depth": int(max_phase_depth),
         }
 
         run_summary["episode_returns"].append(float(episode_return))
@@ -638,6 +1101,16 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         run_summary["node_reuse_rate"].append(float(node_reuse_rate))
         run_summary["new_nodes_per_episode"].append(int(new_nodes))
         run_summary["graph_path_length"].append(float(graph_path_length_mean))
+        run_summary["has_gap_aligned"].append(int(phase_flags["gap_aligned"]))
+        run_summary["has_safe_crossing"].append(int(phase_flags["safe_crossing"]))
+        run_summary["has_post_hazard"].append(int(phase_flags["post_hazard"]))
+        run_summary["has_final_exit_maneuver"].append(int(phase_flags["final_exit_maneuver"]))
+        run_summary["has_resume_to_goal"].append(int(phase_flags["resume_to_goal"]))
+        run_summary["has_post_hazard_progress"].append(int(has_post_hazard_progress))
+        run_summary["has_resume_to_goal_progress"].append(int(has_resume_to_goal_progress))
+        run_summary["post_hazard_to_success"].append(int(phase_flags["post_hazard"] and success))
+        run_summary["resume_to_goal_to_success"].append(int(phase_flags["resume_to_goal"] and success))
+        run_summary["max_phase_depth"].append(int(max_phase_depth))
         run_summary["episode_metrics"].append(episode_metrics)
 
         if verbose:
@@ -676,6 +1149,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
 
         with open(os.path.join(args.out_dir, "summary.json"), "w") as f:
             json.dump(summary, f, indent=2)
+        if args.debug_trace:
+            export_debug_trace(args.out_dir, debug_trace_rows)
 
     env.close()
     return run_summary, summary
@@ -704,6 +1179,31 @@ def parse_args():
     parser.add_argument("--intervention_patience", type=int, default=4)
     parser.add_argument("--min_goal_visits", type=int, default=2)
     parser.add_argument("--top_k_goals", type=int, default=5)
+    parser.add_argument("--graph_rollout_horizon", type=int, default=4)
+    parser.add_argument(
+        "--token_source",
+        type=str,
+        default="symbolic_hash",
+        choices=["symbolic_hash", "scene_semantic", "scene_patch_hash"],
+    )
+    parser.add_argument(
+        "--milestone_mode",
+        type=str,
+        default="none",
+        choices=["none", "semantic_handoff_v1"],
+    )
+    parser.add_argument(
+        "--final_exit_mode",
+        type=str,
+        default="none",
+        choices=["none", "v1"],
+    )
+    parser.add_argument("--scene_radius", type=int, default=1)
+    parser.add_argument("--export_phase_metrics", action="store_true")
+    parser.add_argument("--early_hazard_intervention", action="store_true")
+    parser.add_argument("--commit_to_corridor", action="store_true")
+    parser.add_argument("--debug_trace", action="store_true")
+    parser.add_argument("--debug_trace_env_filter", type=str, default="")
     parser.add_argument("--tokenizer_mode", type=str, default="hash_sign", choices=["argmax", "hash_sign"])
     parser.add_argument("--tokenizer_proj_dim", type=int, default=16)
     parser.add_argument("--out_dir", type=str, default="tmp/songline_minigrid")

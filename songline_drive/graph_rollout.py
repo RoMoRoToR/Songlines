@@ -1,0 +1,93 @@
+from typing import List, Optional
+
+import numpy as np
+
+from songline_drive.types import ManeuverPlan
+
+
+class GraphRolloutPlanner:
+    def __init__(
+        self,
+        alpha: float = 1.0,
+        beta: float = 1.0,
+        eta: float = 0.5,
+        gamma: float = 1.0,
+        delta: float = 0.5,
+        zeta: float = 0.5,
+        path_penalty: float = 0.1,
+    ):
+        self.alpha = alpha
+        self.beta = beta
+        self.eta = eta
+        self.gamma = gamma
+        self.delta = delta
+        self.zeta = zeta
+        self.path_penalty = path_penalty
+
+    def utility(self, node_stats) -> float:
+        return (
+            self.alpha * float(node_stats["progress"])
+            + self.beta * float(node_stats["goal_alignment"])
+            + self.eta * float(node_stats["reuse"])
+            - self.gamma * float(node_stats["risk"])
+            - self.delta * float(node_stats["comfort"])
+            - self.zeta * float(node_stats["uncertainty"])
+        )
+
+    def _node_stats(self, graph, node_id: int):
+        node = graph.nodes[node_id]
+        return {
+            "progress": graph._mean(node, "progress"),
+            "goal_alignment": graph._mean(node, "goal_alignment"),
+            "reuse": float(node.get("reuse_score", 0.0)),
+            "risk": graph._mean(node, "risk"),
+            "comfort": graph._mean(node, "comfort_cost"),
+            "uncertainty": graph._mean(node, "uncertainty"),
+        }
+
+    def rollout(
+        self,
+        graph,
+        current_node_id: Optional[int],
+        horizon: int = 4,
+        top_k: int = 5,
+    ) -> List[ManeuverPlan]:
+        if current_node_id is None:
+            return []
+
+        candidate_ids = graph.candidate_nodes(top_k=top_k)
+        plans: List[ManeuverPlan] = []
+        for node_id in candidate_ids:
+            path = graph.shortest_path(current_node_id, node_id)
+            if path is None:
+                continue
+            truncated_path = path[: max(1, horizon + 1)]
+            path_utility = 0.0
+            token_sequence = []
+            for path_node_id in truncated_path:
+                node = graph.nodes[path_node_id]
+                token_sequence.append(str(node.get("token_type", "phrase")))
+                path_utility += self.utility(self._node_stats(graph, path_node_id))
+            path_utility -= self.path_penalty * max(0, len(truncated_path) - 1)
+
+            waypoint_xy = None
+            next_node_id = truncated_path[1] if len(truncated_path) > 1 else truncated_path[0]
+            pose_xy = graph.get_mean_xy(next_node_id, "pose")
+            if pose_xy is not None:
+                rounded = np.rint(pose_xy).astype(np.int32)
+                waypoint_xy = (int(rounded[0]), int(rounded[1]))
+
+            plans.append(
+                ManeuverPlan(
+                    token_sequence=token_sequence,
+                    node_path=[int(nid) for nid in truncated_path],
+                    utility=float(path_utility),
+                    graph_path_length=int(max(0, len(path) - 1)),
+                    target_node_id=int(node_id),
+                    waypoint_xy=waypoint_xy,
+                    metadata={"next_node_id": int(next_node_id)},
+                )
+            )
+
+        plans.sort(key=lambda plan: plan.utility, reverse=True)
+        return plans

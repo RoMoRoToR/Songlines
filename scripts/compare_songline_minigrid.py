@@ -22,6 +22,8 @@ DEFAULT_METHODS = [
     "songline_no_override",
     "songline_subgoal_controller",
     "songline_graph_path",
+    "milestone_semantic_handoff_v1",
+    "milestone_semantic_handoff_v1_plus_final_exit",
 ]
 
 
@@ -161,6 +163,25 @@ def plot_songline_growth(songline_run_rows, out_path):
     plt.close(fig)
 
 
+def plot_metric_by_method(rows, methods, metric, ylabel, out_path):
+    fig, ax = plt.subplots(figsize=(10, 4.8))
+    x = np.arange(len(methods))
+    means = []
+    stds = []
+    for method in methods:
+        match = next((row for row in rows if row["method"] == method), None)
+        means.append(0.0 if match is None else float(match[f"{metric}_mean"]))
+        stds.append(0.0 if match is None else float(match[f"{metric}_std"]))
+    ax.bar(x, means, yerr=stds, capsize=3)
+    ax.set_xticks(x)
+    ax.set_xticklabels(methods, rotation=20, ha="right")
+    ax.set_ylabel(ylabel)
+    ax.set_title(ylabel)
+    fig.tight_layout()
+    fig.savefig(out_path)
+    plt.close(fig)
+
+
 def method_to_config(method):
     if method == "random":
         return {"agent_mode": "random", "songline_policy": "subgoal_controller"}
@@ -174,6 +195,24 @@ def method_to_config(method):
         return {"agent_mode": "songline", "songline_policy": "subgoal_controller"}
     if method == "songline_graph_path":
         return {"agent_mode": "songline", "songline_policy": "graph_path"}
+    if method == "milestone_semantic_handoff_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+        }
+    if method == "milestone_semantic_handoff_v1_plus_final_exit":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "v1",
+        }
     raise ValueError(f"Unknown method: {method}")
 
 
@@ -191,6 +230,14 @@ def parse_args():
     parser.add_argument("--intervention_patience", type=int, default=4)
     parser.add_argument("--min_goal_visits", type=int, default=2)
     parser.add_argument("--top_k_goals", type=int, default=5)
+    parser.add_argument("--graph_rollout_horizon", type=int, default=4)
+    parser.add_argument(
+        "--token_source",
+        type=str,
+        default="symbolic_hash",
+        choices=["symbolic_hash", "scene_semantic", "scene_patch_hash"],
+    )
+    parser.add_argument("--scene_radius", type=int, default=1)
     parser.add_argument("--tokenizer_mode", type=str, default="hash_sign", choices=["argmax", "hash_sign"])
     parser.add_argument("--tokenizer_proj_dim", type=int, default=16)
     parser.add_argument("--out_dir", type=str, default="tmp/songline_minigrid_compare")
@@ -223,9 +270,19 @@ def main():
                     intervention_patience=args.intervention_patience,
                     min_goal_visits=args.min_goal_visits,
                     top_k_goals=args.top_k_goals,
+                    graph_rollout_horizon=args.graph_rollout_horizon,
+                    token_source=cfg.get("token_source", args.token_source),
+                    milestone_mode=cfg.get("milestone_mode", "none"),
+                    final_exit_mode=cfg.get("final_exit_mode", "none"),
+                    export_phase_metrics=True,
+                    scene_radius=args.scene_radius,
                     tokenizer_mode=args.tokenizer_mode,
                     tokenizer_proj_dim=args.tokenizer_proj_dim,
                     out_dir=run_out_dir,
+                    early_hazard_intervention=cfg.get("early_hazard_intervention", False),
+                    commit_to_corridor=cfg.get("commit_to_corridor", False),
+                    debug_trace=False,
+                    debug_trace_env_filter="",
                 )
 
                 print(f"[run] env={env_id} seed={seed} method={method}")
@@ -238,6 +295,7 @@ def main():
                     "env_id": env_id,
                     "seed": seed,
                     "method": method,
+                    "token_source": cfg.get("token_source", args.token_source),
                     "agent_mode": summary["agent_mode"],
                     "songline_policy": summary["songline_policy"],
                     "success_rate": float(summary["success_rate"]),
@@ -253,6 +311,18 @@ def main():
                     "node_reuse_rate": float(summary["node_reuse_rate"]),
                     "new_nodes_per_episode": float(summary["new_nodes_per_episode"]),
                     "graph_path_length": float(summary["graph_path_length"]),
+                    "fraction_gap_aligned": float(summary["fraction_gap_aligned"]),
+                    "fraction_safe_crossing": float(summary["fraction_safe_crossing"]),
+                    "fraction_post_hazard": float(summary["fraction_post_hazard"]),
+                    "fraction_final_exit_maneuver": float(summary["fraction_final_exit_maneuver"]),
+                    "fraction_resume_to_goal": float(summary["fraction_resume_to_goal"]),
+                    "fraction_post_hazard_progress": float(summary["fraction_post_hazard_progress"]),
+                    "fraction_resume_to_goal_progress": float(summary["fraction_resume_to_goal_progress"]),
+                    "fraction_post_hazard_to_success": float(summary["fraction_post_hazard_to_success"]),
+                    "fraction_resume_to_goal_to_success": float(summary["fraction_resume_to_goal_to_success"]),
+                    "conditional_post_hazard_success": float(summary["conditional_post_hazard_success"]),
+                    "conditional_resume_to_goal_success": float(summary["conditional_resume_to_goal_success"]),
+                    "mean_max_phase_depth": float(summary["mean_max_phase_depth"]),
                 }
                 run_row.update(growth_stats(run_summary["graph_nodes"]))
                 run_rows.append(run_row)
@@ -273,6 +343,7 @@ def main():
         "agent_mode",
         "songline_policy",
         "method",
+        "token_source",
         "seed",
         "return",
         "steps_to_goal",
@@ -288,6 +359,16 @@ def main():
         "node_reuse_rate",
         "new_nodes_per_episode",
         "graph_path_length",
+        "has_gap_aligned",
+        "has_safe_crossing",
+        "has_post_hazard",
+        "has_final_exit_maneuver",
+        "has_resume_to_goal",
+        "has_post_hazard_progress",
+        "has_resume_to_goal_progress",
+        "post_hazard_to_success",
+        "resume_to_goal_to_success",
+        "max_phase_depth",
     ]
     write_csv(os.path.join(args.out_dir, "episode_results.csv"), episode_rows, episode_fieldnames)
     with open(os.path.join(args.out_dir, "episode_results.json"), "w") as f:
@@ -307,19 +388,31 @@ def main():
         "node_reuse_rate",
         "new_nodes_per_episode",
         "graph_path_length",
+        "fraction_gap_aligned",
+        "fraction_safe_crossing",
+        "fraction_post_hazard",
+        "fraction_final_exit_maneuver",
+        "fraction_resume_to_goal",
+        "fraction_post_hazard_progress",
+        "fraction_resume_to_goal_progress",
+        "fraction_post_hazard_to_success",
+        "fraction_resume_to_goal_to_success",
+        "conditional_post_hazard_success",
+        "conditional_resume_to_goal_success",
+        "mean_max_phase_depth",
         "graph_growth_slope_first_half",
         "graph_growth_slope_second_half",
         "graph_growth_slowdown",
     ]
-    run_fieldnames = ["env_id", "seed", "method", "agent_mode", "songline_policy"] + run_metric_keys
+    run_fieldnames = ["env_id", "seed", "method", "token_source", "agent_mode", "songline_policy"] + run_metric_keys
     write_csv(os.path.join(args.out_dir, "run_results.csv"), run_rows, run_fieldnames)
     with open(os.path.join(args.out_dir, "run_results.json"), "w") as f:
         json.dump(run_rows, f, indent=2)
 
-    aggregated_by_env = aggregate_rows(run_rows, ["env_id", "method"], run_metric_keys)
-    aggregated_overall = aggregate_rows(run_rows, ["method"], run_metric_keys)
+    aggregated_by_env = aggregate_rows(run_rows, ["env_id", "method", "token_source"], run_metric_keys)
+    aggregated_overall = aggregate_rows(run_rows, ["method", "token_source"], run_metric_keys)
 
-    agg_fieldnames = ["env_id", "method", "num_runs"]
+    agg_fieldnames = ["env_id", "method", "token_source", "num_runs"]
     for metric in run_metric_keys:
         agg_fieldnames.append(f"{metric}_mean")
         agg_fieldnames.append(f"{metric}_std")
@@ -328,7 +421,7 @@ def main():
     with open(os.path.join(args.out_dir, "aggregate_by_env.json"), "w") as f:
         json.dump(aggregated_by_env, f, indent=2)
 
-    overall_fieldnames = ["method", "num_runs"]
+    overall_fieldnames = ["method", "token_source", "num_runs"]
     for metric in run_metric_keys:
         overall_fieldnames.append(f"{metric}_mean")
         overall_fieldnames.append(f"{metric}_std")
@@ -341,9 +434,19 @@ def main():
         summary_table_rows.append(
             {
                 "Method": row["method"],
+                "Token source": row["token_source"],
                 "Success rate": row["success_rate_mean"],
                 "Avg steps": row["avg_steps_to_goal_mean"],
                 "Avg return": row["avg_return_mean"],
+                "Phase depth": row["mean_max_phase_depth_mean"],
+                "Gap aligned frac": row["fraction_gap_aligned_mean"],
+                "Safe crossing frac": row["fraction_safe_crossing_mean"],
+                "Post hazard frac": row["fraction_post_hazard_mean"],
+                "Resume to goal frac": row["fraction_resume_to_goal_mean"],
+                "Post hazard progress frac": row["fraction_post_hazard_progress_mean"],
+                "Resume progress frac": row["fraction_resume_to_goal_progress_mean"],
+                "Cond post hazard success": row["conditional_post_hazard_success_mean"],
+                "Cond resume success": row["conditional_resume_to_goal_success_mean"],
                 "Std success": row["success_rate_std"],
                 "Std steps": row["avg_steps_to_goal_std"],
                 "Std return": row["avg_return_std"],
@@ -352,7 +455,25 @@ def main():
     write_csv(
         os.path.join(args.out_dir, "summary_table.csv"),
         summary_table_rows,
-        ["Method", "Success rate", "Avg steps", "Avg return", "Std success", "Std steps", "Std return"],
+        [
+            "Method",
+            "Token source",
+            "Success rate",
+            "Avg steps",
+            "Avg return",
+            "Phase depth",
+            "Gap aligned frac",
+            "Safe crossing frac",
+            "Post hazard frac",
+            "Resume to goal frac",
+            "Post hazard progress frac",
+            "Resume progress frac",
+            "Cond post hazard success",
+            "Cond resume success",
+            "Std success",
+            "Std steps",
+            "Std return",
+        ],
     )
     with open(os.path.join(args.out_dir, "summary_table.json"), "w") as f:
         json.dump(summary_table_rows, f, indent=2)
@@ -382,11 +503,26 @@ def main():
         out_path=os.path.join(args.out_dir, "comparison_avg_return.png"),
     )
     plot_songline_growth(songline_growth_rows, os.path.join(args.out_dir, "songline_graph_growth.png"))
+    plot_metric_by_method(
+        aggregated_overall,
+        args.methods,
+        metric="mean_max_phase_depth",
+        ylabel="Phase Depth",
+        out_path=os.path.join(args.out_dir, "comparison_phase_depth.png"),
+    )
+    plot_metric_by_method(
+        aggregated_overall,
+        args.methods,
+        metric="fraction_safe_crossing",
+        ylabel="Safe Crossing Fraction",
+        out_path=os.path.join(args.out_dir, "comparison_safe_crossing_fraction.png"),
+    )
 
     print("\nOverall summary:")
     for row in summary_table_rows:
         print(
             f"{row['Method']}: "
+            f"token_source={row['Token source']} | "
             f"success={row['Success rate']:.3f} +- {row['Std success']:.3f}, "
             f"steps={row['Avg steps']:.3f} +- {row['Std steps']:.3f}, "
             f"return={row['Avg return']:.3f} +- {row['Std return']:.3f}"
