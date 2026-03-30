@@ -23,6 +23,7 @@ class GraphRolloutPlanner:
         self.delta = delta
         self.zeta = zeta
         self.path_penalty = path_penalty
+        self.edge_bonus = 1.0
 
     def utility(self, node_stats) -> float:
         return (
@@ -45,6 +46,16 @@ class GraphRolloutPlanner:
             "uncertainty": graph._mean(node, "uncertainty"),
         }
 
+    def node_utility(self, graph, node_id: int) -> float:
+        if hasattr(graph, "node_utility"):
+            return float(graph.node_utility(node_id))
+        return float(self.utility(self._node_stats(graph, node_id)))
+
+    def edge_utility(self, graph, src: int, dst: int) -> float:
+        if hasattr(graph, "edge_utility"):
+            return float(graph.edge_utility(src, dst))
+        return 0.0
+
     def rollout(
         self,
         graph,
@@ -64,10 +75,13 @@ class GraphRolloutPlanner:
             truncated_path = path[: max(1, horizon + 1)]
             path_utility = 0.0
             token_sequence = []
-            for path_node_id in truncated_path:
+            for idx, path_node_id in enumerate(truncated_path):
                 node = graph.nodes[path_node_id]
                 token_sequence.append(str(node.get("token_type", "phrase")))
-                path_utility += self.utility(self._node_stats(graph, path_node_id))
+                path_utility += self.node_utility(graph, path_node_id)
+                if idx > 0:
+                    prev_node_id = truncated_path[idx - 1]
+                    path_utility += self.edge_bonus * self.edge_utility(graph, prev_node_id, path_node_id)
             path_utility -= self.path_penalty * max(0, len(truncated_path) - 1)
 
             waypoint_xy = None

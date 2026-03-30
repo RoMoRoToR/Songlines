@@ -65,6 +65,7 @@ class GraphNode:
     phrase: Tuple[int, ...]
     visits: int = 0
     success_count: int = 0
+    last_seen_step: int = -1
     progress_sum: float = 0.0
     progress_count: int = 0
     risk_sum: float = 0.0
@@ -78,14 +79,29 @@ class GraphNode:
     speed_sum: float = 0.0
     speed_count: int = 0
     freshness: float = 1.0
+    confidence: float = 0.0
+    progress_slow: float = 0.0
+    risk_slow: float = 0.0
+    success_slow: float = 0.0
+    comfort_slow: float = 0.0
+    goal_alignment_slow: float = 0.0
+    progress_fast: float = 0.0
+    risk_fast: float = 0.0
+    success_fast: float = 0.0
+    comfort_fast: float = 0.0
+    goal_alignment_fast: float = 0.0
+    progress_var: float = 0.0
+    risk_var: float = 0.0
+    success_var: float = 0.0
     reuse_score: float = 0.0
+    utility_cached: float = 0.0
     uncertainty_sum: float = 0.0
     uncertainty_count: int = 0
-    last_seen_step: int = -1
     pose_sum: List[float] = field(default_factory=lambda: [0.0, 0.0])
     pose_count: int = 0
     goal_sum: List[float] = field(default_factory=lambda: [0.0, 0.0])
     goal_count: int = 0
+    phase_histogram: Dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -96,6 +112,14 @@ class GraphEdge:
     success_weight: float = 0.0
     risk_weight: float = 0.0
     freshness: float = 1.0
+    confidence: float = 0.0
+    last_seen_step: int = -1
+    transition_success_slow: float = 0.0
+    transition_success_fast: float = 0.0
+    transition_risk_slow: float = 0.0
+    transition_risk_fast: float = 0.0
+    transition_cost_slow: float = 0.0
+    transition_cost_fast: float = 0.0
 
 
 @dataclass

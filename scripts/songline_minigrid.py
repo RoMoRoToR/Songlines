@@ -7,6 +7,7 @@ import gymnasium as gym
 import matplotlib.pyplot as plt
 import minigrid
 import numpy as np
+from minigrid.core.world_object import Goal
 
 from songline_drive.graph_memory import DynamicSonglineGraph
 from songline_drive.graph_rollout import GraphRolloutPlanner
@@ -93,10 +94,79 @@ def get_goal_position(env):
     return None
 
 
+def apply_goal_shift_v1(env, change_phase: int) -> bool:
+    unwrapped = env.unwrapped
+    grid = unwrapped.grid
+    agent_xy = tuple(int(v) for v in unwrapped.agent_pos)
+    current_goal = None
+    candidates = []
+
+    for y in range(grid.height):
+        for x in range(grid.width):
+            cell = grid.get(x, y)
+            if cell is not None and cell.type == "goal":
+                current_goal = (x, y)
+            if (x, y) == agent_xy:
+                continue
+            if cell is None or (cell is not None and cell.type == "goal"):
+                dist = abs(x - agent_xy[0]) + abs(y - agent_xy[1])
+                candidates.append((dist, y, x))
+
+    if len(candidates) < 2:
+        return False
+
+    candidates.sort(key=lambda item: (-item[0], item[1], item[2]))
+    target_rank = min(len(candidates) - 1, int(change_phase % 2))
+    tx = int(candidates[target_rank][2])
+    ty = int(candidates[target_rank][1])
+    target = (tx, ty)
+    if current_goal == target:
+        alt_rank = min(len(candidates) - 1, target_rank + 1)
+        tx = int(candidates[alt_rank][2])
+        ty = int(candidates[alt_rank][1])
+        target = (tx, ty)
+
+    if current_goal is not None and current_goal != target:
+        grid.set(int(current_goal[0]), int(current_goal[1]), None)
+    grid.set(tx, ty, Goal())
+    return True
+
+
+def apply_env_change(env, episode_idx: int, env_change_mode: str, change_after_episode: int) -> bool:
+    if env_change_mode == "none":
+        return False
+    if int(change_after_episode) < 0 or int(episode_idx) < int(change_after_episode):
+        return False
+    if env_change_mode == "goal_shift_v1":
+        return apply_goal_shift_v1(env, change_phase=int(episode_idx - change_after_episode))
+    raise ValueError(f"Unknown env_change_mode: {env_change_mode}")
+
+
 def safe_rate(numerator, denominator):
     if denominator == 0:
         return 0.0
     return float(numerator) / float(denominator)
+
+
+def scene_risk_proxy(scene):
+    if scene is None:
+        return None
+    risk = scene.risk_features
+    return float(
+        max(
+            float(risk.get("collision_risk", 0.0)),
+            float(risk.get("hazard_front", 0.0)),
+            0.5 * float(risk.get("hazard_near", 0.0)),
+            float(risk.get("lateral_hazard", 0.0)),
+        )
+    )
+
+
+def scene_comfort_proxy(scene):
+    if scene is None:
+        return None
+    alignment = float(scene.route_context.goal_alignment)
+    return float(max(0.0, 1.0 - alignment))
 
 
 def get_phrase_length_mean(memory):
@@ -132,7 +202,10 @@ def build_memory(args):
         tokenizer = SceneTokenizer(mode="patch_hash")
     else:
         raise ValueError(f"Unknown token_source: {args.token_source}")
-    memory = DynamicSonglineGraph(min_goal_visits=args.min_goal_visits)
+    memory = DynamicSonglineGraph(
+        min_goal_visits=args.min_goal_visits,
+        graph_update_mode=args.graph_update_mode,
+    )
     planner = GraphRolloutPlanner()
     return tokenizer, encoder, memory, planner
 
@@ -417,6 +490,8 @@ def summarise_run(run_summary, memory):
 
     summary = {
         "success_rate": float(np.mean(run_summary["successes"])) if run_summary["successes"] else 0.0,
+        "success_rate_pre_change": float(np.mean(run_summary["successes_pre_change"])) if run_summary["successes_pre_change"] else 0.0,
+        "success_rate_post_change": float(np.mean(run_summary["successes_post_change"])) if run_summary["successes_post_change"] else 0.0,
         "avg_return": float(np.mean(run_summary["episode_returns"])) if run_summary["episode_returns"] else 0.0,
         "avg_steps_to_goal": float(np.mean(run_summary["episode_lengths"])) if run_summary["episode_lengths"] else 0.0,
         "avg_steps": float(np.mean(run_summary["episode_lengths"])) if run_summary["episode_lengths"] else 0.0,
@@ -491,9 +566,13 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "episodes": args.episodes,
         "max_steps": args.max_steps,
         "seed": args.seed,
+        "env_change_mode": args.env_change_mode,
+        "change_after_episode": args.change_after_episode,
         "episode_returns": [],
         "episode_lengths": [],
         "successes": [],
+        "successes_pre_change": [],
+        "successes_post_change": [],
         "graph_nodes": [],
         "graph_edges": [],
         "intervention_rate": [],
@@ -524,6 +603,12 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
     for ep in range(args.episodes):
         obs, info = env.reset(seed=args.seed + ep)
         del obs, info
+        change_active = apply_env_change(
+            env,
+            episode_idx=ep,
+            env_change_mode=args.env_change_mode,
+            change_after_episode=args.change_after_episode,
+        )
         if tokenizer is not None and hasattr(tokenizer, "reset"):
             tokenizer.reset()
         if trajectory_planner is not None and hasattr(trajectory_planner, "reset"):
@@ -586,6 +671,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             token_label = None
 
             if args.agent_mode == "songline":
+                prev_graph_node_id = memory.current_phrase_id
                 if args.token_source == "symbolic_hash":
                     obs_vec = local_symbolic_observation(env, radius=args.scene_radius)
                     token = tokenizer.encode(obs_vec)
@@ -596,6 +682,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     token = scene_token_to_int(scene_token)
                     token_label = str(scene_token.token_type)
                 is_new_node = memory.update_token(token, total_step_idx)
+                current_graph_node_id = memory.current_phrase_id
                 if is_new_node and memory.current_phrase_id is not None:
                     unique_songline_nodes_this_episode.add(memory.current_phrase_id)
                     if memory.current_phrase_id in seen_songline_nodes:
@@ -607,6 +694,10 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     pose_xy=agent_xy,
                     goal_xy=goal_xy,
                     reward=0.0,
+                    risk=scene_risk_proxy(scene) if args.token_source != "symbolic_hash" else None,
+                    comfort_cost=scene_comfort_proxy(scene) if args.token_source != "symbolic_hash" else None,
+                    goal_alignment=scene.route_context.goal_alignment if args.token_source != "symbolic_hash" else None,
+                    phase_label=token_label,
                 )
 
                 hazard_phase_active = is_hazard_phase_token(token_label)
@@ -835,18 +926,45 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     improved = distance_after < previous_goal_distance
                     memory.record_plan_outcome(improved)
 
+                transition_success = None
+                transition_risk = None
+                transition_cost = None
+                if delta_distance is not None:
+                    transition_success = 1.0 if delta_distance > 0.0 else 0.0
+                    transition_cost = 1.0
+                if args.token_source != "symbolic_hash":
+                    post_scene = scene_encoder.encode(env)
+                    transition_risk = scene_risk_proxy(post_scene)
+                else:
+                    post_scene = None
+
                 memory.observe(
                     total_step_idx,
                     pose_xy=agent_xy_new,
                     goal_xy=goal_xy,
                     reward=float(reward),
+                    progress=delta_distance,
+                    risk=transition_risk,
+                    success=1.0 if float(reward) > 0.0 else 0.0,
+                    comfort_cost=scene_comfort_proxy(post_scene) if post_scene is not None else None,
+                    goal_alignment=post_scene.route_context.goal_alignment if post_scene is not None else None,
+                    phase_label=token_label,
+                )
+                memory.observe_transition(
+                    src=prev_graph_node_id,
+                    dst=current_graph_node_id,
+                    step_idx=total_step_idx,
+                    transition_success=transition_success,
+                    transition_risk=transition_risk,
+                    transition_cost=transition_cost,
                 )
 
             if hazard_commit_active:
                 still_hazard = hazard_phase_active
                 front_safe_now = False
                 if args.agent_mode == "songline" and scene_encoder is not None:
-                    post_scene = scene_encoder.encode(env)
+                    if post_scene is None:
+                        post_scene = scene_encoder.encode(env)
                     post_risk = post_scene.risk_features
                     still_hazard = bool(
                         int(post_risk.get("hazard_front", 0.0)) == 1
@@ -1058,6 +1176,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         episode_metrics = {
             "episode": ep + 1,
             "env_id": args.env_id,
+            "change_active": int(change_active),
             "agent_mode": args.agent_mode,
             "songline_policy": args.songline_policy,
             "method": method_name,
@@ -1091,6 +1210,10 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         run_summary["episode_returns"].append(float(episode_return))
         run_summary["episode_lengths"].append(int(step_count))
         run_summary["successes"].append(int(success))
+        if change_active:
+            run_summary["successes_post_change"].append(int(success))
+        else:
+            run_summary["successes_pre_change"].append(int(success))
         run_summary["graph_nodes"].append(episode_metrics["graph_nodes"])
         run_summary["graph_edges"].append(episode_metrics["graph_edges"])
         run_summary["intervention_rate"].append(float(intervention_rate))
@@ -1198,6 +1321,19 @@ def parse_args():
         default="none",
         choices=["none", "v1"],
     )
+    parser.add_argument(
+        "--graph_update_mode",
+        type=str,
+        default="static",
+        choices=["static", "adaptive"],
+    )
+    parser.add_argument(
+        "--env_change_mode",
+        type=str,
+        default="none",
+        choices=["none", "goal_shift_v1"],
+    )
+    parser.add_argument("--change_after_episode", type=int, default=-1)
     parser.add_argument("--scene_radius", type=int, default=1)
     parser.add_argument("--export_phase_metrics", action="store_true")
     parser.add_argument("--early_hazard_intervention", action="store_true")

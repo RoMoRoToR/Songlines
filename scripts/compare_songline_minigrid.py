@@ -23,6 +23,7 @@ DEFAULT_METHODS = [
     "songline_subgoal_controller",
     "songline_graph_path",
     "milestone_semantic_handoff_v1",
+    "milestone_semantic_handoff_v1_adaptive_graph",
     "milestone_semantic_handoff_v1_plus_final_exit",
 ]
 
@@ -203,6 +204,17 @@ def method_to_config(method):
             "milestone_mode": "semantic_handoff_v1",
             "early_hazard_intervention": True,
             "final_exit_mode": "none",
+            "graph_update_mode": "static",
+        }
+    if method == "milestone_semantic_handoff_v1_adaptive_graph":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "adaptive",
         }
     if method == "milestone_semantic_handoff_v1_plus_final_exit":
         return {
@@ -212,6 +224,7 @@ def method_to_config(method):
             "milestone_mode": "semantic_handoff_v1",
             "early_hazard_intervention": True,
             "final_exit_mode": "v1",
+            "graph_update_mode": "static",
         }
     raise ValueError(f"Unknown method: {method}")
 
@@ -238,6 +251,8 @@ def parse_args():
         choices=["symbolic_hash", "scene_semantic", "scene_patch_hash"],
     )
     parser.add_argument("--scene_radius", type=int, default=1)
+    parser.add_argument("--env_change_mode", type=str, default="none", choices=["none", "goal_shift_v1"])
+    parser.add_argument("--change_after_episode", type=int, default=-1)
     parser.add_argument("--tokenizer_mode", type=str, default="hash_sign", choices=["argmax", "hash_sign"])
     parser.add_argument("--tokenizer_proj_dim", type=int, default=16)
     parser.add_argument("--out_dir", type=str, default="tmp/songline_minigrid_compare")
@@ -274,6 +289,9 @@ def main():
                     token_source=cfg.get("token_source", args.token_source),
                     milestone_mode=cfg.get("milestone_mode", "none"),
                     final_exit_mode=cfg.get("final_exit_mode", "none"),
+                    graph_update_mode=cfg.get("graph_update_mode", "static"),
+                    env_change_mode=args.env_change_mode,
+                    change_after_episode=args.change_after_episode,
                     export_phase_metrics=True,
                     scene_radius=args.scene_radius,
                     tokenizer_mode=args.tokenizer_mode,
@@ -296,11 +314,14 @@ def main():
                     "seed": seed,
                     "method": method,
                     "token_source": cfg.get("token_source", args.token_source),
+                    "graph_update_mode": cfg.get("graph_update_mode", "static"),
                     "agent_mode": summary["agent_mode"],
                     "songline_policy": summary["songline_policy"],
                     "success_rate": float(summary["success_rate"]),
                     "avg_steps_to_goal": float(summary["avg_steps_to_goal"]),
                     "avg_return": float(summary["avg_return"]),
+                    "success_rate_pre_change": float(summary["success_rate_pre_change"]),
+                    "success_rate_post_change": float(summary["success_rate_post_change"]),
                     "intervention_rate": float(summary["intervention_rate"]),
                     "plan_hit_rate": float(summary["plan_hit_rate"]),
                     "graph_nodes": float(summary["graph_nodes"]),
@@ -340,6 +361,7 @@ def main():
     episode_fieldnames = [
         "episode",
         "env_id",
+        "change_active",
         "agent_mode",
         "songline_policy",
         "method",
@@ -378,6 +400,8 @@ def main():
         "success_rate",
         "avg_steps_to_goal",
         "avg_return",
+        "success_rate_pre_change",
+        "success_rate_post_change",
         "intervention_rate",
         "plan_hit_rate",
         "graph_nodes",
@@ -404,15 +428,15 @@ def main():
         "graph_growth_slope_second_half",
         "graph_growth_slowdown",
     ]
-    run_fieldnames = ["env_id", "seed", "method", "token_source", "agent_mode", "songline_policy"] + run_metric_keys
+    run_fieldnames = ["env_id", "seed", "method", "token_source", "graph_update_mode", "agent_mode", "songline_policy"] + run_metric_keys
     write_csv(os.path.join(args.out_dir, "run_results.csv"), run_rows, run_fieldnames)
     with open(os.path.join(args.out_dir, "run_results.json"), "w") as f:
         json.dump(run_rows, f, indent=2)
 
-    aggregated_by_env = aggregate_rows(run_rows, ["env_id", "method", "token_source"], run_metric_keys)
-    aggregated_overall = aggregate_rows(run_rows, ["method", "token_source"], run_metric_keys)
+    aggregated_by_env = aggregate_rows(run_rows, ["env_id", "method", "token_source", "graph_update_mode"], run_metric_keys)
+    aggregated_overall = aggregate_rows(run_rows, ["method", "token_source", "graph_update_mode"], run_metric_keys)
 
-    agg_fieldnames = ["env_id", "method", "token_source", "num_runs"]
+    agg_fieldnames = ["env_id", "method", "token_source", "graph_update_mode", "num_runs"]
     for metric in run_metric_keys:
         agg_fieldnames.append(f"{metric}_mean")
         agg_fieldnames.append(f"{metric}_std")
@@ -421,7 +445,7 @@ def main():
     with open(os.path.join(args.out_dir, "aggregate_by_env.json"), "w") as f:
         json.dump(aggregated_by_env, f, indent=2)
 
-    overall_fieldnames = ["method", "token_source", "num_runs"]
+    overall_fieldnames = ["method", "token_source", "graph_update_mode", "num_runs"]
     for metric in run_metric_keys:
         overall_fieldnames.append(f"{metric}_mean")
         overall_fieldnames.append(f"{metric}_std")
@@ -435,7 +459,10 @@ def main():
             {
                 "Method": row["method"],
                 "Token source": row["token_source"],
+                "Graph update": row["graph_update_mode"],
                 "Success rate": row["success_rate_mean"],
+                "Pre-change success": row["success_rate_pre_change_mean"],
+                "Post-change success": row["success_rate_post_change_mean"],
                 "Avg steps": row["avg_steps_to_goal_mean"],
                 "Avg return": row["avg_return_mean"],
                 "Phase depth": row["mean_max_phase_depth_mean"],
@@ -458,7 +485,10 @@ def main():
         [
             "Method",
             "Token source",
+            "Graph update",
             "Success rate",
+            "Pre-change success",
+            "Post-change success",
             "Avg steps",
             "Avg return",
             "Phase depth",
@@ -523,6 +553,7 @@ def main():
         print(
             f"{row['Method']}: "
             f"token_source={row['Token source']} | "
+            f"graph_update={row['Graph update']} | "
             f"success={row['Success rate']:.3f} +- {row['Std success']:.3f}, "
             f"steps={row['Avg steps']:.3f} +- {row['Std steps']:.3f}, "
             f"return={row['Avg return']:.3f} +- {row['Std return']:.3f}"
