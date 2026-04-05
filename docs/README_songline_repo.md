@@ -1,4 +1,4 @@
-# README_songline_repo.md
+# README.md
 
 ## Что это
 
@@ -243,13 +243,155 @@ Adaptive:
 * hazard-aware phases нужны для LavaGap;
 * phased handoff работает;
 * `milestone_semantic_handoff_v1` работает end-to-end;
-* adaptive graph v1 подключён end-to-end и baseline не ломает.
+* adaptive graph v1 подключён end-to-end и baseline не ломает;
+* static semantic intention layer технически работает, но в текущем виде не даёт gain;
+* state-conditioned intention selection уже показывает локальную пользу на `FourRooms`, но пока не обобщается на `LavaGap`;
+* Sprint 2 v2 устранил timing mismatch между `AgentState` switch и planner refresh.
 
 Не подтверждено:
 
 * что final local exit primitive даёт gain поверх milestone;
 * что adaptive graph даёт сильный общий выигрыш в stationary benchmark;
-* что last-mile primitive — главный следующий источник gain.
+* что last-mile primitive — главный следующий источник gain;
+* что static `safe_exit` predicate сам по себе полезен для target selection.
+
+## Trace-аудит Sprint 1 semantic intention
+
+Полный benchmark и последующий trace-аудит уже показали отрицательный, но интерпретируемый результат для:
+
+* `milestone_semantic_intent_safe_exit_v1`
+
+Главный вывод:
+
+* проблема не в plumbing;
+* проблема в decision rule.
+
+Что именно подтверждено trace-ами на `FourRooms` и `LavaGap`:
+
+* `intent`-pipeline действительно работает end-to-end;
+* planner реально переключается на intent-aware candidate retrieval;
+* текущий `safe_exit` predicate слишком широкий и почти не селективный;
+* во многих decision points `planner_candidate_tag_confidences` насыщаются до `1.0` почти для всех кандидатов;
+* из-за этого planner уходит к семантически правдоподобным, но маршрутно слабым узлам.
+
+Практический вывод:
+
+* не пытаться дожимать `safe_exit` вслепую;
+* не считать отрицательный результат Sprint 1 багом;
+* следующий meaningful шаг — state-conditioned intention selection, а не blind tuning static predicate.
+
+## Sprint 2: state-conditioned intention selection
+
+После Sprint 1 был добавлен минимальный слой:
+
+* `AgentState`
+* `IntentPolicy`
+* state-conditioned `active_intent`
+* state-conditioned `planner_query`
+
+Полный benchmark был прогнан на:
+
+* `MiniGrid-FourRooms-v0`
+* `MiniGrid-LavaGapS7-v0`
+
+Сравнивались:
+
+* `milestone_semantic_handoff_v1`
+* `milestone_semantic_intent_safe_exit_v1`
+* `milestone_state_conditioned_intent_v1`
+
+Общий результат:
+
+* baseline: success = **0.24625**, avg_steps = **43.0525**, avg_return = **0.22764**
+* static intent: success = **0.2300**, avg_steps = **43.92125**, avg_return = **0.21311**
+* state-conditioned intent: success = **0.2350**, avg_steps = **43.52125**, avg_return = **0.21844**
+
+По средам:
+
+* `FourRooms`: state-conditioned intent полностью снимает регресс static `safe_exit` и выходит в паритет с baseline;
+* `LavaGap`: state-conditioned intent пока не помогает и остаётся хуже baseline.
+
+Итог:
+
+* Sprint 2 v1 частично подтверждает гипотезу;
+* state-conditioned intent не является пустой идеей;
+* но как общий слой он пока не готов.
+
+## Trace-аудит Sprint 2 на LavaGap
+
+Для `MiniGrid-LavaGapS7-v0` был сделан узкий trace-аудит baseline против:
+
+* `milestone_state_conditioned_intent_v1`
+
+Репрезентативный seed:
+
+* `seed = 0`
+
+Run-level результат:
+
+* baseline: success = **0.20**, avg_steps = **8.6**, graph_nodes = **109**
+* state-conditioned: success = **0.175**, avg_steps = **14.15**, graph_nodes = **157**
+
+Что показал trace:
+
+* `AgentState` действительно рано и массово переключается в `reach_safe_exit`;
+* planner intent-query при этом срабатывает редко;
+* в episode 2 `active_intent` уже меняется на `reach_safe_exit`, но planner всё ещё удерживает старый `goal_region` target;
+* в episode 4, 5 и 21 появляются точечные `reach_safe_exit` retarget-события внутри hazard-phase, после которых эпизоды раздуваются до **42**, **113** и **120** шагов;
+* в baseline для тех же эпизодов graph retargeting в hazard-phase не происходит, а поведение остаётся компактнее.
+
+Дополнительный важный факт:
+
+* выбранные target nodes насыщены `semantic_tag_confidence["safe_exit"] = 1.0`;
+* те же nodes часто одновременно имеют `room_center` и `hazard_edge`;
+* это снова показывает, что текущий `safe_exit` остаётся слишком широким и route-insensitive.
+
+Главный вывод `LavaGap` trace-аудита:
+
+* проблема уже не только в broad `safe_exit` predicate;
+* есть ещё timing issue между переключением `active_intent` и обновлением planner target;
+* следующий шаг должен быть узким `Sprint 2 v2` patch, а не новый большой benchmark.
+
+## Sprint 2 v2: sync-fix for state-conditioned intent
+
+После trace-аудита был сделан узкий runtime patch:
+
+* forced planner target refresh при смене `active_intent` в defensive mode;
+* invalidation старого graph target на том же шаге;
+* cooldown на forced replanning;
+* новые trace-поля:
+  * `intent_switched`
+  * `forced_intent_replan`
+  * `previous_active_intent`
+  * `new_active_intent`
+  * `previous_target_node_id`
+  * `new_target_node_id`
+
+Что это подтвердило:
+
+* проблема действительно была не в самом `AgentState`, а в рассинхронизации между state switch и planner target refresh;
+* после патча trace показывает `forced_intent_replan = 1` и немедленную смену `target_node_id` на том же шаге;
+* длинные хвосты на репрезентативном `LavaGap seed=0` схлопнулись:
+  * episodes `4/5/21`: **42/113/120 -> 13/12/17**
+
+Узкий benchmark только на `LavaGap` после scoped fix:
+
+* baseline: success = **0.240**, avg_steps = **8.8825**, avg_return = **0.2250**
+* static intent: success = **0.220**, avg_steps = **9.315**, avg_return = **0.2090**
+* state-conditioned v2: success = **0.220**, avg_steps = **8.555**, avg_return = **0.2090**
+
+Интерпретация:
+
+* synchronization bug fixed;
+* state-conditioned layer больше не страдает от прежней step-regression;
+* но baseline по success всё ещё не обогнан;
+* значит оставшийся bottleneck относится уже к качеству самого defensive intent, а не к plumbing.
+
+Итоговый статус:
+
+* Sprint 2 v2 завершён как debugging milestone;
+* forced replanning больше не является главным bottleneck;
+* следующий шаг должен быть содержательным, а не инфраструктурным.
 
 ## Главные режимы и их смысл
 
@@ -330,15 +472,76 @@ PYTHONPATH=. .venv/bin/python scripts/compare_songline_minigrid.py \
   --out_dir /tmp/benchmark_adaptive_graph_v1
 ```
 
+### Controlled non-stationarity
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/benchmark_songline_nonstationary.py \
+  --env_ids MiniGrid-Empty-Random-6x6-v0 MiniGrid-FourRooms-v0 MiniGrid-LavaGapS7-v0 \
+  --num_seeds 10 \
+  --episodes 40 \
+  --change_after_episode 20 \
+  --max_steps 120 \
+  --suggest_every 8 \
+  --graph_rollout_horizon 4 \
+  --scene_radius 1 \
+  --out_dir /tmp/benchmark_nonstationary_adaptive_graph_v1
+```
+
+### Semantic intention benchmark
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/benchmark_songline_intents.py \
+  --env_ids MiniGrid-Empty-Random-6x6-v0 MiniGrid-FourRooms-v0 MiniGrid-LavaGapS7-v0 \
+  --num_seeds 10 \
+  --episodes 40 \
+  --max_steps 120 \
+  --suggest_every 8 \
+  --graph_rollout_horizon 4 \
+  --scene_radius 1 \
+  --out_dir /tmp/benchmark_semantic_intent_v1
+```
+
+### LavaGap Sprint 2 compare
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/compare_songline_minigrid.py \
+  --env_ids MiniGrid-LavaGapS7-v0 \
+  --methods milestone_semantic_handoff_v1 milestone_semantic_intent_safe_exit_v1 \
+            milestone_state_conditioned_intent_v1 \
+  --num_seeds 10 \
+  --episodes 40 \
+  --max_steps 120 \
+  --suggest_every 8 \
+  --graph_rollout_horizon 4 \
+  --scene_radius 1 \
+  --out_dir /tmp/benchmark_state_conditioned_intent_v2_lavagap_scoped
+```
+
 ## Что делать дальше
 
 Самый сильный следующий шаг:
-**controlled non-stationarity benchmark**
+**Sprint 2 v3: новый defensive intent для LavaGap вместо broad `REACH_SAFE_EXIT`**
 
 Почему:
 
-* в stationary benchmark adaptive уже показал “not worse + slight LavaGap signal”;
-* основная ценность adaptive updates должна проявляться при меняющейся среде.
+* adaptive/non-stationary benchmark уже прогнан;
+* Sprint 1 уже закрыт как отрицательный, но объяснённый результат;
+* Sprint 2 v2 уже устранил synchronization bug;
+* главный оставшийся bottleneck теперь относится к качеству defensive intent.
+
+Практический план Sprint 2 v3:
+
+* не трогать `tokenizer`, `graph_rollout`, forced replanning и compare plumbing;
+* ввести более узкий defensive intent только для hazard-heavy case:
+  * `hazard_recovery_exit`
+  * или `recover_crossing_route`
+  * или `post_hazard_goal_rejoin`
+* тестировать сначала только на `MiniGrid-LavaGapS7-v0`;
+* сравнивать против:
+  * `milestone_semantic_handoff_v1`
+  * `milestone_semantic_intent_safe_exit_v1`
+  * `milestone_state_conditioned_intent_v1`
+* успех Sprint 2 v3 считать только по локальным `LavaGap` метрикам и trace, без нового широкого benchmark-а.
 
 ## Итог в одной фразе
 

@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from songline_drive.types import GraphEdge, GraphNode
+from songline_drive.types import GraphEdge, GraphNode, SemanticTargetPredicate
 
 
 class DynamicSonglineGraph:
@@ -95,6 +95,8 @@ class DynamicSonglineGraph:
             "goal_sum": np.zeros(2, dtype=np.float64),
             "goal_count": node.goal_count,
             "phase_histogram": {},
+            "semantic_tag_counts": {},
+            "semantic_tag_confidence": {},
         }
         self.edges[node_id] = {}
         self.edge_stats[node_id] = {}
@@ -232,6 +234,24 @@ class DynamicSonglineGraph:
                 goal_alignment_value=goal_alignment_value,
             )
         node["utility_cached"] = self.node_utility(self.current_phrase_id)
+
+    def observe_semantics(self, node_id: Optional[int], semantic_tags: Dict[str, float]):
+        if node_id is None:
+            return
+        if node_id not in self.nodes:
+            return
+        node = self.nodes[node_id]
+        counts = node.setdefault("semantic_tag_counts", {})
+        confs = node.setdefault("semantic_tag_confidence", {})
+
+        for tag_name, value in semantic_tags.items():
+            tag_value = float(value)
+            if tag_value <= 0.0:
+                continue
+            counts[tag_name] = int(counts.get(tag_name, 0)) + 1
+            prev = float(confs.get(tag_name, 0.0))
+            new_count = int(counts[tag_name])
+            confs[tag_name] = ((prev * float(new_count - 1)) + tag_value) / float(new_count)
 
     def _compute_freshness(self, now_step: int, last_seen_step: int) -> float:
         age = max(0.0, float(now_step - last_seen_step))
@@ -389,6 +409,28 @@ class DynamicSonglineGraph:
             if int(node["goal_count"]) <= 0 or int(node["pose_count"]) <= 0:
                 continue
             scored.append((self.node_utility(node_id), node_id))
+        scored.sort(reverse=True)
+        return [node_id for _, node_id in scored[:top_k]]
+
+    def node_matches_intent(self, node_id: int, predicate: SemanticTargetPredicate) -> bool:
+        node = self.nodes[node_id]
+        confs = node.get("semantic_tag_confidence", {})
+        tag_value = float(confs.get(predicate.tag_name, 0.0))
+        return tag_value >= float(predicate.min_confidence)
+
+    def candidate_nodes_for_intent(self, predicate: SemanticTargetPredicate, top_k: int = 5) -> List[int]:
+        scored = []
+        for node_id, node in self.nodes.items():
+            if int(node["visits"]) < self.min_goal_visits:
+                continue
+            if not self.node_matches_intent(node_id, predicate):
+                continue
+
+            base_utility = self.node_utility(node_id)
+            tag_conf = float(node.get("semantic_tag_confidence", {}).get(predicate.tag_name, 0.0))
+            score = base_utility + (0.5 * tag_conf)
+            scored.append((score, node_id))
+
         scored.sort(reverse=True)
         return [node_id for _, node_id in scored[:top_k]]
 
@@ -551,6 +593,8 @@ class DynamicSonglineGraph:
                     "progress_slow": float(node.get("progress_slow", 0.0)),
                     "risk_fast": float(node.get("risk_fast", 0.0)),
                     "risk_slow": float(node.get("risk_slow", 0.0)),
+                    "semantic_tag_counts": node.get("semantic_tag_counts", {}),
+                    "semantic_tag_confidence": node.get("semantic_tag_confidence", {}),
                     "last_seen_step": int(node["last_seen_step"]),
                 }
             )

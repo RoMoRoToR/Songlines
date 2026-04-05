@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 
@@ -55,6 +56,34 @@ class SceneToken:
     token_type: str
     confidence: float
     attributes: Dict[str, Any] = field(default_factory=dict)
+    semantic_tags: Dict[str, float] = field(default_factory=dict)
+
+
+class IntentType(str, Enum):
+    REACH_SAFE_EXIT = "reach_safe_exit"
+    FIND_GOAL_REGION = "find_goal_region"
+    FIND_WATER_SOURCE = "find_water_source"
+
+
+@dataclass
+class NodeSemanticTag:
+    name: str
+    confidence: float = 0.0
+    count: int = 0
+
+
+@dataclass
+class SemanticTargetPredicate:
+    tag_name: str
+    min_confidence: float = 0.5
+
+
+@dataclass
+class PlannerQuery:
+    intent_type: IntentType
+    target_predicate: SemanticTargetPredicate
+    fallback_goal_xy: Optional[Tuple[int, int]] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -102,6 +131,8 @@ class GraphNode:
     goal_sum: List[float] = field(default_factory=lambda: [0.0, 0.0])
     goal_count: int = 0
     phase_histogram: Dict[str, int] = field(default_factory=dict)
+    semantic_tag_counts: Dict[str, int] = field(default_factory=dict)
+    semantic_tag_confidence: Dict[str, float] = field(default_factory=dict)
 
 
 @dataclass

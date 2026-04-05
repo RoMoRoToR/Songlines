@@ -9,12 +9,15 @@ import minigrid
 import numpy as np
 from minigrid.core.world_object import Goal
 
+from songline_drive.agent_state import AgentState, IntentPolicy, update_agent_state
 from songline_drive.graph_memory import DynamicSonglineGraph
 from songline_drive.graph_rollout import GraphRolloutPlanner
+from songline_drive.intents import build_planner_query
 from songline_drive.maneuver_selector import ManeuverSelector
 from songline_drive.scene_encoder import MiniGridSceneEncoder
 from songline_drive.scene_tokenizer import SceneTokenizer
 from songline_drive.trajectory_planner import TrajectoryPlanner
+from songline_drive.types import IntentType
 from utils.lz_memory import SymbolicTokenizer
 
 
@@ -342,12 +345,23 @@ def _hazard_aware_waypoint(env, current_token_label, plan_waypoint_xy, goal_xy):
     return candidates[0][1]
 
 
-def select_graph_waypoint(memory, planner, selector, top_k, rollout_horizon, current_token_label=None, env=None, goal_xy=None):
+def select_graph_waypoint(
+    memory,
+    planner,
+    selector,
+    top_k,
+    rollout_horizon,
+    current_token_label=None,
+    env=None,
+    goal_xy=None,
+    planner_query=None,
+):
     plans = planner.rollout(
         graph=memory,
         current_node_id=current_phrase_node(memory),
         horizon=rollout_horizon,
         top_k=top_k,
+        planner_query=planner_query,
     )
     if not plans:
         return None
@@ -369,6 +383,13 @@ def select_graph_waypoint(memory, planner, selector, top_k, rollout_horizon, cur
     if hazard_waypoint is not None:
         waypoint_xy = hazard_waypoint
         command["waypoint_xy"] = tuple(int(v) for v in waypoint_xy)
+    planner_debug = dict(plan.metadata)
+    if plan.target_node_id is not None and plan.target_node_id in memory.nodes:
+        planner_debug["selected_node_semantic_tag_confidence"] = dict(
+            memory.nodes[plan.target_node_id].get("semantic_tag_confidence", {})
+        )
+    else:
+        planner_debug["selected_node_semantic_tag_confidence"] = {}
 
     return {
         "waypoint_xy": waypoint_xy,
@@ -378,6 +399,7 @@ def select_graph_waypoint(memory, planner, selector, top_k, rollout_horizon, cur
         "utility": float(plan.utility),
         "token_sequence": list(plan.token_sequence),
         "maneuver_command": command,
+        "planner_debug": planner_debug,
     }
 
 
@@ -394,6 +416,28 @@ def apply_milestone_mode(args):
         args.token_source = "scene_semantic"
         args.early_hazard_intervention = True
     return args
+
+
+def parse_intent_type(name: str) -> IntentType:
+    return IntentType(name)
+
+
+def resolve_active_intent_type(args, agent_state=None, intent_policy=None, scene=None):
+    if getattr(args, "intent_mode", "none") == "none":
+        return None
+    if getattr(args, "intent_selection_mode", "fixed") == "state_v1":
+        if agent_state is None or intent_policy is None:
+            return parse_intent_type(args.intent_type)
+        return intent_policy.select_intent(agent_state, scene=scene)
+    return parse_intent_type(args.intent_type)
+
+
+def current_planner_query(args, goal_xy=None, active_intent_type=None):
+    if getattr(args, "intent_mode", "none") == "none":
+        return None
+    if active_intent_type is None:
+        active_intent_type = parse_intent_type(args.intent_type)
+    return build_planner_query(active_intent_type, goal_xy=goal_xy)
 
 
 def export_run_summary(out_dir, run_summary):
@@ -476,12 +520,41 @@ def should_activate_hazard_commit(scene, hazard_phase_active, subgoal_xy):
     return bool(front_safe and goal_alignment >= 0.35)
 
 
+def clear_active_graph_plan():
+    return {
+        "subgoal_xy": None,
+        "active_subgoal_key": None,
+        "active_graph_path_length": 0,
+        "active_target_node_id": None,
+        "active_next_node_id": None,
+        "active_maneuver_command": None,
+        "active_maneuver_command_type": None,
+        "active_planner_debug": None,
+    }
+
+
 def summarise_run(run_summary, memory):
     final_nodes = 0 if memory is None else int(len(memory.nodes))
     final_edges = 0 if memory is None else int(sum(len(v) for v in memory.edges.values()))
     intervention_rate = 0.0
     plan_hit_rate = 0.0
     phrase_length_mean = 0.0
+    overall_success = float(np.mean(run_summary["successes"])) if run_summary["successes"] else 0.0
+    num_pre_change_episodes = int(len(run_summary["successes_pre_change"]))
+    num_post_change_episodes = int(len(run_summary["successes_post_change"]))
+    change_split_active = bool(
+        run_summary.get("env_change_mode", "none") != "none"
+        and num_pre_change_episodes > 0
+        and num_post_change_episodes > 0
+    )
+    if change_split_active:
+        pre_change_success = float(np.mean(run_summary["successes_pre_change"]))
+        post_change_success = float(np.mean(run_summary["successes_post_change"]))
+        change_eval_mode = "nonstationary_split"
+    else:
+        pre_change_success = overall_success
+        post_change_success = overall_success
+        change_eval_mode = "stationary_equivalent"
 
     if memory is not None:
         intervention_rate = safe_rate(memory.interventions, memory.intervention_attempts)
@@ -489,9 +562,14 @@ def summarise_run(run_summary, memory):
         phrase_length_mean = get_phrase_length_mean(memory)
 
     summary = {
-        "success_rate": float(np.mean(run_summary["successes"])) if run_summary["successes"] else 0.0,
-        "success_rate_pre_change": float(np.mean(run_summary["successes_pre_change"])) if run_summary["successes_pre_change"] else 0.0,
-        "success_rate_post_change": float(np.mean(run_summary["successes_post_change"])) if run_summary["successes_post_change"] else 0.0,
+        "success_rate": overall_success,
+        "success_rate_pre_change": pre_change_success,
+        "success_rate_post_change": post_change_success,
+        "success_rate_change_delta": post_change_success - pre_change_success,
+        "num_pre_change_episodes": num_pre_change_episodes,
+        "num_post_change_episodes": num_post_change_episodes,
+        "change_split_active": int(change_split_active),
+        "change_eval_mode": change_eval_mode,
         "avg_return": float(np.mean(run_summary["episode_returns"])) if run_summary["episode_returns"] else 0.0,
         "avg_steps_to_goal": float(np.mean(run_summary["episode_lengths"])) if run_summary["episode_lengths"] else 0.0,
         "avg_steps": float(np.mean(run_summary["episode_lengths"])) if run_summary["episode_lengths"] else 0.0,
@@ -541,6 +619,7 @@ def summarise_run(run_summary, memory):
 def run_songline_experiment(args, export_outputs=True, verbose=True):
     args = apply_milestone_mode(args)
     ensure_dir(args.out_dir)
+    intent_replan_cooldown_steps = max(0, int(getattr(args, "intent_replan_cooldown_steps", 4)))
 
     env = gym.make(args.env_id, render_mode="rgb_array")
     rng = np.random.RandomState(args.seed)
@@ -568,6 +647,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "seed": args.seed,
         "env_change_mode": args.env_change_mode,
         "change_after_episode": args.change_after_episode,
+        "intent_mode": args.intent_mode,
+        "intent_selection_mode": args.intent_selection_mode,
+        "intent_type": args.intent_type,
         "episode_returns": [],
         "episode_lengths": [],
         "successes": [],
@@ -638,6 +720,11 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         hazard_phase_intervened = False
         active_maneuver_command = None
         active_maneuver_command_type = None
+        active_planner_debug = None
+        active_intent_type = None
+        intent_replan_cooldown_left = 0
+        agent_state = AgentState(active_intent=parse_intent_type(args.intent_type))
+        intent_policy = IntentPolicy() if args.intent_selection_mode == "state_v1" else None
         hazard_commit_active = False
         hazard_commit_dir = None
         hazard_commit_steps_left = 0
@@ -669,6 +756,12 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             scene = None
             scene_token = None
             token_label = None
+            trace_intent_switched = 0
+            trace_forced_intent_replan = 0
+            trace_previous_active_intent = None if active_intent_type is None else str(active_intent_type.value)
+            trace_new_active_intent = trace_previous_active_intent
+            trace_previous_target_node_id = active_target_node_id
+            trace_new_target_node_id = active_target_node_id
 
             if args.agent_mode == "songline":
                 prev_graph_node_id = memory.current_phrase_id
@@ -699,6 +792,55 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     goal_alignment=scene.route_context.goal_alignment if args.token_source != "symbolic_hash" else None,
                     phase_label=token_label,
                 )
+                if hasattr(scene_token, "semantic_tags") and memory.current_phrase_id is not None:
+                    memory.observe_semantics(memory.current_phrase_id, scene_token.semantic_tags)
+                prior_active_intent_type = active_intent_type
+                prior_task_phase = str(agent_state.task_phase)
+                force_intent_replan = False
+                if args.intent_mode != "none":
+                    agent_state = update_agent_state(
+                        agent_state,
+                        scene=scene,
+                        token_label=token_label,
+                    )
+                    active_intent_type = resolve_active_intent_type(
+                        args,
+                        agent_state=agent_state,
+                        intent_policy=intent_policy,
+                        scene=scene,
+                    )
+                    agent_state.active_intent = active_intent_type
+                    trace_previous_active_intent = None if prior_active_intent_type is None else str(prior_active_intent_type.value)
+                    trace_new_active_intent = None if active_intent_type is None else str(active_intent_type.value)
+                    trace_intent_switched = int(
+                        prior_active_intent_type is not None and prior_active_intent_type != active_intent_type
+                    )
+                    entered_hazard_navigation = (
+                        prior_task_phase != "hazard_navigation"
+                        and str(agent_state.task_phase) == "hazard_navigation"
+                    )
+                    switched_to_defensive_intent = (
+                        active_intent_type == IntentType.REACH_SAFE_EXIT
+                        and prior_active_intent_type != IntentType.REACH_SAFE_EXIT
+                    )
+                    force_intent_replan = bool(
+                        args.songline_policy == "graph_path"
+                        and getattr(args, "intent_selection_mode", "fixed") == "state_v1"
+                        and intent_replan_cooldown_left <= 0
+                        and (entered_hazard_navigation or switched_to_defensive_intent)
+                    )
+                    if force_intent_replan:
+                        cleared = clear_active_graph_plan()
+                        subgoal_xy = cleared["subgoal_xy"]
+                        active_subgoal_key = cleared["active_subgoal_key"]
+                        active_graph_path_length = cleared["active_graph_path_length"]
+                        active_target_node_id = cleared["active_target_node_id"]
+                        active_next_node_id = cleared["active_next_node_id"]
+                        active_maneuver_command = cleared["active_maneuver_command"]
+                        active_maneuver_command_type = cleared["active_maneuver_command_type"]
+                        active_planner_debug = cleared["active_planner_debug"]
+                        trace_forced_intent_replan = 1
+                        intent_replan_cooldown_left = intent_replan_cooldown_steps
 
                 hazard_phase_active = is_hazard_phase_token(token_label)
                 post_exit_pending = bool(
@@ -732,7 +874,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     token_label=token_label,
                     active_subgoal_key=active_subgoal_key,
                     hazard_phase_intervened=hazard_phase_intervened,
-                ):
+                ) or force_intent_replan:
                     proposal = memory.suggest_subgoal(top_k=args.top_k_goals)
                     if proposal is not None:
                         no_override_suggestions += 1
@@ -759,7 +901,12 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                             or (final_exit_active and final_exit_steps_left > 0)
                             or (resume_to_goal_active and resume_to_goal_steps_left > 0)
                         )
-                        if not preserve_commit:
+                        if force_intent_replan or not preserve_commit:
+                            planner_query = current_planner_query(
+                                args,
+                                goal_xy=goal_xy,
+                                active_intent_type=active_intent_type,
+                            )
                             path_plan = select_graph_waypoint(
                                 memory,
                                 rollout_planner,
@@ -769,6 +916,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                 current_token_label=token_label,
                                 env=env,
                                 goal_xy=goal_xy,
+                                planner_query=planner_query,
                             )
                             if path_plan is not None:
                                 subgoal_xy = path_plan["waypoint_xy"].copy()
@@ -781,8 +929,12 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                 active_next_node_id = int(path_plan["next_node_id"])
                                 active_maneuver_command = dict(path_plan["maneuver_command"])
                                 active_maneuver_command_type = str(active_maneuver_command.get("command_type"))
+                                active_planner_debug = dict(path_plan.get("planner_debug", {}))
+                                if active_intent_type is not None:
+                                    active_planner_debug["resolved_active_intent_type"] = str(active_intent_type.value)
                                 if hazard_phase_active:
                                     hazard_phase_intervened = True
+                                trace_new_target_node_id = active_target_node_id
 
                 if (
                     args.commit_to_corridor
@@ -1038,6 +1190,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     active_next_node_id = None
                     active_maneuver_command = None
                     active_maneuver_command_type = None
+                    active_planner_debug = None
                     hazard_commit_active = False
                     hazard_commit_dir = None
                     hazard_commit_steps_left = 0
@@ -1059,6 +1212,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                         active_next_node_id = None
                         active_maneuver_command = None
                         active_maneuver_command_type = None
+                        active_planner_debug = None
                         hazard_commit_active = False
                         hazard_commit_dir = None
                         hazard_commit_steps_left = 0
@@ -1108,6 +1262,27 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                             "target_node_id": active_target_node_id,
                             "next_graph_node_id": active_next_node_id,
                             "maneuver_command_type": active_maneuver_command_type,
+                            "planner_used_intent_query": int(bool(active_planner_debug and active_planner_debug.get("used_intent_query", False))),
+                            "planner_query_intent": None if active_planner_debug is None else active_planner_debug.get("intent_type"),
+                            "planner_resolved_active_intent_type": None if active_planner_debug is None else active_planner_debug.get("resolved_active_intent_type"),
+                            "planner_query_tag_name": None if active_planner_debug is None else active_planner_debug.get("query_tag_name"),
+                            "planner_candidate_node_ids": "[]" if active_planner_debug is None else json.dumps(active_planner_debug.get("candidate_node_ids", [])),
+                            "planner_candidate_base_utilities": "{}" if active_planner_debug is None else json.dumps(active_planner_debug.get("candidate_base_utilities", {}), sort_keys=True),
+                            "planner_candidate_tag_confidences": "{}" if active_planner_debug is None else json.dumps(active_planner_debug.get("candidate_tag_confidences", {}), sort_keys=True),
+                            "planner_selected_tag_confidence": None if active_planner_debug is None else active_planner_debug.get("selected_tag_confidence"),
+                            "planner_selected_node_semantic_tag_confidence": "{}" if active_planner_debug is None else json.dumps(active_planner_debug.get("selected_node_semantic_tag_confidence", {}), sort_keys=True),
+                            "planner_selected_plan_utility": None if active_planner_debug is None else float(active_planner_debug.get("selected_plan_utility", 0.0)),
+                            "intent_switched": int(trace_intent_switched),
+                            "forced_intent_replan": int(trace_forced_intent_replan),
+                            "previous_active_intent": trace_previous_active_intent,
+                            "new_active_intent": trace_new_active_intent,
+                            "previous_target_node_id": trace_previous_target_node_id,
+                            "new_target_node_id": trace_new_target_node_id,
+                            "agent_state_thirst": float(agent_state.thirst),
+                            "agent_state_energy": float(agent_state.energy),
+                            "agent_state_risk_budget": float(agent_state.risk_budget),
+                            "agent_state_task_phase": str(agent_state.task_phase),
+                            "agent_state_active_intent": None if active_intent_type is None else str(active_intent_type.value),
                             "goal_visible": int(risk.get("goal_visible", 0.0)),
                             "hazard_front": int(risk.get("hazard_front", 0.0)),
                             "hazard_near": int(risk.get("hazard_near", 0.0)),
@@ -1132,6 +1307,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
 
             if distance_after is not None:
                 previous_goal_distance = distance_after
+            if intent_replan_cooldown_left > 0:
+                intent_replan_cooldown_left -= 1
 
             if reward > 0:
                 success = 1
@@ -1177,6 +1354,17 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "episode": ep + 1,
             "env_id": args.env_id,
             "change_active": int(change_active),
+            "env_change_mode": args.env_change_mode,
+            "change_after_episode": int(args.change_after_episode),
+            "intent_mode": args.intent_mode,
+            "intent_selection_mode": args.intent_selection_mode,
+            "intent_type": args.intent_type,
+            "intent_active": int(args.intent_mode != "none"),
+            "active_intent_type": None if active_intent_type is None else str(active_intent_type.value),
+            "agent_task_phase": str(agent_state.task_phase),
+            "agent_thirst": float(agent_state.thirst),
+            "agent_energy": float(agent_state.energy),
+            "agent_risk_budget": float(agent_state.risk_budget),
             "agent_mode": args.agent_mode,
             "songline_policy": args.songline_policy,
             "method": method_name,
@@ -1258,6 +1446,11 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "episodes": args.episodes,
             "max_steps": args.max_steps,
             "seed": args.seed,
+            "env_change_mode": args.env_change_mode,
+            "change_after_episode": int(args.change_after_episode),
+            "intent_mode": args.intent_mode,
+            "intent_selection_mode": args.intent_selection_mode,
+            "intent_type": args.intent_type,
         }
     )
 
@@ -1328,6 +1521,24 @@ def parse_args():
         choices=["static", "adaptive"],
     )
     parser.add_argument(
+        "--intent_mode",
+        type=str,
+        default="none",
+        choices=["none", "safe_exit_v1", "goal_region_v1"],
+    )
+    parser.add_argument(
+        "--intent_selection_mode",
+        type=str,
+        default="fixed",
+        choices=["fixed", "state_v1"],
+    )
+    parser.add_argument(
+        "--intent_type",
+        type=str,
+        default="reach_safe_exit",
+        choices=["reach_safe_exit", "find_goal_region", "find_water_source"],
+    )
+    parser.add_argument(
         "--env_change_mode",
         type=str,
         default="none",
@@ -1340,6 +1551,7 @@ def parse_args():
     parser.add_argument("--commit_to_corridor", action="store_true")
     parser.add_argument("--debug_trace", action="store_true")
     parser.add_argument("--debug_trace_env_filter", type=str, default="")
+    parser.add_argument("--intent_replan_cooldown_steps", type=int, default=4)
     parser.add_argument("--tokenizer_mode", type=str, default="hash_sign", choices=["argmax", "hash_sign"])
     parser.add_argument("--tokenizer_proj_dim", type=int, default=16)
     parser.add_argument("--out_dir", type=str, default="tmp/songline_minigrid")

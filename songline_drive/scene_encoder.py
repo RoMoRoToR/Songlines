@@ -60,6 +60,19 @@ class MiniGridSceneEncoder:
             goal_dx = float(goal_xy[0] - agent_pos[0])
             goal_dy = float(goal_xy[1] - agent_pos[1])
         goal_heading_alignment = self._goal_heading_alignment(agent_dir, goal_dx, goal_dy)
+        is_safe_zone = float(
+            front_safe == 1.0
+            and hazard_front == 0.0
+            and hazard_near == 0.0
+        )
+        is_goal_region = float(
+            goal_visible
+            or goal_front == 1.0
+            or (goal_xy is not None and remaining_distance <= 2.0)
+        )
+        is_hazard_edge = float(hazard_near == 1.0 and front_safe == 1.0)
+        is_room_center = float(open_space_like == 1.0 and free_neighbor_count >= 3)
+        is_corridor = float(corridor_like == 1.0)
 
         return SceneState(
             ego_state=EgoState(
@@ -117,6 +130,11 @@ class MiniGridSceneEncoder:
                 "corridor_like": corridor_like,
                 "doorway_like": doorway_like,
                 "open_space_like": open_space_like,
+                "place_is_safe_zone": is_safe_zone,
+                "place_is_goal_region": is_goal_region,
+                "place_is_hazard_edge": is_hazard_edge,
+                "place_is_room_center": is_room_center,
+                "place_is_corridor": is_corridor,
                 "goal_heading_alignment": float(goal_heading_alignment),
                 "goal_dx": goal_dx,
                 "goal_dy": goal_dy,

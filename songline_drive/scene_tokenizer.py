@@ -37,6 +37,7 @@ class SceneTokenizer:
             transition_context=transition_context,
             distance_progress=distance_progress,
         )
+        semantic_tags = self._semantic_tags(scene)
         self.previous_topology = topology_context
         self.previous_route_token = route_token
         self.previous_remaining_distance = float(scene.route_context.remaining_distance)
@@ -52,7 +53,18 @@ class SceneTokenizer:
                 "distance_progress": distance_progress,
                 "free_space_score": scene.free_space_score,
             },
+            semantic_tags=semantic_tags,
         )
+
+    def _semantic_tags(self, scene: SceneState):
+        rf = scene.risk_features
+        return {
+            "safe_exit": float(rf.get("place_is_safe_zone", 0.0)),
+            "goal_region": float(rf.get("place_is_goal_region", 0.0)),
+            "hazard_edge": float(rf.get("place_is_hazard_edge", 0.0)),
+            "room_center": float(rf.get("place_is_room_center", 0.0)),
+            "corridor": float(rf.get("place_is_corridor", 0.0)),
+        }
 
     def _distance_progress(self, scene: SceneState) -> float:
         current_distance = float(scene.route_context.remaining_distance)

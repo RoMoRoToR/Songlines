@@ -62,11 +62,27 @@ class GraphRolloutPlanner:
         current_node_id: Optional[int],
         horizon: int = 4,
         top_k: int = 5,
+        planner_query=None,
     ) -> List[ManeuverPlan]:
         if current_node_id is None:
             return []
 
-        candidate_ids = graph.candidate_nodes(top_k=top_k)
+        if planner_query is not None and hasattr(graph, "candidate_nodes_for_intent"):
+            candidate_ids = graph.candidate_nodes_for_intent(
+                planner_query.target_predicate,
+                top_k=top_k,
+            )
+        else:
+            candidate_ids = graph.candidate_nodes(top_k=top_k)
+        query_tag_name = None if planner_query is None else str(planner_query.target_predicate.tag_name)
+        candidate_base_utilities = {}
+        candidate_tag_confidences = {}
+        for node_id in candidate_ids:
+            candidate_base_utilities[str(node_id)] = float(self.node_utility(graph, node_id))
+            if query_tag_name is not None:
+                candidate_tag_confidences[str(node_id)] = float(
+                    graph.nodes[node_id].get("semantic_tag_confidence", {}).get(query_tag_name, 0.0)
+                )
         plans: List[ManeuverPlan] = []
         for node_id in candidate_ids:
             path = graph.shortest_path(current_node_id, node_id)
@@ -99,7 +115,17 @@ class GraphRolloutPlanner:
                     graph_path_length=int(max(0, len(path) - 1)),
                     target_node_id=int(node_id),
                     waypoint_xy=waypoint_xy,
-                    metadata={"next_node_id": int(next_node_id)},
+                    metadata={
+                        "next_node_id": int(next_node_id),
+                        "intent_type": None if planner_query is None else str(planner_query.intent_type.value),
+                        "query_tag_name": query_tag_name,
+                        "used_intent_query": bool(planner_query is not None),
+                        "candidate_node_ids": [int(cid) for cid in candidate_ids],
+                        "candidate_base_utilities": candidate_base_utilities,
+                        "candidate_tag_confidences": candidate_tag_confidences,
+                        "selected_tag_confidence": float(candidate_tag_confidences.get(str(node_id), 0.0)),
+                        "selected_plan_utility": float(path_utility),
+                    },
                 )
             )
 
