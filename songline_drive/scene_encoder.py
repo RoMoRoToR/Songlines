@@ -73,6 +73,16 @@ class MiniGridSceneEncoder:
         is_hazard_edge = float(hazard_near == 1.0 and front_safe == 1.0)
         is_room_center = float(open_space_like == 1.0 and free_neighbor_count >= 3)
         is_corridor = float(corridor_like == 1.0)
+        is_hazard_recovery_route = float(
+            front_safe == 1.0
+            and hazard_near == 1.0
+            and goal_heading_alignment >= 0.3
+            and (
+                narrow_safe_channel == 1.0
+                or hazard_asymmetric_gap_channel == 1.0
+                or lateral_hazard == 1.0
+            )
+        )
 
         return SceneState(
             ego_state=EgoState(
@@ -135,6 +145,7 @@ class MiniGridSceneEncoder:
                 "place_is_hazard_edge": is_hazard_edge,
                 "place_is_room_center": is_room_center,
                 "place_is_corridor": is_corridor,
+                "place_is_hazard_recovery_route": is_hazard_recovery_route,
                 "goal_heading_alignment": float(goal_heading_alignment),
                 "goal_dx": goal_dx,
                 "goal_dy": goal_dy,

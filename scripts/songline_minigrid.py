@@ -345,6 +345,108 @@ def _hazard_aware_waypoint(env, current_token_label, plan_waypoint_xy, goal_xy):
     return candidates[0][1]
 
 
+def _target_waypoint_stats(env, source_xy, target_xy, goal_xy):
+    if target_xy is None:
+        return {
+            "hazard_adjacent": 0,
+            "goal_alignment": 0.0,
+        }
+
+    tx, ty = [int(v) for v in target_xy]
+    hazard_adjacent = 0
+    for dir_idx in range(4):
+        dx, dy = _dir_to_delta(dir_idx)
+        if _cell_code(env, tx + dx, ty + dy) == 3:
+            hazard_adjacent = 1
+            break
+
+    goal_alignment = 0.0
+    if source_xy is not None and goal_xy is not None:
+        sx, sy = [int(v) for v in source_xy]
+        gx, gy = [int(v) for v in goal_xy]
+        tdx = tx - sx
+        tdy = ty - sy
+        gdx = gx - sx
+        gdy = gy - sy
+        target_norm = float(max(1e-6, (tdx * tdx + tdy * tdy) ** 0.5))
+        goal_norm = float(max(1e-6, (gdx * gdx + gdy * gdy) ** 0.5))
+        goal_alignment = float(((tdx * gdx) + (tdy * gdy)) / (target_norm * goal_norm))
+
+    return {
+        "hazard_adjacent": int(hazard_adjacent),
+        "goal_alignment": float(goal_alignment),
+    }
+
+
+def _stable_goal_rejoin_waypoint(env, goal_xy, radius=2, avoid_hazard_adjacent=False, max_radius=None):
+    if goal_xy is None:
+        return None
+
+    unwrapped = env.unwrapped
+    ax, ay = [int(v) for v in unwrapped.agent_pos]
+    current_xy = np.array([ax, ay], dtype=np.int32)
+    goal_xy = np.asarray(goal_xy, dtype=np.int32)
+    current_goal_distance = manhattan(current_xy, goal_xy)
+
+    if max_radius is None:
+        max_radius = radius
+
+    best_safe = []
+    best_any = []
+    for current_radius in range(int(radius), int(max_radius) + 1):
+        candidates = []
+        for dx in range(-current_radius, current_radius + 1):
+            for dy in range(-current_radius, current_radius + 1):
+                if abs(dx) + abs(dy) == 0 or abs(dx) + abs(dy) > current_radius:
+                    continue
+                nx, ny = ax + dx, ay + dy
+                code = _cell_code(env, nx, ny)
+                if code not in (0, 2):
+                    continue
+
+                waypoint_xy = np.array([nx, ny], dtype=np.int32)
+                goal_distance = manhattan(waypoint_xy, goal_xy)
+                goal_progress = float(current_goal_distance - goal_distance)
+                if goal_progress < 0.0:
+                    continue
+
+                free_neighbors = 0
+                hazard_neighbors = 0
+                for dir_idx in range(4):
+                    ddx, ddy = _dir_to_delta(dir_idx)
+                    ncode = _cell_code(env, nx + ddx, ny + ddy)
+                    if ncode in (0, 2):
+                        free_neighbors += 1
+                    if ncode == 3:
+                        hazard_neighbors += 1
+
+                stats = _target_waypoint_stats(env, current_xy, waypoint_xy, goal_xy)
+                score = (
+                    2.0 * goal_progress
+                    + 1.25 * stats["goal_alignment"]
+                    + 0.35 * free_neighbors
+                    - 1.5 * hazard_neighbors
+                    - 0.15 * (abs(dx) + abs(dy))
+                )
+                candidates.append((score, waypoint_xy, stats))
+                best_any.append((score, waypoint_xy, stats))
+
+            if candidates:
+                safe_candidates = [item for item in candidates if int(item[2]["hazard_adjacent"]) == 0]
+                if safe_candidates:
+                    best_safe.extend(safe_candidates)
+                    if avoid_hazard_adjacent:
+                        break
+
+    if avoid_hazard_adjacent and best_safe:
+        best_safe.sort(key=lambda item: item[0], reverse=True)
+        return best_safe[0][1]
+    if best_any:
+        best_any.sort(key=lambda item: item[0], reverse=True)
+        return best_any[0][1]
+    return None
+
+
 def select_graph_waypoint(
     memory,
     planner,
@@ -422,6 +524,104 @@ def parse_intent_type(name: str) -> IntentType:
     return IntentType(name)
 
 
+def is_defensive_intent(intent_type: IntentType) -> bool:
+    return intent_type in {
+        IntentType.REACH_SAFE_EXIT,
+        IntentType.HAZARD_RECOVERY_EXIT,
+    }
+
+
+def should_use_post_recovery_goal_handoff(args) -> bool:
+    return getattr(args, "intent_handoff_mode", "none") == "post_recovery_goal_v1"
+
+
+def should_use_goal_rejoin_guard(args) -> bool:
+    return getattr(args, "goal_rejoin_guard_mode", "none") == "debounce_v1"
+
+
+def should_use_goal_rejoin_target_fallback(args) -> bool:
+    return getattr(args, "goal_rejoin_target_mode", "none") == "fallback_goal_v1"
+
+
+def should_use_stable_goal_rejoin_waypoint(args) -> bool:
+    return getattr(args, "goal_rejoin_target_mode", "none") == "stable_waypoint_v1"
+
+
+def should_use_source_selected_goal_rejoin(args) -> bool:
+    return getattr(args, "goal_rejoin_target_mode", "none") in {"source_select_v1", "source_select_v2"}
+
+
+def should_use_strict_stable_goal_rejoin(args) -> bool:
+    return getattr(args, "goal_rejoin_target_mode", "none") == "source_select_v2"
+
+
+def _select_rejoin_target_source(args, env, source_xy, goal_xy, graph_waypoint_xy, planner_debug):
+    graph_waypoint = None if graph_waypoint_xy is None else np.asarray(graph_waypoint_xy, dtype=np.int32).copy()
+    graph_stats = _target_waypoint_stats(env, source_xy, graph_waypoint, goal_xy) if graph_waypoint is not None else {
+        "hazard_adjacent": 0,
+        "goal_alignment": 0.0,
+    }
+    selected_conf = {} if planner_debug is None else dict(planner_debug.get("selected_node_semantic_tag_confidence", {}))
+    goal_region_conf = float(selected_conf.get("goal_region", 0.0))
+
+    decision = {
+        "selected_source": "none",
+        "selected_waypoint_xy": None,
+        "graph_node_considered": int(graph_waypoint is not None),
+        "graph_node_goal_region_confidence": goal_region_conf,
+        "graph_node_hazard_adjacent": int(graph_stats["hazard_adjacent"]),
+        "graph_node_goal_alignment": float(graph_stats["goal_alignment"]),
+        "graph_node_accepted": 0,
+        "graph_node_rejected": 0,
+        "graph_node_reject_reason": "none",
+        "stable_waypoint_available": 0,
+    }
+
+    if should_use_source_selected_goal_rejoin(args):
+        stable_waypoint = _stable_goal_rejoin_waypoint(
+            env,
+            goal_xy,
+            avoid_hazard_adjacent=should_use_strict_stable_goal_rejoin(args),
+            max_radius=4 if should_use_strict_stable_goal_rejoin(args) else 2,
+        )
+        decision["stable_waypoint_available"] = int(stable_waypoint is not None)
+        graph_ok = bool(
+            graph_waypoint is not None
+            and goal_region_conf >= 0.5
+            and int(graph_stats["hazard_adjacent"]) == 0
+        )
+        if graph_ok:
+            decision["selected_source"] = "graph_node"
+            decision["selected_waypoint_xy"] = graph_waypoint
+            decision["graph_node_accepted"] = 1
+            return decision
+        if graph_waypoint is not None:
+            decision["graph_node_rejected"] = 1
+            if goal_region_conf < 0.5:
+                decision["graph_node_reject_reason"] = "low_goal_region_confidence"
+            elif int(graph_stats["hazard_adjacent"]) != 0:
+                decision["graph_node_reject_reason"] = "hazard_adjacent"
+            else:
+                decision["graph_node_reject_reason"] = "source_select_guard"
+        if stable_waypoint is not None:
+            decision["selected_source"] = "stable_rejoin_waypoint"
+            decision["selected_waypoint_xy"] = np.asarray(stable_waypoint, dtype=np.int32).copy()
+            return decision
+        if graph_waypoint is not None:
+            decision["selected_source"] = "graph_node"
+            decision["selected_waypoint_xy"] = graph_waypoint
+            return decision
+        return decision
+
+    if graph_waypoint is not None:
+        decision["selected_source"] = "graph_node"
+        decision["selected_waypoint_xy"] = graph_waypoint
+        decision["graph_node_accepted"] = 1
+        return decision
+
+    return decision
+
+
 def resolve_active_intent_type(args, agent_state=None, intent_policy=None, scene=None):
     if getattr(args, "intent_mode", "none") == "none":
         return None
@@ -495,6 +695,80 @@ def export_debug_trace(out_dir, trace_rows):
         writer.writeheader()
         for row in trace_rows:
             writer.writerow(row)
+
+
+def _demo_caption_lines(meta):
+    event = meta.get("event", "")
+    line1 = f"ep {meta.get('episode', '?')} step {meta.get('step', '?')} token={meta.get('token', '?')} action={meta.get('action', '?')}"
+    line2 = (
+        f"intent={meta.get('intent', 'none')} src={meta.get('rejoin_source', 'none')} "
+        f"haz_adj={meta.get('hazard_adjacent', 0)} align={meta.get('goal_alignment', 0.0):.2f}"
+    )
+    line3 = (
+        f"pos={meta.get('pos', '?')} subgoal={meta.get('subgoal', None)} "
+        f"dist={meta.get('distance_after', '?')} reward={meta.get('reward', 0.0):.3f}"
+    )
+    if event:
+        line3 = f"{line3} | {event}"
+    return [line1, line2, line3]
+
+
+def _annotate_demo_frame(frame, meta):
+    import numpy as np
+    from PIL import Image, ImageDraw
+
+    lines = _demo_caption_lines(meta)
+    image = Image.fromarray(np.asarray(frame, dtype=np.uint8))
+    width, height = image.size
+    footer_h = 22 * len(lines) + 12
+    canvas = Image.new("RGB", (width, height + footer_h), (12, 12, 12))
+    canvas.paste(image, (0, 0))
+    draw = ImageDraw.Draw(canvas)
+    y = height + 6
+    for line in lines:
+        draw.text((8, y), str(line), fill=(245, 245, 245))
+        y += 22
+    return np.asarray(canvas, dtype=np.uint8)
+
+
+def export_demo_artifacts(out_dir, frames, frame_meta, fps=3):
+    if not frames or not frame_meta or len(frames) != len(frame_meta):
+        return
+
+    try:
+        import imageio.v2 as imageio
+    except Exception:
+        import imageio
+    import numpy as np
+    from PIL import Image
+
+    demo_dir = os.path.join(out_dir, "demo")
+    ensure_dir(demo_dir)
+
+    annotated = [_annotate_demo_frame(frame, meta) for frame, meta in zip(frames, frame_meta)]
+
+    gif_path = os.path.join(demo_dir, "demo.gif")
+    imageio.mimsave(gif_path, annotated, duration=max(0.05, 1.0 / max(1, int(fps))))
+
+    json_path = os.path.join(demo_dir, "demo_metadata.json")
+    with open(json_path, "w") as f:
+        json.dump(frame_meta, f, indent=2)
+
+    key_count = min(6, len(annotated))
+    indices = np.linspace(0, len(annotated) - 1, num=key_count, dtype=int)
+    unique_indices = []
+    seen = set()
+    for idx in indices:
+        if int(idx) not in seen:
+            unique_indices.append(int(idx))
+            seen.add(int(idx))
+    tiles = [Image.fromarray(annotated[idx]) for idx in unique_indices]
+    tile_w = max(tile.width for tile in tiles)
+    tile_h = max(tile.height for tile in tiles)
+    sheet = Image.new("RGB", (tile_w * len(tiles), tile_h), (255, 255, 255))
+    for i, tile in enumerate(tiles):
+        sheet.paste(tile, (i * tile_w, 0))
+    sheet.save(os.path.join(demo_dir, "storyboard.png"))
 
 
 def is_hazard_phase_token(token_label):
@@ -620,6 +894,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
     args = apply_milestone_mode(args)
     ensure_dir(args.out_dir)
     intent_replan_cooldown_steps = max(0, int(getattr(args, "intent_replan_cooldown_steps", 4)))
+    goal_rejoin_guard_steps = max(0, int(getattr(args, "goal_rejoin_guard_steps", 4)))
 
     env = gym.make(args.env_id, render_mode="rgb_array")
     rng = np.random.RandomState(args.seed)
@@ -650,6 +925,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "intent_mode": args.intent_mode,
         "intent_selection_mode": args.intent_selection_mode,
         "intent_type": args.intent_type,
+        "intent_handoff_mode": args.intent_handoff_mode,
+        "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
+        "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
         "episode_returns": [],
         "episode_lengths": [],
         "successes": [],
@@ -681,6 +959,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
     total_step_idx = 0
     seen_songline_nodes = set()
     debug_trace_rows = []
+    demo_frames = []
+    demo_frame_meta = []
 
     for ep in range(args.episodes):
         obs, info = env.reset(seed=args.seed + ep)
@@ -723,8 +1003,15 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         active_planner_debug = None
         active_intent_type = None
         intent_replan_cooldown_left = 0
+        goal_rejoin_guard_active = False
+        goal_rejoin_guard_steps_left = 0
+        goal_rejoin_guard_best_distance = None
         agent_state = AgentState(active_intent=parse_intent_type(args.intent_type))
-        intent_policy = IntentPolicy() if args.intent_selection_mode == "state_v1" else None
+        intent_policy = (
+            IntentPolicy(hazard_intent=parse_intent_type(args.intent_type))
+            if args.intent_selection_mode == "state_v1"
+            else None
+        )
         hazard_commit_active = False
         hazard_commit_dir = None
         hazard_commit_steps_left = 0
@@ -747,6 +1034,32 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         resume_to_goal_armed = 0
         has_post_hazard_progress = 0
         has_resume_to_goal_progress = 0
+        has_goal_rejoin_materialization_failure = 0
+        record_demo_episode = bool(
+            getattr(args, "record_demo", False)
+            and int(ep + 1) == int(getattr(args, "demo_episode", 1))
+        )
+        if record_demo_episode:
+            frame = env.render()
+            if frame is not None:
+                demo_frames.append(np.asarray(frame, dtype=np.uint8))
+                demo_frame_meta.append(
+                    {
+                        "episode": int(ep + 1),
+                        "step": 0,
+                        "token": "reset",
+                        "action": None,
+                        "intent": None,
+                        "rejoin_source": "none",
+                        "hazard_adjacent": 0,
+                        "goal_alignment": 0.0,
+                        "pos": tuple(int(v) for v in env.unwrapped.agent_pos),
+                        "subgoal": None,
+                        "distance_after": None if goal_xy is None else int(manhattan(np.array(env.unwrapped.agent_pos, dtype=np.int32), goal_xy)),
+                        "reward": 0.0,
+                        "event": "episode_start",
+                    }
+                )
 
         for step in range(args.max_steps):
             step_count = step + 1
@@ -758,6 +1071,25 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             token_label = None
             trace_intent_switched = 0
             trace_forced_intent_replan = 0
+            trace_forced_goal_rejoin_replan = 0
+            trace_exited_hazard_recovery_intent = 0
+            trace_goal_rejoin_handoff_suppressed = 0
+            trace_goal_rejoin_target_materialized = 0
+            trace_goal_rejoin_target_source = "none"
+            trace_goal_rejoin_fallback_used = 0
+            trace_stable_rejoin_waypoint_used = 0
+            trace_stable_rejoin_waypoint_x = None
+            trace_stable_rejoin_waypoint_y = None
+            trace_rejoin_target_hazard_adjacent = 0
+            trace_rejoin_target_goal_alignment = 0.0
+            trace_goal_rejoin_graph_node_considered = 0
+            trace_goal_rejoin_graph_node_accepted = 0
+            trace_goal_rejoin_graph_node_rejected = 0
+            trace_goal_rejoin_graph_node_reject_reason = "none"
+            trace_goal_rejoin_graph_node_goal_region_confidence = 0.0
+            trace_goal_rejoin_graph_node_hazard_adjacent = 0
+            trace_goal_rejoin_graph_node_goal_alignment = 0.0
+            trace_goal_rejoin_stable_waypoint_available = 0
             trace_previous_active_intent = None if active_intent_type is None else str(active_intent_type.value)
             trace_new_active_intent = trace_previous_active_intent
             trace_previous_target_node_id = active_target_node_id
@@ -820,14 +1152,33 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                         and str(agent_state.task_phase) == "hazard_navigation"
                     )
                     switched_to_defensive_intent = (
-                        active_intent_type == IntentType.REACH_SAFE_EXIT
-                        and prior_active_intent_type != IntentType.REACH_SAFE_EXIT
+                        active_intent_type is not None
+                        and is_defensive_intent(active_intent_type)
+                        and active_intent_type != prior_active_intent_type
                     )
+                    exited_hazard_recovery_intent = bool(
+                        should_use_post_recovery_goal_handoff(args)
+                        and prior_active_intent_type == IntentType.HAZARD_RECOVERY_EXIT
+                        and active_intent_type == IntentType.FIND_GOAL_REGION
+                    )
+                    if (
+                        exited_hazard_recovery_intent
+                        and should_use_goal_rejoin_guard(args)
+                        and goal_rejoin_guard_active
+                        and goal_rejoin_guard_steps_left > 0
+                    ):
+                        trace_goal_rejoin_handoff_suppressed = 1
+                        exited_hazard_recovery_intent = False
+                    trace_exited_hazard_recovery_intent = int(exited_hazard_recovery_intent)
                     force_intent_replan = bool(
                         args.songline_policy == "graph_path"
                         and getattr(args, "intent_selection_mode", "fixed") == "state_v1"
                         and intent_replan_cooldown_left <= 0
-                        and (entered_hazard_navigation or switched_to_defensive_intent)
+                        and (
+                            entered_hazard_navigation
+                            or switched_to_defensive_intent
+                            or exited_hazard_recovery_intent
+                        )
                     )
                     if force_intent_replan:
                         cleared = clear_active_graph_plan()
@@ -840,7 +1191,12 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                         active_maneuver_command_type = cleared["active_maneuver_command_type"]
                         active_planner_debug = cleared["active_planner_debug"]
                         trace_forced_intent_replan = 1
+                        trace_forced_goal_rejoin_replan = int(exited_hazard_recovery_intent)
                         intent_replan_cooldown_left = intent_replan_cooldown_steps
+                        if exited_hazard_recovery_intent and should_use_goal_rejoin_guard(args):
+                            goal_rejoin_guard_active = True
+                            goal_rejoin_guard_steps_left = goal_rejoin_guard_steps
+                            goal_rejoin_guard_best_distance = distance_before
 
                 hazard_phase_active = is_hazard_phase_token(token_label)
                 post_exit_pending = bool(
@@ -907,6 +1263,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                 goal_xy=goal_xy,
                                 active_intent_type=active_intent_type,
                             )
+                            planner_query_tag_name = None
+                            if planner_query is not None and getattr(planner_query, "target_predicate", None) is not None:
+                                planner_query_tag_name = planner_query.target_predicate.tag_name
                             path_plan = select_graph_waypoint(
                                 memory,
                                 rollout_planner,
@@ -919,22 +1278,165 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                 planner_query=planner_query,
                             )
                             if path_plan is not None:
-                                subgoal_xy = path_plan["waypoint_xy"].copy()
-                                interventions_this_episode += 1
-                                active_intervention_distance = distance_before
-                                active_subgoal_key = (int(subgoal_xy[0]), int(subgoal_xy[1]))
-                                active_graph_path_length = int(path_plan["graph_path_length"])
-                                graph_path_lengths.append(active_graph_path_length)
-                                active_target_node_id = None if path_plan["target_node_id"] is None else int(path_plan["target_node_id"])
-                                active_next_node_id = int(path_plan["next_node_id"])
-                                active_maneuver_command = dict(path_plan["maneuver_command"])
-                                active_maneuver_command_type = str(active_maneuver_command.get("command_type"))
-                                active_planner_debug = dict(path_plan.get("planner_debug", {}))
+                                planner_debug = dict(path_plan.get("planner_debug", {}))
                                 if active_intent_type is not None:
-                                    active_planner_debug["resolved_active_intent_type"] = str(active_intent_type.value)
-                                if hazard_phase_active:
-                                    hazard_phase_intervened = True
-                                trace_new_target_node_id = active_target_node_id
+                                    planner_debug["resolved_active_intent_type"] = str(active_intent_type.value)
+                                if trace_forced_goal_rejoin_replan:
+                                    decision = _select_rejoin_target_source(
+                                        args,
+                                        env=env,
+                                        source_xy=agent_xy,
+                                        goal_xy=goal_xy,
+                                        graph_waypoint_xy=path_plan["waypoint_xy"],
+                                        planner_debug=planner_debug,
+                                    )
+                                    trace_goal_rejoin_graph_node_considered = int(decision["graph_node_considered"])
+                                    trace_goal_rejoin_graph_node_accepted = int(decision["graph_node_accepted"])
+                                    trace_goal_rejoin_graph_node_rejected = int(decision["graph_node_rejected"])
+                                    trace_goal_rejoin_graph_node_reject_reason = str(decision["graph_node_reject_reason"])
+                                    trace_goal_rejoin_graph_node_goal_region_confidence = float(decision["graph_node_goal_region_confidence"])
+                                    trace_goal_rejoin_graph_node_hazard_adjacent = int(decision["graph_node_hazard_adjacent"])
+                                    trace_goal_rejoin_graph_node_goal_alignment = float(decision["graph_node_goal_alignment"])
+                                    trace_goal_rejoin_stable_waypoint_available = int(decision["stable_waypoint_available"])
+                                    selected_waypoint = decision["selected_waypoint_xy"]
+                                    selected_source = str(decision["selected_source"])
+                                    if selected_waypoint is not None:
+                                        subgoal_xy = np.asarray(selected_waypoint, dtype=np.int32).copy()
+                                        interventions_this_episode += 1
+                                        active_intervention_distance = distance_before
+                                        active_subgoal_key = (int(subgoal_xy[0]), int(subgoal_xy[1]))
+                                        if selected_source == "graph_node":
+                                            active_graph_path_length = int(path_plan["graph_path_length"])
+                                            graph_path_lengths.append(active_graph_path_length)
+                                            active_target_node_id = None if path_plan["target_node_id"] is None else int(path_plan["target_node_id"])
+                                            active_next_node_id = int(path_plan["next_node_id"])
+                                            active_maneuver_command = dict(path_plan["maneuver_command"])
+                                            active_maneuver_command_type = str(active_maneuver_command.get("command_type"))
+                                        else:
+                                            active_graph_path_length = 0
+                                            active_target_node_id = None
+                                            active_next_node_id = None
+                                            active_maneuver_command = {
+                                                "command_type": "go_to_waypoint",
+                                                "waypoint_xy": tuple(int(v) for v in subgoal_xy),
+                                            }
+                                            active_maneuver_command_type = "go_to_waypoint"
+                                        active_planner_debug = planner_debug
+                                        active_planner_debug["goal_rejoin_target_materialized"] = True
+                                        active_planner_debug["goal_rejoin_target_source"] = selected_source
+                                        active_planner_debug["goal_rejoin_graph_node_considered"] = int(decision["graph_node_considered"])
+                                        active_planner_debug["goal_rejoin_graph_node_accepted"] = int(decision["graph_node_accepted"])
+                                        active_planner_debug["goal_rejoin_graph_node_rejected"] = int(decision["graph_node_rejected"])
+                                        active_planner_debug["goal_rejoin_graph_node_reject_reason"] = str(decision["graph_node_reject_reason"])
+                                        active_planner_debug["goal_rejoin_graph_node_goal_region_confidence"] = float(decision["graph_node_goal_region_confidence"])
+                                        active_planner_debug["goal_rejoin_graph_node_hazard_adjacent"] = int(decision["graph_node_hazard_adjacent"])
+                                        active_planner_debug["goal_rejoin_graph_node_goal_alignment"] = float(decision["graph_node_goal_alignment"])
+                                        active_planner_debug["goal_rejoin_stable_waypoint_available"] = int(decision["stable_waypoint_available"])
+                                        if selected_source == "stable_rejoin_waypoint":
+                                            trace_stable_rejoin_waypoint_used = 1
+                                            trace_stable_rejoin_waypoint_x = int(subgoal_xy[0])
+                                            trace_stable_rejoin_waypoint_y = int(subgoal_xy[1])
+                                        if hazard_phase_active:
+                                            hazard_phase_intervened = True
+                                        trace_new_target_node_id = active_target_node_id
+                                        trace_goal_rejoin_target_materialized = 1
+                                        trace_goal_rejoin_target_source = selected_source
+                                        trace_goal_rejoin_fallback_used = int(selected_source != "graph_node")
+                                        waypoint_stats = _target_waypoint_stats(env, agent_xy, subgoal_xy, goal_xy)
+                                        trace_rejoin_target_hazard_adjacent = int(waypoint_stats["hazard_adjacent"])
+                                        trace_rejoin_target_goal_alignment = float(waypoint_stats["goal_alignment"])
+                                    else:
+                                        active_planner_debug = planner_debug
+                                        active_planner_debug["goal_rejoin_target_materialized"] = False
+                                        active_planner_debug["goal_rejoin_target_source"] = "none"
+                                        has_goal_rejoin_materialization_failure = 1
+                                else:
+                                    subgoal_xy = path_plan["waypoint_xy"].copy()
+                                    interventions_this_episode += 1
+                                    active_intervention_distance = distance_before
+                                    active_subgoal_key = (int(subgoal_xy[0]), int(subgoal_xy[1]))
+                                    active_graph_path_length = int(path_plan["graph_path_length"])
+                                    graph_path_lengths.append(active_graph_path_length)
+                                    active_target_node_id = None if path_plan["target_node_id"] is None else int(path_plan["target_node_id"])
+                                    active_next_node_id = int(path_plan["next_node_id"])
+                                    active_maneuver_command = dict(path_plan["maneuver_command"])
+                                    active_maneuver_command_type = str(active_maneuver_command.get("command_type"))
+                                    active_planner_debug = planner_debug
+                                    active_planner_debug["goal_rejoin_target_materialized"] = True
+                                    active_planner_debug["goal_rejoin_target_source"] = "graph_plan"
+                                    if hazard_phase_active:
+                                        hazard_phase_intervened = True
+                                    trace_new_target_node_id = active_target_node_id
+                            elif trace_forced_goal_rejoin_replan:
+                                active_planner_debug = {
+                                    "used_intent_query": bool(planner_query is not None),
+                                    "intent_type": None if active_intent_type is None else str(active_intent_type.value),
+                                    "resolved_active_intent_type": None if active_intent_type is None else str(active_intent_type.value),
+                                    "query_tag_name": planner_query_tag_name,
+                                    "candidate_node_ids": [],
+                                    "candidate_base_utilities": {},
+                                    "candidate_tag_confidences": {},
+                                    "selected_tag_confidence": None,
+                                    "selected_node_semantic_tag_confidence": {},
+                                    "selected_plan_utility": 0.0,
+                                    "goal_rejoin_target_materialized": False,
+                                    "goal_rejoin_target_source": "none",
+                                    "goal_rejoin_graph_node_considered": 0,
+                                    "goal_rejoin_graph_node_accepted": 0,
+                                    "goal_rejoin_graph_node_rejected": 0,
+                                    "goal_rejoin_graph_node_reject_reason": "no_graph_plan",
+                                    "goal_rejoin_graph_node_goal_region_confidence": 0.0,
+                                    "goal_rejoin_graph_node_hazard_adjacent": 0,
+                                    "goal_rejoin_graph_node_goal_alignment": 0.0,
+                                    "goal_rejoin_stable_waypoint_available": 0,
+                                }
+                                fallback_waypoint = None
+                                fallback_source = "none"
+                                if should_use_stable_goal_rejoin_waypoint(args) or should_use_source_selected_goal_rejoin(args):
+                                    stable_waypoint = _stable_goal_rejoin_waypoint(
+                                        env,
+                                        goal_xy,
+                                        avoid_hazard_adjacent=should_use_strict_stable_goal_rejoin(args),
+                                        max_radius=4 if should_use_strict_stable_goal_rejoin(args) else 2,
+                                    )
+                                    trace_goal_rejoin_stable_waypoint_available = int(stable_waypoint is not None)
+                                    active_planner_debug["goal_rejoin_stable_waypoint_available"] = int(stable_waypoint is not None)
+                                    if stable_waypoint is not None:
+                                        fallback_waypoint = np.asarray(stable_waypoint, dtype=np.int32).copy()
+                                        fallback_source = "stable_rejoin_waypoint"
+                                        trace_stable_rejoin_waypoint_used = 1
+                                        trace_stable_rejoin_waypoint_x = int(fallback_waypoint[0])
+                                        trace_stable_rejoin_waypoint_y = int(fallback_waypoint[1])
+                                    elif goal_xy is not None:
+                                        fallback_waypoint = np.asarray(goal_xy, dtype=np.int32).copy()
+                                        fallback_source = "goal_xy_fallback"
+                                elif should_use_goal_rejoin_target_fallback(args) and goal_xy is not None:
+                                    fallback_waypoint = np.asarray(goal_xy, dtype=np.int32).copy()
+                                    fallback_source = "goal_xy_fallback"
+
+                                if fallback_waypoint is not None:
+                                    subgoal_xy = fallback_waypoint
+                                    interventions_this_episode += 1
+                                    active_intervention_distance = distance_before
+                                    active_subgoal_key = (int(subgoal_xy[0]), int(subgoal_xy[1]))
+                                    active_graph_path_length = 0
+                                    active_target_node_id = None
+                                    active_next_node_id = None
+                                    active_maneuver_command = {
+                                        "command_type": "go_to_waypoint",
+                                        "waypoint_xy": tuple(int(v) for v in subgoal_xy),
+                                    }
+                                    active_maneuver_command_type = "go_to_waypoint"
+                                    active_planner_debug["goal_rejoin_target_materialized"] = True
+                                    active_planner_debug["goal_rejoin_target_source"] = fallback_source
+                                    trace_goal_rejoin_target_materialized = 1
+                                    trace_goal_rejoin_target_source = fallback_source
+                                    trace_goal_rejoin_fallback_used = int(fallback_source != "graph_node")
+                                    waypoint_stats = _target_waypoint_stats(env, agent_xy, subgoal_xy, goal_xy)
+                                    trace_rejoin_target_hazard_adjacent = int(waypoint_stats["hazard_adjacent"])
+                                    trace_rejoin_target_goal_alignment = float(waypoint_stats["goal_alignment"])
+                                if not trace_goal_rejoin_target_materialized:
+                                    has_goal_rejoin_materialization_failure = 1
 
                 if (
                     args.commit_to_corridor
@@ -1111,6 +1613,24 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     transition_cost=transition_cost,
                 )
 
+            if should_use_goal_rejoin_guard(args):
+                if str(agent_state.task_phase) == "hazard_navigation":
+                    goal_rejoin_guard_active = False
+                    goal_rejoin_guard_steps_left = 0
+                    goal_rejoin_guard_best_distance = None
+                elif goal_rejoin_guard_active:
+                    if distance_after is not None:
+                        if goal_rejoin_guard_best_distance is None or distance_after < goal_rejoin_guard_best_distance:
+                            goal_rejoin_guard_best_distance = distance_after
+                        elif distance_after > goal_rejoin_guard_best_distance + 1:
+                            goal_rejoin_guard_active = False
+                            goal_rejoin_guard_steps_left = 0
+                            goal_rejoin_guard_best_distance = None
+                    if goal_rejoin_guard_active and goal_rejoin_guard_steps_left > 0:
+                        goal_rejoin_guard_steps_left -= 1
+                    if goal_rejoin_guard_steps_left <= 0:
+                        goal_rejoin_guard_active = False
+
             if hazard_commit_active:
                 still_hazard = hazard_phase_active
                 front_safe_now = False
@@ -1274,6 +1794,25 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                             "planner_selected_plan_utility": None if active_planner_debug is None else float(active_planner_debug.get("selected_plan_utility", 0.0)),
                             "intent_switched": int(trace_intent_switched),
                             "forced_intent_replan": int(trace_forced_intent_replan),
+                            "forced_goal_rejoin_replan": int(trace_forced_goal_rejoin_replan),
+                            "exited_hazard_recovery_intent": int(trace_exited_hazard_recovery_intent),
+                            "goal_rejoin_handoff_suppressed": int(trace_goal_rejoin_handoff_suppressed),
+                            "goal_rejoin_target_materialized": int(trace_goal_rejoin_target_materialized),
+                            "goal_rejoin_target_source": trace_goal_rejoin_target_source,
+                            "goal_rejoin_fallback_used": int(trace_goal_rejoin_fallback_used),
+                            "stable_rejoin_waypoint_used": int(trace_stable_rejoin_waypoint_used),
+                            "stable_rejoin_waypoint_x": trace_stable_rejoin_waypoint_x,
+                            "stable_rejoin_waypoint_y": trace_stable_rejoin_waypoint_y,
+                            "rejoin_target_hazard_adjacent": int(trace_rejoin_target_hazard_adjacent),
+                            "rejoin_target_goal_alignment": float(trace_rejoin_target_goal_alignment),
+                            "goal_rejoin_graph_node_considered": int(trace_goal_rejoin_graph_node_considered),
+                            "goal_rejoin_graph_node_accepted": int(trace_goal_rejoin_graph_node_accepted),
+                            "goal_rejoin_graph_node_rejected": int(trace_goal_rejoin_graph_node_rejected),
+                            "goal_rejoin_graph_node_reject_reason": trace_goal_rejoin_graph_node_reject_reason,
+                            "goal_rejoin_graph_node_goal_region_confidence": float(trace_goal_rejoin_graph_node_goal_region_confidence),
+                            "goal_rejoin_graph_node_hazard_adjacent": int(trace_goal_rejoin_graph_node_hazard_adjacent),
+                            "goal_rejoin_graph_node_goal_alignment": float(trace_goal_rejoin_graph_node_goal_alignment),
+                            "goal_rejoin_stable_waypoint_available": int(trace_goal_rejoin_stable_waypoint_available),
                             "previous_active_intent": trace_previous_active_intent,
                             "new_active_intent": trace_new_active_intent,
                             "previous_target_node_id": trace_previous_target_node_id,
@@ -1301,9 +1840,48 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                             "final_exit_steps_left": int(final_exit_steps_left),
                             "resume_to_goal_active": int(resume_to_goal_active),
                             "resume_to_goal_steps_left": int(resume_to_goal_steps_left),
+                            "goal_rejoin_guard_active": int(goal_rejoin_guard_active),
+                            "goal_rejoin_guard_steps_left": int(goal_rejoin_guard_steps_left),
                         }
                     )
                     previous_token_label = token_label
+
+            if record_demo_episode:
+                should_capture_demo = bool(
+                    ((step + 1) % max(1, int(getattr(args, "demo_frame_stride", 1))) == 0)
+                    or int(trace_forced_goal_rejoin_replan) == 1
+                    or float(reward) > 0.0
+                    or terminated
+                    or truncated
+                )
+                if should_capture_demo:
+                    frame = env.render()
+                    if frame is not None:
+                        event_bits = []
+                        if int(trace_forced_goal_rejoin_replan) == 1:
+                            event_bits.append("forced_goal_rejoin")
+                        if str(trace_goal_rejoin_target_source) not in ("none", ""):
+                            event_bits.append(f"source={trace_goal_rejoin_target_source}")
+                        if float(reward) > 0.0:
+                            event_bits.append("goal_reached")
+                        demo_frames.append(np.asarray(frame, dtype=np.uint8))
+                        demo_frame_meta.append(
+                            {
+                                "episode": int(ep + 1),
+                                "step": int(step + 1),
+                                "token": token_label,
+                                "action": int(action),
+                                "intent": None if active_intent_type is None else str(active_intent_type.value),
+                                "rejoin_source": str(trace_goal_rejoin_target_source),
+                                "hazard_adjacent": int(trace_rejoin_target_hazard_adjacent),
+                                "goal_alignment": float(trace_rejoin_target_goal_alignment),
+                                "pos": tuple(int(v) for v in agent_xy_new),
+                                "subgoal": None if subgoal_xy is None else tuple(int(v) for v in subgoal_xy),
+                                "distance_after": None if distance_after is None else int(distance_after),
+                                "reward": float(reward),
+                                "event": ",".join(event_bits),
+                            }
+                        )
 
             if distance_after is not None:
                 previous_goal_distance = distance_after
@@ -1359,7 +1937,11 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "intent_mode": args.intent_mode,
             "intent_selection_mode": args.intent_selection_mode,
             "intent_type": args.intent_type,
+            "intent_handoff_mode": args.intent_handoff_mode,
+            "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
+            "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
             "intent_active": int(args.intent_mode != "none"),
+            "has_goal_rejoin_materialization_failure": int(has_goal_rejoin_materialization_failure),
             "active_intent_type": None if active_intent_type is None else str(active_intent_type.value),
             "agent_task_phase": str(agent_state.task_phase),
             "agent_thirst": float(agent_state.thirst),
@@ -1451,6 +2033,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "intent_mode": args.intent_mode,
             "intent_selection_mode": args.intent_selection_mode,
             "intent_type": args.intent_type,
+            "intent_handoff_mode": args.intent_handoff_mode,
+            "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
+            "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
         }
     )
 
@@ -1467,6 +2052,13 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             json.dump(summary, f, indent=2)
         if args.debug_trace:
             export_debug_trace(args.out_dir, debug_trace_rows)
+        if getattr(args, "record_demo", False):
+            export_demo_artifacts(
+                args.out_dir,
+                demo_frames,
+                demo_frame_meta,
+                fps=int(getattr(args, "demo_fps", 3)),
+            )
 
     env.close()
     return run_summary, summary
@@ -1524,7 +2116,7 @@ def parse_args():
         "--intent_mode",
         type=str,
         default="none",
-        choices=["none", "safe_exit_v1", "goal_region_v1"],
+        choices=["none", "safe_exit_v1", "hazard_recovery_v1", "goal_region_v1"],
     )
     parser.add_argument(
         "--intent_selection_mode",
@@ -1536,7 +2128,26 @@ def parse_args():
         "--intent_type",
         type=str,
         default="reach_safe_exit",
-        choices=["reach_safe_exit", "find_goal_region", "find_water_source"],
+        choices=["reach_safe_exit", "hazard_recovery_exit", "find_goal_region", "find_water_source"],
+    )
+    parser.add_argument(
+        "--intent_handoff_mode",
+        type=str,
+        default="none",
+        choices=["none", "post_recovery_goal_v1"],
+    )
+    parser.add_argument(
+        "--goal_rejoin_guard_mode",
+        type=str,
+        default="none",
+        choices=["none", "debounce_v1"],
+    )
+    parser.add_argument("--goal_rejoin_guard_steps", type=int, default=4)
+    parser.add_argument(
+        "--goal_rejoin_target_mode",
+        type=str,
+        default="none",
+        choices=["none", "fallback_goal_v1", "stable_waypoint_v1", "source_select_v1", "source_select_v2"],
     )
     parser.add_argument(
         "--env_change_mode",
@@ -1551,6 +2162,10 @@ def parse_args():
     parser.add_argument("--commit_to_corridor", action="store_true")
     parser.add_argument("--debug_trace", action="store_true")
     parser.add_argument("--debug_trace_env_filter", type=str, default="")
+    parser.add_argument("--record_demo", action="store_true")
+    parser.add_argument("--demo_episode", type=int, default=1)
+    parser.add_argument("--demo_frame_stride", type=int, default=1)
+    parser.add_argument("--demo_fps", type=int, default=3)
     parser.add_argument("--intent_replan_cooldown_steps", type=int, default=4)
     parser.add_argument("--tokenizer_mode", type=str, default="hash_sign", choices=["argmax", "hash_sign"])
     parser.add_argument("--tokenizer_proj_dim", type=int, default=16)

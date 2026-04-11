@@ -393,6 +393,221 @@ Run-level результат:
 * forced replanning больше не является главным bottleneck;
 * следующий шаг должен быть содержательным, а не инфраструктурным.
 
+## Sprint 2 v3: hazard-specific recovery intent
+
+После `Sprint 2 v2` broad `REACH_SAFE_EXIT` был заменён на более узкий defensive intent:
+
+* `HAZARD_RECOVERY_EXIT`
+* semantic tag: `hazard_recovery_route`
+* compare method: `milestone_state_conditioned_hazard_recovery_v1`
+
+Узкий benchmark только на `LavaGap`:
+
+* baseline: success = **0.240**, avg_steps = **8.8825**, avg_return = **0.2250**
+* static `safe_exit`: success = **0.220**, avg_steps = **9.315**, avg_return = **0.2090**
+* state-conditioned `safe_exit`: success = **0.220**, avg_steps = **8.555**, avg_return = **0.2090**
+* `hazard_recovery v1`: success = **0.225**, avg_steps = **8.11**, avg_return = **0.2123**
+
+Интерпретация:
+
+* `hazard_recovery_exit` лучше обоих вариантов на broad `safe_exit`;
+* узкий hazard-specific intent действительно полезен;
+* но baseline по success всё ещё не догнан.
+
+## Sprint 2 v4a: post-recovery goal handoff
+
+Следующий узкий патч добавил явный handoff:
+
+* `hazard_recovery_exit -> find_goal_region`
+* `intent_handoff_mode = post_recovery_goal_v1`
+* compare method: `milestone_state_conditioned_hazard_recovery_v2`
+
+Что именно подтвердилось:
+
+* recovery intent сам по себе полезен, но не завершает goal-directed rejoin;
+* после handoff trace показывает:
+  * `exited_hazard_recovery_intent = 1`
+  * `forced_goal_rejoin_replan = 1`
+  * `planner_query_intent` переключается на `find_goal_region`
+
+Узкий benchmark на `LavaGap`:
+
+* baseline: success = **0.240**, avg_steps = **8.8825**, avg_return = **0.2250**
+* `hazard_recovery v1`: success = **0.2275**, avg_steps = **8.215**, avg_return = **0.2142**
+* `hazard_recovery v2`: success = **0.2350**, avg_steps = **8.4925**, avg_return = **0.2201**
+
+Главный вывод:
+
+* post-recovery handoff почти закрывает gap к baseline по success;
+* при этом advantage по steps относительно baseline остаётся.
+
+## Sprint 2 v4b: debounce on repeated goal-rejoin handoff
+
+Был сделан отдельный стабилизирующий патч:
+
+* `goal_rejoin_guard_mode = debounce_v1`
+* compare method: `milestone_state_conditioned_hazard_recovery_v3`
+
+Результат:
+
+* `hazard_recovery v3` дал те же aggregate-метрики, что и `v2`;
+* trace показал, что `goal_rejoin_handoff_suppressed` не активируется как доминирующий случай;
+* значит повторные handoff-события не являются главным bottleneck.
+
+Практический вывод:
+
+* debounce как главная гипотеза опровергнут;
+* remaining gap находится не в duplicated handoff within one window.
+
+## Sprint 2 v5: repeated-hazard cycle audit
+
+После `v4b` был сделан отдельный failure audit на `LavaGap`.
+
+Артефакты:
+
+* `/tmp/repeated_hazard_cycle_audit/reentry_cycles.csv`
+* `/tmp/repeated_hazard_cycle_audit/reentry_cycles.json`
+
+Что показал аудит:
+
+* найдено **68** re-entry cycles;
+* из них:
+  * **56** — `handoff_without_graph_target`
+  * **7** — `controller_slip_on_hazard_adjacent_rejoin`
+  * **2** — `hazard_adjacent_rejoin_node`
+  * **2** — `rejoin_target_missing_goal_region`
+  * **1** — `local_reentry_after_nominal_goal_rejoin`
+
+Главный вывод:
+
+* основной remaining bottleneck уже не в качестве semantic node;
+* dominant failure mode — handoff без materialized graph target.
+
+## Sprint 2 v6: explicit goal-rejoin target materialization
+
+Следующий патч сделал `goal-rejoin` полноценным planning event:
+
+* на `forced_goal_rejoin_replan` требуется явная materialization target;
+* если graph query не даёт node сразу, используется fallback;
+* compare method: `milestone_state_conditioned_hazard_recovery_v4`
+* новые trace-поля:
+  * `goal_rejoin_target_materialized`
+  * `goal_rejoin_target_source`
+  * `goal_rejoin_fallback_used`
+
+В первом варианте fallback был прямым:
+
+* `goal_xy_fallback`
+
+Что подтвердилось:
+
+* бывшие `handoff_without_graph_target` случаи действительно исчезают;
+* на репрезентативном `seed=2` длинный episode `9` схлопнулся:
+  * **38 -> 12** steps
+
+Aggregate на `LavaGap`:
+
+* baseline: success = **0.240**, avg_steps = **8.8825**, avg_return = **0.225**
+* `hazard_recovery v2`: success = **0.235**, avg_steps = **8.4925**, avg_return = **0.220**
+* `hazard_recovery v4`: success = **0.230**, avg_steps = **8.067**, avg_return = **0.218**
+
+Интерпретация:
+
+* materialization gap был реальным;
+* прямой `goal_xy_fallback` делает rejoin слишком агрессивным;
+* steps улучшаются, но success слегка падает.
+
+## Sprint 2 v7: stable rejoin waypoint
+
+Чтобы не оставлять систему без цели, но и не тащить её напрямую в `goal_xy`, был добавлен промежуточный fallback:
+
+* `stable_rejoin_waypoint`
+* compare method: `milestone_state_conditioned_hazard_recovery_v5`
+* новые trace-поля:
+  * `stable_rejoin_waypoint_used`
+  * `stable_rejoin_waypoint_x`
+  * `stable_rejoin_waypoint_y`
+  * `rejoin_target_hazard_adjacent`
+  * `rejoin_target_goal_alignment`
+
+Aggregate на `LavaGap`:
+
+* baseline: success = **0.240**, avg_steps = **8.8825**, avg_return = **0.225**
+* `hazard_recovery v2`: success = **0.235**, avg_steps = **8.4925**, avg_return = **0.220**
+* `hazard_recovery v5`: success = **0.235**, avg_steps = **8.310**, avg_return = **0.221**
+
+Главный вывод:
+
+* `stable_rejoin_waypoint` лучше прямого `goal_xy_fallback`;
+* он сохраняет success на уровне `v2`;
+* и при этом ещё немного улучшает steps и return.
+
+Итоговая интерпретация Sprint 2 на `LavaGap`:
+
+* broad `safe_exit` был слишком грубым;
+* `hazard_recovery_exit` улучшил compactness recovery;
+* explicit post-recovery goal handoff почти восстановил completion;
+* debounce handoff не оказался bottleneck;
+* target materialization оказался реальным bottleneck;
+* `stable_rejoin_waypoint` оказался лучшим текущим rejoin fallback.
+
+## Sprint 2 v8: source-conditioned rejoin selection
+
+После `v7` был добавлен узкий policy layer:
+
+* compare method: `milestone_state_conditioned_hazard_recovery_v6`
+* `graph_node` разрешён только если:
+  * `goal_region_confidence >= 0.5`
+  * `hazard_adjacent == 0`
+* иначе используется `stable_rejoin_waypoint`
+
+Aggregate на `LavaGap`:
+
+* baseline: success = **0.240**, avg_steps = **8.8825**, avg_return = **0.2250**
+* `hazard_recovery v5`: success = **0.235**, avg_steps = **8.310**, avg_return = **0.2210**
+* `hazard_recovery v6`: success = **0.235**, avg_steps = **8.2175**, avg_return = **0.2213**
+
+Главный вывод:
+
+* source selection улучшает эффективность rejoin без потери success;
+* но aggregate success не растёт;
+* remaining gap уже не в самом наличии source-selection, а в качестве rejoin trajectory после выбора источника.
+
+## Sprint 2 v9: stricter stable selector
+
+После `v8.1` source-conditioned audit был сделан ещё более узкий патч:
+
+* compare method: `milestone_state_conditioned_hazard_recovery_v7`
+* `source_select_v2`
+* stricter `stable_rejoin_waypoint`:
+  * сначала искать non-`hazard_adjacent` stable waypoint
+  * при необходимости расширять радиус поиска до `4`
+
+Локально trace подтверждает, что selector работает:
+
+* на `seed=2`
+  * `stable_adj1`: **10 -> 3**
+  * `stable_adj0`: **9 -> 16**
+
+Но aggregate не меняется:
+
+* `hazard_recovery v6`: success = **0.235**, avg_steps = **8.2175**, avg_return = **0.2213**
+* `hazard_recovery v7`: success = **0.235**, avg_steps = **8.2175**, avg_return = **0.2213**
+
+Главный вывод:
+
+* stricter stable selector локально улучшает геометрию rejoin-targets;
+* но benchmark-level gain не появляется;
+* значит remaining bottleneck уже не сводится к оси `hazard_adjacent` vs non-`hazard_adjacent`.
+
+Итоговая интерпретация после `v9`:
+
+* `source_select_v2` подтверждает, что adjacency-фильтрация сама по себе недостаточна;
+* remaining gap теперь относится к качеству самой rejoin trajectory:
+  * orientation,
+  * timing rejoin,
+  * local controller entry into post-recovery path.
+
 ## Главные режимы и их смысл
 
 ### `milestone_mode`
@@ -517,31 +732,53 @@ PYTHONPATH=. .venv/bin/python scripts/compare_songline_minigrid.py \
   --out_dir /tmp/benchmark_state_conditioned_intent_v2_lavagap_scoped
 ```
 
+### LavaGap hazard-recovery compare
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/compare_songline_minigrid.py \
+  --env_ids MiniGrid-LavaGapS7-v0 \
+  --methods milestone_semantic_handoff_v1 \
+            milestone_state_conditioned_hazard_recovery_v5 \
+            milestone_state_conditioned_hazard_recovery_v6 \
+            milestone_state_conditioned_hazard_recovery_v7 \
+  --num_seeds 10 \
+  --episodes 40 \
+  --max_steps 120 \
+  --suggest_every 8 \
+  --graph_rollout_horizon 4 \
+  --scene_radius 1 \
+  --out_dir /tmp/benchmark_state_conditioned_hazard_recovery_v7
+```
+
 ## Что делать дальше
 
 Самый сильный следующий шаг:
-**Sprint 2 v3: новый defensive intent для LavaGap вместо broad `REACH_SAFE_EXIT`**
+**не новый intent и не ещё более жёсткий selector, а `Sprint 2 v9.1` audit качества stable rejoin trajectory**
 
 Почему:
 
 * adaptive/non-stationary benchmark уже прогнан;
 * Sprint 1 уже закрыт как отрицательный, но объяснённый результат;
-* Sprint 2 v2 уже устранил synchronization bug;
-* главный оставшийся bottleneck теперь относится к качеству defensive intent.
+* Sprint 2 v3-v9 уже локализовали большую часть remaining failures;
+* текущий remaining gap уже не в выборе intent, не в отсутствии target и не в простой adjacency-фильтрации;
+* следующий bottleneck относится к качеству самой rejoin trajectory после выбора `stable_rejoin_waypoint`.
 
-Практический план Sprint 2 v3:
+Практический план следующего шага:
 
-* не трогать `tokenizer`, `graph_rollout`, forced replanning и compare plumbing;
-* ввести более узкий defensive intent только для hazard-heavy case:
-  * `hazard_recovery_exit`
-  * или `recover_crossing_route`
-  * или `post_hazard_goal_rejoin`
-* тестировать сначала только на `MiniGrid-LavaGapS7-v0`;
-* сравнивать против:
-  * `milestone_semantic_handoff_v1`
-  * `milestone_semantic_intent_safe_exit_v1`
-  * `milestone_state_conditioned_intent_v1`
-* успех Sprint 2 v3 считать только по локальным `LavaGap` метрикам и trace, без нового широкого benchmark-а.
+* не трогать `tokenizer`, `semantic tags`, `graph_rollout`, `IntentPolicy` и forced replanning;
+* сделать узкий audit только по `stable_rejoin_waypoint`:
+  * `hazard_adjacent = 0` vs `hazard_adjacent = 1`
+  * `goal_alignment` bins
+* отдельно проверить:
+  * `success_of_episode`
+  * `reentered_hazard_after_rejoin`
+  * `next_1_step_delta`
+  * `next_3_step_delta`
+  * `episode_steps_after_rejoin`
+  * повторные включения recovery intent после rejoin
+* только после этого решать, нужен ли:
+  * `orientation-aware stable rejoin waypoint`
+  * или короткий post-rejoin commit.
 
 ## Итог в одной фразе
 

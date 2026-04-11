@@ -61,6 +61,7 @@ class SceneToken:
 
 class IntentType(str, Enum):
     REACH_SAFE_EXIT = "reach_safe_exit"
+    HAZARD_RECOVERY_EXIT = "hazard_recovery_exit"
     FIND_GOAL_REGION = "find_goal_region"
     FIND_WATER_SOURCE = "find_water_source"
 

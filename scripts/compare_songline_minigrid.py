@@ -27,6 +27,13 @@ DEFAULT_METHODS = [
     "milestone_semantic_handoff_v1_plus_final_exit",
     "milestone_semantic_intent_safe_exit_v1",
     "milestone_state_conditioned_intent_v1",
+    "milestone_state_conditioned_hazard_recovery_v1",
+    "milestone_state_conditioned_hazard_recovery_v2",
+    "milestone_state_conditioned_hazard_recovery_v3",
+    "milestone_state_conditioned_hazard_recovery_v4",
+    "milestone_state_conditioned_hazard_recovery_v5",
+    "milestone_state_conditioned_hazard_recovery_v6",
+    "milestone_state_conditioned_hazard_recovery_v7",
 ]
 
 
@@ -253,6 +260,108 @@ def method_to_config(method):
             "intent_selection_mode": "state_v1",
             "intent_type": "reach_safe_exit",
         }
+    if method == "milestone_state_conditioned_hazard_recovery_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "hazard_recovery_v1",
+            "intent_selection_mode": "state_v1",
+            "intent_type": "hazard_recovery_exit",
+        }
+    if method == "milestone_state_conditioned_hazard_recovery_v2":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "hazard_recovery_v1",
+            "intent_selection_mode": "state_v1",
+            "intent_type": "hazard_recovery_exit",
+            "intent_handoff_mode": "post_recovery_goal_v1",
+        }
+    if method == "milestone_state_conditioned_hazard_recovery_v3":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "hazard_recovery_v1",
+            "intent_selection_mode": "state_v1",
+            "intent_type": "hazard_recovery_exit",
+            "intent_handoff_mode": "post_recovery_goal_v1",
+            "goal_rejoin_guard_mode": "debounce_v1",
+        }
+    if method == "milestone_state_conditioned_hazard_recovery_v4":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "hazard_recovery_v1",
+            "intent_selection_mode": "state_v1",
+            "intent_type": "hazard_recovery_exit",
+            "intent_handoff_mode": "post_recovery_goal_v1",
+            "goal_rejoin_target_mode": "fallback_goal_v1",
+        }
+    if method == "milestone_state_conditioned_hazard_recovery_v5":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "hazard_recovery_v1",
+            "intent_selection_mode": "state_v1",
+            "intent_type": "hazard_recovery_exit",
+            "intent_handoff_mode": "post_recovery_goal_v1",
+            "goal_rejoin_target_mode": "stable_waypoint_v1",
+        }
+    if method == "milestone_state_conditioned_hazard_recovery_v6":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "hazard_recovery_v1",
+            "intent_selection_mode": "state_v1",
+            "intent_type": "hazard_recovery_exit",
+            "intent_handoff_mode": "post_recovery_goal_v1",
+            "goal_rejoin_target_mode": "source_select_v1",
+        }
+    if method == "milestone_state_conditioned_hazard_recovery_v7":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "hazard_recovery_v1",
+            "intent_selection_mode": "state_v1",
+            "intent_type": "hazard_recovery_exit",
+            "intent_handoff_mode": "post_recovery_goal_v1",
+            "goal_rejoin_target_mode": "source_select_v2",
+        }
     raise ValueError(f"Unknown method: {method}")
 
 
@@ -278,14 +387,18 @@ def parse_args():
         choices=["symbolic_hash", "scene_semantic", "scene_patch_hash"],
     )
     parser.add_argument("--scene_radius", type=int, default=1)
-    parser.add_argument("--intent_mode", type=str, default="none", choices=["none", "safe_exit_v1", "goal_region_v1"])
+    parser.add_argument("--intent_mode", type=str, default="none", choices=["none", "safe_exit_v1", "hazard_recovery_v1", "goal_region_v1"])
     parser.add_argument("--intent_selection_mode", type=str, default="fixed", choices=["fixed", "state_v1"])
     parser.add_argument(
         "--intent_type",
         type=str,
         default="reach_safe_exit",
-        choices=["reach_safe_exit", "find_goal_region", "find_water_source"],
+        choices=["reach_safe_exit", "hazard_recovery_exit", "find_goal_region", "find_water_source"],
     )
+    parser.add_argument("--intent_handoff_mode", type=str, default="none", choices=["none", "post_recovery_goal_v1"])
+    parser.add_argument("--goal_rejoin_guard_mode", type=str, default="none", choices=["none", "debounce_v1"])
+    parser.add_argument("--goal_rejoin_guard_steps", type=int, default=4)
+    parser.add_argument("--goal_rejoin_target_mode", type=str, default="none", choices=["none", "fallback_goal_v1", "stable_waypoint_v1", "source_select_v1", "source_select_v2"])
     parser.add_argument("--env_change_mode", type=str, default="none", choices=["none", "goal_shift_v1"])
     parser.add_argument("--change_after_episode", type=int, default=-1)
     parser.add_argument("--tokenizer_mode", type=str, default="hash_sign", choices=["argmax", "hash_sign"])
@@ -327,6 +440,10 @@ def run_comparison(args):
                     intent_mode=cfg.get("intent_mode", getattr(args, "intent_mode", "none")),
                     intent_selection_mode=cfg.get("intent_selection_mode", getattr(args, "intent_selection_mode", "fixed")),
                     intent_type=cfg.get("intent_type", getattr(args, "intent_type", "reach_safe_exit")),
+                    intent_handoff_mode=cfg.get("intent_handoff_mode", getattr(args, "intent_handoff_mode", "none")),
+                    goal_rejoin_guard_mode=cfg.get("goal_rejoin_guard_mode", getattr(args, "goal_rejoin_guard_mode", "none")),
+                    goal_rejoin_guard_steps=args.goal_rejoin_guard_steps,
+                    goal_rejoin_target_mode=cfg.get("goal_rejoin_target_mode", getattr(args, "goal_rejoin_target_mode", "none")),
                     env_change_mode=args.env_change_mode,
                     change_after_episode=args.change_after_episode,
                     export_phase_metrics=True,
@@ -355,6 +472,9 @@ def run_comparison(args):
                     "intent_mode": cfg.get("intent_mode", getattr(args, "intent_mode", "none")),
                     "intent_selection_mode": cfg.get("intent_selection_mode", getattr(args, "intent_selection_mode", "fixed")),
                     "intent_type": cfg.get("intent_type", getattr(args, "intent_type", "reach_safe_exit")),
+                    "intent_handoff_mode": cfg.get("intent_handoff_mode", getattr(args, "intent_handoff_mode", "none")),
+                    "goal_rejoin_guard_mode": cfg.get("goal_rejoin_guard_mode", getattr(args, "goal_rejoin_guard_mode", "none")),
+                    "goal_rejoin_target_mode": cfg.get("goal_rejoin_target_mode", getattr(args, "goal_rejoin_target_mode", "none")),
                     "env_change_mode": args.env_change_mode,
                     "change_after_episode": int(args.change_after_episode),
                     "agent_mode": summary["agent_mode"],
@@ -410,7 +530,11 @@ def run_comparison(args):
         "intent_mode",
         "intent_selection_mode",
         "intent_type",
+        "intent_handoff_mode",
+        "goal_rejoin_guard_mode",
+        "goal_rejoin_target_mode",
         "intent_active",
+        "has_goal_rejoin_materialization_failure",
         "active_intent_type",
         "agent_task_phase",
         "agent_thirst",
@@ -492,6 +616,9 @@ def run_comparison(args):
         "intent_mode",
         "intent_selection_mode",
         "intent_type",
+        "intent_handoff_mode",
+        "goal_rejoin_guard_mode",
+        "goal_rejoin_target_mode",
         "env_change_mode",
         "change_after_episode",
         "agent_mode",
@@ -511,6 +638,9 @@ def run_comparison(args):
             "intent_mode",
             "intent_selection_mode",
             "intent_type",
+            "intent_handoff_mode",
+            "goal_rejoin_guard_mode",
+            "goal_rejoin_target_mode",
             "env_change_mode",
             "change_after_episode",
         ],
@@ -518,7 +648,19 @@ def run_comparison(args):
     )
     aggregated_overall = aggregate_rows(
         run_rows,
-        ["method", "token_source", "graph_update_mode", "intent_mode", "intent_selection_mode", "intent_type", "env_change_mode", "change_after_episode"],
+        [
+            "method",
+            "token_source",
+            "graph_update_mode",
+            "intent_mode",
+            "intent_selection_mode",
+            "intent_type",
+            "intent_handoff_mode",
+            "goal_rejoin_guard_mode",
+            "goal_rejoin_target_mode",
+            "env_change_mode",
+            "change_after_episode",
+        ],
         run_metric_keys,
     )
 
@@ -530,6 +672,9 @@ def run_comparison(args):
         "intent_mode",
         "intent_selection_mode",
         "intent_type",
+        "intent_handoff_mode",
+        "goal_rejoin_guard_mode",
+        "goal_rejoin_target_mode",
         "env_change_mode",
         "change_after_episode",
         "num_runs",
@@ -549,6 +694,9 @@ def run_comparison(args):
         "intent_mode",
         "intent_selection_mode",
         "intent_type",
+        "intent_handoff_mode",
+        "goal_rejoin_guard_mode",
+        "goal_rejoin_target_mode",
         "env_change_mode",
         "change_after_episode",
         "num_runs",
@@ -570,6 +718,9 @@ def run_comparison(args):
                 "Intent mode": row["intent_mode"],
                 "Intent selection": row["intent_selection_mode"],
                 "Intent type": row["intent_type"],
+                "Intent handoff": row["intent_handoff_mode"],
+                "Goal rejoin guard": row["goal_rejoin_guard_mode"],
+                "Goal rejoin target": row["goal_rejoin_target_mode"],
                 "Env change": row["env_change_mode"],
                 "Change after": row["change_after_episode"],
                 "Success rate": row["success_rate_mean"],
@@ -602,6 +753,9 @@ def run_comparison(args):
             "Intent mode",
             "Intent selection",
             "Intent type",
+            "Intent handoff",
+            "Goal rejoin guard",
+            "Goal rejoin target",
             "Env change",
             "Change after",
             "Success rate",

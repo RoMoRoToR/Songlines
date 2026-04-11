@@ -60,6 +60,7 @@ class SceneTokenizer:
         rf = scene.risk_features
         return {
             "safe_exit": float(rf.get("place_is_safe_zone", 0.0)),
+            "hazard_recovery_route": float(rf.get("place_is_hazard_recovery_route", 0.0)),
             "goal_region": float(rf.get("place_is_goal_region", 0.0)),
             "hazard_edge": float(rf.get("place_is_hazard_edge", 0.0)),
             "room_center": float(rf.get("place_is_room_center", 0.0)),
