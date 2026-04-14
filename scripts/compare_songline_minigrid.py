@@ -34,6 +34,12 @@ DEFAULT_METHODS = [
     "milestone_state_conditioned_hazard_recovery_v5",
     "milestone_state_conditioned_hazard_recovery_v6",
     "milestone_state_conditioned_hazard_recovery_v7",
+    "milestone_semantic_intent_water_v1",
+    "milestone_state_conditioned_water_v1",
+    "milestone_state_conditioned_water_v2",
+    "milestone_semantic_intent_rest_v1",
+    "milestone_state_conditioned_rest_v1",
+    "milestone_state_conditioned_rest_v2",
 ]
 
 
@@ -362,6 +368,100 @@ def method_to_config(method):
             "intent_handoff_mode": "post_recovery_goal_v1",
             "goal_rejoin_target_mode": "source_select_v2",
         }
+    if method == "milestone_semantic_intent_water_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "task_mode": "water_search_v1",
+            "intent_mode": "water_v1",
+            "intent_type": "find_water_source",
+        }
+    if method == "milestone_state_conditioned_water_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "task_mode": "water_search_v1",
+            "intent_mode": "water_v1",
+            "intent_selection_mode": "state_v1",
+            "intent_type": "find_water_source",
+            "thirst_on_threshold": 0.10,
+            "thirst_off_threshold": 0.04,
+        }
+    if method == "milestone_state_conditioned_water_v2":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "task_mode": "water_search_v1",
+            "intent_mode": "water_v1",
+            "intent_selection_mode": "state_v1",
+            "intent_type": "find_water_source",
+            "thirst_on_threshold": 0.06,
+            "thirst_off_threshold": 0.03,
+            "water_local_activation_threshold": 0.18,
+            "water_local_hold_threshold": 0.12,
+        }
+    if method == "milestone_semantic_intent_rest_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "task_mode": "rest_search_v1",
+            "intent_mode": "rest_v1",
+            "intent_type": "find_safe_rest_zone",
+        }
+    if method == "milestone_state_conditioned_rest_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "task_mode": "rest_search_v1",
+            "intent_mode": "rest_v1",
+            "intent_selection_mode": "state_v1",
+            "intent_type": "find_safe_rest_zone",
+            "rest_energy_on_threshold": 0.95,
+            "rest_energy_off_threshold": 0.98,
+        }
+    if method == "milestone_state_conditioned_rest_v2":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "task_mode": "rest_search_v1",
+            "intent_mode": "rest_v1",
+            "intent_selection_mode": "state_v1",
+            "intent_type": "find_safe_rest_zone",
+            "rest_energy_on_threshold": 0.985,
+            "rest_energy_off_threshold": 0.995,
+            "rest_local_activation_threshold": 0.18,
+            "rest_local_hold_threshold": 0.12,
+        }
     raise ValueError(f"Unknown method: {method}")
 
 
@@ -387,18 +487,29 @@ def parse_args():
         choices=["symbolic_hash", "scene_semantic", "scene_patch_hash"],
     )
     parser.add_argument("--scene_radius", type=int, default=1)
-    parser.add_argument("--intent_mode", type=str, default="none", choices=["none", "safe_exit_v1", "hazard_recovery_v1", "goal_region_v1"])
+    parser.add_argument("--task_mode", type=str, default="default", choices=["default", "water_search_v1", "rest_search_v1"])
+    parser.add_argument("--intent_mode", type=str, default="none", choices=["none", "safe_exit_v1", "hazard_recovery_v1", "goal_region_v1", "water_v1", "rest_v1"])
     parser.add_argument("--intent_selection_mode", type=str, default="fixed", choices=["fixed", "state_v1"])
     parser.add_argument(
         "--intent_type",
         type=str,
         default="reach_safe_exit",
-        choices=["reach_safe_exit", "hazard_recovery_exit", "find_goal_region", "find_water_source"],
+        choices=["reach_safe_exit", "hazard_recovery_exit", "find_goal_region", "find_water_source", "find_safe_rest_zone"],
     )
     parser.add_argument("--intent_handoff_mode", type=str, default="none", choices=["none", "post_recovery_goal_v1"])
     parser.add_argument("--goal_rejoin_guard_mode", type=str, default="none", choices=["none", "debounce_v1"])
     parser.add_argument("--goal_rejoin_guard_steps", type=int, default=4)
     parser.add_argument("--goal_rejoin_target_mode", type=str, default="none", choices=["none", "fallback_goal_v1", "stable_waypoint_v1", "source_select_v1", "source_select_v2"])
+    parser.add_argument("--water_success_radius", type=int, default=1)
+    parser.add_argument("--rest_success_radius", type=int, default=1)
+    parser.add_argument("--thirst_on_threshold", type=float, default=0.10)
+    parser.add_argument("--thirst_off_threshold", type=float, default=0.04)
+    parser.add_argument("--water_local_activation_threshold", type=float, default=0.0)
+    parser.add_argument("--water_local_hold_threshold", type=float, default=0.0)
+    parser.add_argument("--rest_energy_on_threshold", type=float, default=0.95)
+    parser.add_argument("--rest_energy_off_threshold", type=float, default=0.98)
+    parser.add_argument("--rest_local_activation_threshold", type=float, default=0.0)
+    parser.add_argument("--rest_local_hold_threshold", type=float, default=0.0)
     parser.add_argument("--env_change_mode", type=str, default="none", choices=["none", "goal_shift_v1"])
     parser.add_argument("--change_after_episode", type=int, default=-1)
     parser.add_argument("--tokenizer_mode", type=str, default="hash_sign", choices=["argmax", "hash_sign"])
@@ -424,6 +535,7 @@ def run_comparison(args):
                     env_id=env_id,
                     agent_mode=cfg["agent_mode"],
                     songline_policy=cfg["songline_policy"],
+                    task_mode=cfg.get("task_mode", getattr(args, "task_mode", "default")),
                     episodes=args.episodes,
                     max_steps=args.max_steps,
                     seed=seed,
@@ -444,6 +556,16 @@ def run_comparison(args):
                     goal_rejoin_guard_mode=cfg.get("goal_rejoin_guard_mode", getattr(args, "goal_rejoin_guard_mode", "none")),
                     goal_rejoin_guard_steps=args.goal_rejoin_guard_steps,
                     goal_rejoin_target_mode=cfg.get("goal_rejoin_target_mode", getattr(args, "goal_rejoin_target_mode", "none")),
+                    water_success_radius=args.water_success_radius,
+                    rest_success_radius=args.rest_success_radius,
+                    thirst_on_threshold=cfg.get("thirst_on_threshold", getattr(args, "thirst_on_threshold", 0.10)),
+                    thirst_off_threshold=cfg.get("thirst_off_threshold", getattr(args, "thirst_off_threshold", 0.04)),
+                    water_local_activation_threshold=cfg.get("water_local_activation_threshold", getattr(args, "water_local_activation_threshold", 0.0)),
+                    water_local_hold_threshold=cfg.get("water_local_hold_threshold", getattr(args, "water_local_hold_threshold", 0.0)),
+                    rest_energy_on_threshold=cfg.get("rest_energy_on_threshold", getattr(args, "rest_energy_on_threshold", 0.95)),
+                    rest_energy_off_threshold=cfg.get("rest_energy_off_threshold", getattr(args, "rest_energy_off_threshold", 0.98)),
+                    rest_local_activation_threshold=cfg.get("rest_local_activation_threshold", getattr(args, "rest_local_activation_threshold", 0.0)),
+                    rest_local_hold_threshold=cfg.get("rest_local_hold_threshold", getattr(args, "rest_local_hold_threshold", 0.0)),
                     env_change_mode=args.env_change_mode,
                     change_after_episode=args.change_after_episode,
                     export_phase_metrics=True,
@@ -468,6 +590,7 @@ def run_comparison(args):
                     "seed": seed,
                     "method": method,
                     "token_source": cfg.get("token_source", args.token_source),
+                    "task_mode": cfg.get("task_mode", getattr(args, "task_mode", "default")),
                     "graph_update_mode": cfg.get("graph_update_mode", "static"),
                     "intent_mode": cfg.get("intent_mode", getattr(args, "intent_mode", "none")),
                     "intent_selection_mode": cfg.get("intent_selection_mode", getattr(args, "intent_selection_mode", "fixed")),
@@ -475,6 +598,16 @@ def run_comparison(args):
                     "intent_handoff_mode": cfg.get("intent_handoff_mode", getattr(args, "intent_handoff_mode", "none")),
                     "goal_rejoin_guard_mode": cfg.get("goal_rejoin_guard_mode", getattr(args, "goal_rejoin_guard_mode", "none")),
                     "goal_rejoin_target_mode": cfg.get("goal_rejoin_target_mode", getattr(args, "goal_rejoin_target_mode", "none")),
+                    "water_success_radius": args.water_success_radius,
+                    "rest_success_radius": args.rest_success_radius,
+                    "thirst_on_threshold": cfg.get("thirst_on_threshold", getattr(args, "thirst_on_threshold", 0.10)),
+                    "thirst_off_threshold": cfg.get("thirst_off_threshold", getattr(args, "thirst_off_threshold", 0.04)),
+                    "water_local_activation_threshold": cfg.get("water_local_activation_threshold", getattr(args, "water_local_activation_threshold", 0.0)),
+                    "water_local_hold_threshold": cfg.get("water_local_hold_threshold", getattr(args, "water_local_hold_threshold", 0.0)),
+                    "rest_energy_on_threshold": cfg.get("rest_energy_on_threshold", getattr(args, "rest_energy_on_threshold", 0.95)),
+                    "rest_energy_off_threshold": cfg.get("rest_energy_off_threshold", getattr(args, "rest_energy_off_threshold", 0.98)),
+                    "rest_local_activation_threshold": cfg.get("rest_local_activation_threshold", getattr(args, "rest_local_activation_threshold", 0.0)),
+                    "rest_local_hold_threshold": cfg.get("rest_local_hold_threshold", getattr(args, "rest_local_hold_threshold", 0.0)),
                     "env_change_mode": args.env_change_mode,
                     "change_after_episode": int(args.change_after_episode),
                     "agent_mode": summary["agent_mode"],
@@ -527,15 +660,29 @@ def run_comparison(args):
         "change_active",
         "env_change_mode",
         "change_after_episode",
+        "task_mode",
         "intent_mode",
         "intent_selection_mode",
         "intent_type",
         "intent_handoff_mode",
         "goal_rejoin_guard_mode",
         "goal_rejoin_target_mode",
+        "water_success_radius",
+        "rest_success_radius",
+        "thirst_on_threshold",
+        "thirst_off_threshold",
+        "water_local_activation_threshold",
+        "water_local_hold_threshold",
+        "rest_energy_on_threshold",
+        "rest_energy_off_threshold",
+        "rest_local_activation_threshold",
+        "rest_local_hold_threshold",
         "intent_active",
         "has_goal_rejoin_materialization_failure",
+        "water_task_success",
+        "rest_task_success",
         "active_intent_type",
+        "intent_switch_reason",
         "agent_task_phase",
         "agent_thirst",
         "agent_energy",
@@ -611,6 +758,7 @@ def run_comparison(args):
         "env_id",
         "seed",
         "method",
+        "task_mode",
         "token_source",
         "graph_update_mode",
         "intent_mode",
@@ -619,6 +767,16 @@ def run_comparison(args):
         "intent_handoff_mode",
         "goal_rejoin_guard_mode",
         "goal_rejoin_target_mode",
+        "water_success_radius",
+        "rest_success_radius",
+        "thirst_on_threshold",
+        "thirst_off_threshold",
+        "water_local_activation_threshold",
+        "water_local_hold_threshold",
+        "rest_energy_on_threshold",
+        "rest_energy_off_threshold",
+        "rest_local_activation_threshold",
+        "rest_local_hold_threshold",
         "env_change_mode",
         "change_after_episode",
         "agent_mode",
@@ -633,6 +791,7 @@ def run_comparison(args):
         [
             "env_id",
             "method",
+            "task_mode",
             "token_source",
             "graph_update_mode",
             "intent_mode",
@@ -641,6 +800,16 @@ def run_comparison(args):
             "intent_handoff_mode",
             "goal_rejoin_guard_mode",
             "goal_rejoin_target_mode",
+            "water_success_radius",
+            "rest_success_radius",
+            "thirst_on_threshold",
+            "thirst_off_threshold",
+            "water_local_activation_threshold",
+            "water_local_hold_threshold",
+            "rest_energy_on_threshold",
+            "rest_energy_off_threshold",
+            "rest_local_activation_threshold",
+            "rest_local_hold_threshold",
             "env_change_mode",
             "change_after_episode",
         ],
@@ -650,6 +819,7 @@ def run_comparison(args):
         run_rows,
         [
             "method",
+            "task_mode",
             "token_source",
             "graph_update_mode",
             "intent_mode",
@@ -658,6 +828,16 @@ def run_comparison(args):
             "intent_handoff_mode",
             "goal_rejoin_guard_mode",
             "goal_rejoin_target_mode",
+            "water_success_radius",
+            "rest_success_radius",
+            "thirst_on_threshold",
+            "thirst_off_threshold",
+            "water_local_activation_threshold",
+            "water_local_hold_threshold",
+            "rest_energy_on_threshold",
+            "rest_energy_off_threshold",
+            "rest_local_activation_threshold",
+            "rest_local_hold_threshold",
             "env_change_mode",
             "change_after_episode",
         ],
@@ -667,6 +847,7 @@ def run_comparison(args):
     agg_fieldnames = [
         "env_id",
         "method",
+        "task_mode",
         "token_source",
         "graph_update_mode",
         "intent_mode",
@@ -675,6 +856,16 @@ def run_comparison(args):
         "intent_handoff_mode",
         "goal_rejoin_guard_mode",
         "goal_rejoin_target_mode",
+        "water_success_radius",
+        "rest_success_radius",
+        "thirst_on_threshold",
+        "thirst_off_threshold",
+        "water_local_activation_threshold",
+        "water_local_hold_threshold",
+        "rest_energy_on_threshold",
+        "rest_energy_off_threshold",
+        "rest_local_activation_threshold",
+        "rest_local_hold_threshold",
         "env_change_mode",
         "change_after_episode",
         "num_runs",
@@ -689,6 +880,7 @@ def run_comparison(args):
 
     overall_fieldnames = [
         "method",
+        "task_mode",
         "token_source",
         "graph_update_mode",
         "intent_mode",
@@ -697,6 +889,16 @@ def run_comparison(args):
         "intent_handoff_mode",
         "goal_rejoin_guard_mode",
         "goal_rejoin_target_mode",
+        "water_success_radius",
+        "rest_success_radius",
+        "thirst_on_threshold",
+        "thirst_off_threshold",
+        "water_local_activation_threshold",
+        "water_local_hold_threshold",
+        "rest_energy_on_threshold",
+        "rest_energy_off_threshold",
+        "rest_local_activation_threshold",
+        "rest_local_hold_threshold",
         "env_change_mode",
         "change_after_episode",
         "num_runs",
@@ -713,6 +915,7 @@ def run_comparison(args):
         summary_table_rows.append(
             {
                 "Method": row["method"],
+                "Task mode": row["task_mode"],
                 "Token source": row["token_source"],
                 "Graph update": row["graph_update_mode"],
                 "Intent mode": row["intent_mode"],
@@ -721,6 +924,16 @@ def run_comparison(args):
                 "Intent handoff": row["intent_handoff_mode"],
                 "Goal rejoin guard": row["goal_rejoin_guard_mode"],
                 "Goal rejoin target": row["goal_rejoin_target_mode"],
+                "Water radius": row["water_success_radius"],
+                "Rest radius": row["rest_success_radius"],
+                "Thirst on": row["thirst_on_threshold"],
+                "Thirst off": row["thirst_off_threshold"],
+                "Water local on": row["water_local_activation_threshold"],
+                "Water local hold": row["water_local_hold_threshold"],
+                "Rest energy on": row["rest_energy_on_threshold"],
+                "Rest energy off": row["rest_energy_off_threshold"],
+                "Rest local on": row["rest_local_activation_threshold"],
+                "Rest local hold": row["rest_local_hold_threshold"],
                 "Env change": row["env_change_mode"],
                 "Change after": row["change_after_episode"],
                 "Success rate": row["success_rate_mean"],
@@ -748,6 +961,7 @@ def run_comparison(args):
         summary_table_rows,
         [
             "Method",
+            "Task mode",
             "Token source",
             "Graph update",
             "Intent mode",
@@ -756,6 +970,16 @@ def run_comparison(args):
             "Intent handoff",
             "Goal rejoin guard",
             "Goal rejoin target",
+            "Water radius",
+            "Rest radius",
+            "Thirst on",
+            "Thirst off",
+            "Water local on",
+            "Water local hold",
+            "Rest energy on",
+            "Rest energy off",
+            "Rest local on",
+            "Rest local hold",
             "Env change",
             "Change after",
             "Success rate",

@@ -64,6 +64,7 @@ class IntentType(str, Enum):
     HAZARD_RECOVERY_EXIT = "hazard_recovery_exit"
     FIND_GOAL_REGION = "find_goal_region"
     FIND_WATER_SOURCE = "find_water_source"
+    FIND_SAFE_REST_ZONE = "find_safe_rest_zone"
 
 
 @dataclass
@@ -77,6 +78,10 @@ class NodeSemanticTag:
 class SemanticTargetPredicate:
     tag_name: str
     min_confidence: float = 0.5
+    required_tag_thresholds: Dict[str, float] = field(default_factory=dict)
+    score_weights: Dict[str, float] = field(default_factory=dict)
+    penalty_weights: Dict[str, float] = field(default_factory=dict)
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

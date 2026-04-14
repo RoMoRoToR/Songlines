@@ -184,6 +184,87 @@
 * Sprint 2 v7 (`stable_rejoin_waypoint`) сейчас является лучшим узким rejoin fallback на `LavaGap`.
 * Sprint 2 v8 (`source_select_v1`) улучшил rejoin efficiency без потери success;
 * Sprint 2 v9 (`source_select_v2`) локально вытесняет `hazard_adjacent` stable targets, но не даёт benchmark-level gain.
+* water-line теперь тоже доведена до рабочего semantic-intention demonstrator;
+* `FIND_WATER_SOURCE` уже materialize-ится как planner-level retrieval, а не только как memory tag;
+* state-conditioned water activation (`thirst` + local water evidence) уже реализована и работает;
+* warning `gymnasium` про observation space в water wrapper закрыт.
+
+## Что уже известно про water semantic task
+
+Проверенный результат:
+
+* water-case уже можно считать первым рабочим demonstrator перехода от `goal_xy` к semantic target;
+* `FIND_WATER_SOURCE` работает как настоящий intent, а не как special-case;
+* вода проходит полный контур:
+  * `scene -> semantic tags -> graph memory -> planner query -> target materialization -> waypoint/action`;
+* water-task success считается по достижению water-marker, а не по штатному `Goal`;
+* trace уже показывает реальные retrieval events:
+  * `planner_query_intent = find_water_source`
+  * `candidate_intent_scores`
+  * `new_target_node_id`
+  * `maneuver_command_type`
+
+Практический вывод:
+
+* water-line больше не является только architecture-first plumbing;
+* это уже поведенчески валидированный semantic task.
+
+### Sprint A / A.1
+
+Что уже подтверждено:
+
+* `IntentType.FIND_WATER_SOURCE` добавлен;
+* `SemanticTargetPredicate` для воды стал composite;
+* scene layer пишет water evidence:
+  * `water_visible`
+  * `water_pattern_match`
+  * `water_accessible`
+  * `water_neighbor_context`
+  * `water_confidence_local`
+* tokenizer пишет:
+  * `water_source`
+  * `water_candidate`
+  * `water_nearby`
+* graph memory хранит water evidence per node;
+* planner умеет делать generic intent query для воды;
+* water-task wrapper уже даёт task-level success без привязки к `goal_xy`.
+
+### Sprint B
+
+Что уже подтверждено:
+
+* `thirst` теперь реально участвует в выборе intent;
+* policy использует hysteresis:
+  * `thirst_on_threshold`
+  * `thirst_off_threshold`
+* evidence-aware удержание water intent уже реализовано;
+* trace пишет:
+  * `previous_active_intent`
+  * `new_active_intent`
+  * `intent_switch_reason`
+  * `agent_state_thirst`
+
+Проверенный итог:
+
+* `state-conditioned water v2` доведён до рабочего качества;
+* он вышел в паритет с fixed water intent на текущем demo scenario;
+* значит water-case уже демонстрирует не только semantic target retrieval, но и state-conditioned semantic intention.
+
+### Technical note: water wrapper warning
+
+Старый warning `gymnasium` был не от grid rewrite, а от `mission`.
+
+Причина:
+
+* wrapper подменял `mission` строкой `"find the water source"`;
+* это значение не принадлежало `MissionSpace`;
+* поэтому `observation_space.contains(obs)` ломался.
+
+Исправление:
+
+* `mission` среды больше не мутируется;
+* описание задачи теперь пишется в `info["task_mission"]`;
+* short run подтверждает, что `observation_space.contains(obs)` снова истинно и warning исчез.
 
 ## Что уже известно про Sprint 1 intention layer
 
@@ -383,6 +464,16 @@ Aggregate:
 
 ### Приоритет 1
 
+Для water-line:
+
+* water-case уже считать рабочим demonstrator, а не незавершённым plumbing;
+* не возвращаться к постановке “цель воды = координата”;
+* следующий meaningful шаг для этой ветки:
+  * либо reproducible water benchmark/demo block,
+  * либо только потом переход к multi-agent semantic coordination.
+
+Для LavaGap-line:
+
 Сделать **Sprint 2 v9.1 audit: conditional outcomes for `stable_rejoin_waypoint` by `hazard_adjacent` and `goal_alignment`**.
 
 Минимальный смысл:
@@ -417,6 +508,8 @@ Aggregate:
 * не возвращаться к raw materialization-vs-no-materialization как к главной гипотезе,
 * не возвращаться к adjacency-only filtering как к главной гипотезе,
 * не запускать новый широкий benchmark до локального `LavaGap` `v9.1` audit результата.
+* не ломать water demonstrator возвратом к `goal_xy`-anchored logic,
+* не мутировать `mission` внутри water wrapper повторно.
 
 ## Команды
 
@@ -511,6 +604,23 @@ PYTHONPATH=. .venv/bin/python scripts/compare_songline_minigrid.py \
   --graph_rollout_horizon 4 \
   --scene_radius 1 \
   --out_dir /tmp/benchmark_state_conditioned_hazard_recovery_v7
+```
+
+### Water semantic task compare
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/compare_songline_minigrid.py \
+  --env_ids MiniGrid-Empty-Random-6x6-v0 \
+  --methods milestone_semantic_intent_water_v1 \
+            milestone_state_conditioned_water_v1 \
+            milestone_state_conditioned_water_v2 \
+  --num_seeds 1 \
+  --episodes 6 \
+  --max_steps 40 \
+  --suggest_every 8 \
+  --graph_rollout_horizon 4 \
+  --scene_radius 1 \
+  --out_dir /tmp/songline_water_state_v2_compare
 ```
 
 ## Финальная памятка агенту

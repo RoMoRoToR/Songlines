@@ -7,7 +7,7 @@ import gymnasium as gym
 import matplotlib.pyplot as plt
 import minigrid
 import numpy as np
-from minigrid.core.world_object import Goal
+from minigrid.core.world_object import Ball, Box, Goal
 
 from songline_drive.agent_state import AgentState, IntentPolicy, update_agent_state
 from songline_drive.graph_memory import DynamicSonglineGraph
@@ -95,6 +95,221 @@ def get_goal_position(env):
             if cell is not None and cell.type == "goal":
                 return np.array([x, y], dtype=np.int32)
     return None
+
+
+def get_water_position(env):
+    water_xy = getattr(env, "water_pos", None)
+    if water_xy is not None:
+        return np.asarray(water_xy, dtype=np.int32).copy()
+    grid = env.unwrapped.grid
+    for y in range(grid.height):
+        for x in range(grid.width):
+            cell = grid.get(x, y)
+            if cell is not None and cell.type == "ball":
+                return np.array([x, y], dtype=np.int32)
+    return None
+
+
+def get_rest_position(env):
+    rest_xy = getattr(env, "rest_pos", None)
+    if rest_xy is not None:
+        return np.asarray(rest_xy, dtype=np.int32).copy()
+    grid = env.unwrapped.grid
+    for y in range(grid.height):
+        for x in range(grid.width):
+            cell = grid.get(x, y)
+            if cell is not None and cell.type == "box":
+                return np.array([x, y], dtype=np.int32)
+    return None
+
+
+class WaterTaskWrapper(gym.Wrapper):
+    def __init__(self, env, success_radius: int = 1, success_reward: float = 1.0):
+        super().__init__(env)
+        self.success_radius = max(1, int(success_radius))
+        self.success_reward = float(success_reward)
+        self.water_pos = None
+
+    def _find_cells(self, cell_type: str):
+        cells = []
+        grid = self.unwrapped.grid
+        for y in range(grid.height):
+            for x in range(grid.width):
+                cell = grid.get(x, y)
+                if cell is not None and cell.type == cell_type:
+                    cells.append((int(x), int(y)))
+        return cells
+
+    def _fallback_water_position(self):
+        grid = self.unwrapped.grid
+        agent_xy = tuple(int(v) for v in self.unwrapped.agent_pos)
+        candidates = []
+        for y in range(1, grid.height - 1):
+            for x in range(1, grid.width - 1):
+                if (x, y) == agent_xy:
+                    continue
+                cell = grid.get(x, y)
+                if cell is None:
+                    dist = abs(x - agent_xy[0]) + abs(y - agent_xy[1])
+                    candidates.append((dist, y, x))
+        if not candidates:
+            return None
+        candidates.sort(key=lambda item: (-item[0], item[1], item[2]))
+        return int(candidates[0][2]), int(candidates[0][1])
+
+    def _install_water_marker(self):
+        grid = self.unwrapped.grid
+        goal_cells = self._find_cells("goal")
+        for gx, gy in goal_cells:
+            grid.set(int(gx), int(gy), None)
+        if goal_cells:
+            wx, wy = goal_cells[0]
+        else:
+            fallback = self._fallback_water_position()
+            if fallback is None:
+                self.water_pos = None
+                return
+            wx, wy = fallback
+        grid.set(int(wx), int(wy), Ball(color="blue"))
+        self.water_pos = np.array([int(wx), int(wy)], dtype=np.int32)
+
+    def _task_success(self):
+        if self.water_pos is None:
+            return False
+        agent_xy = np.asarray(self.unwrapped.agent_pos, dtype=np.int32)
+        return manhattan(agent_xy, self.water_pos) <= self.success_radius
+
+    def reset(self, **kwargs):
+        obs, info = self.env.reset(**kwargs)
+        self._install_water_marker()
+        if hasattr(self.unwrapped, "gen_obs"):
+            obs = self.unwrapped.gen_obs()
+        info = dict(info or {})
+        info["task_mode"] = "water_search_v1"
+        info["task_mission"] = "find the water source"
+        info["water_pos"] = None if self.water_pos is None else [int(v) for v in self.water_pos]
+        info["water_task_success"] = 0
+        return obs, info
+
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        info = dict(info or {})
+        task_success = int(self._task_success())
+        if task_success:
+            reward = max(float(reward), self.success_reward)
+            terminated = True
+        else:
+            reward = 0.0
+        info["task_mode"] = "water_search_v1"
+        info["task_mission"] = "find the water source"
+        info["water_pos"] = None if self.water_pos is None else [int(v) for v in self.water_pos]
+        info["water_task_success"] = int(task_success)
+        if self.water_pos is not None:
+            info["water_distance"] = int(manhattan(np.asarray(self.unwrapped.agent_pos, dtype=np.int32), self.water_pos))
+        return obs, float(reward), bool(terminated), bool(truncated), info
+
+
+class RestTaskWrapper(gym.Wrapper):
+    def __init__(self, env, success_radius: int = 1, success_reward: float = 1.0):
+        super().__init__(env)
+        self.success_radius = max(1, int(success_radius))
+        self.success_reward = float(success_reward)
+        self.rest_pos = None
+
+    def _find_cells(self, cell_type: str):
+        cells = []
+        grid = self.unwrapped.grid
+        for y in range(grid.height):
+            for x in range(grid.width):
+                cell = grid.get(x, y)
+                if cell is not None and cell.type == cell_type:
+                    cells.append((int(x), int(y)))
+        return cells
+
+    def _fallback_rest_position(self):
+        grid = self.unwrapped.grid
+        agent_xy = tuple(int(v) for v in self.unwrapped.agent_pos)
+        candidates = []
+        for y in range(1, grid.height - 1):
+            for x in range(1, grid.width - 1):
+                if (x, y) == agent_xy:
+                    continue
+                cell = grid.get(x, y)
+                if cell is None:
+                    dist = abs(x - agent_xy[0]) + abs(y - agent_xy[1])
+                    candidates.append((dist, y, x))
+        if not candidates:
+            return None
+        candidates.sort(key=lambda item: (-item[0], item[1], item[2]))
+        return int(candidates[0][2]), int(candidates[0][1])
+
+    def _install_rest_marker(self):
+        grid = self.unwrapped.grid
+        goal_cells = self._find_cells("goal")
+        for gx, gy in goal_cells:
+            grid.set(int(gx), int(gy), None)
+        if goal_cells:
+            rx, ry = goal_cells[0]
+        else:
+            fallback = self._fallback_rest_position()
+            if fallback is None:
+                self.rest_pos = None
+                return
+            rx, ry = fallback
+        grid.set(int(rx), int(ry), Box(color="green"))
+        self.rest_pos = np.array([int(rx), int(ry)], dtype=np.int32)
+
+    def _task_success(self):
+        if self.rest_pos is None:
+            return False
+        agent_xy = np.asarray(self.unwrapped.agent_pos, dtype=np.int32)
+        return manhattan(agent_xy, self.rest_pos) <= self.success_radius
+
+    def reset(self, **kwargs):
+        obs, info = self.env.reset(**kwargs)
+        self._install_rest_marker()
+        if hasattr(self.unwrapped, "gen_obs"):
+            obs = self.unwrapped.gen_obs()
+        info = dict(info or {})
+        info["task_mode"] = "rest_search_v1"
+        info["task_mission"] = "find a safe rest zone"
+        info["rest_pos"] = None if self.rest_pos is None else [int(v) for v in self.rest_pos]
+        info["rest_task_success"] = 0
+        return obs, info
+
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        info = dict(info or {})
+        task_success = int(self._task_success())
+        if task_success:
+            reward = max(float(reward), self.success_reward)
+            terminated = True
+        else:
+            reward = 0.0
+        info["task_mode"] = "rest_search_v1"
+        info["task_mission"] = "find a safe rest zone"
+        info["rest_pos"] = None if self.rest_pos is None else [int(v) for v in self.rest_pos]
+        info["rest_task_success"] = int(task_success)
+        if self.rest_pos is not None:
+            info["rest_distance"] = int(manhattan(np.asarray(self.unwrapped.agent_pos, dtype=np.int32), self.rest_pos))
+        return obs, float(reward), bool(terminated), bool(truncated), info
+
+
+def build_env(args):
+    env = gym.make(args.env_id, render_mode="rgb_array")
+    if getattr(args, "task_mode", "default") == "water_search_v1":
+        env = WaterTaskWrapper(
+            env,
+            success_radius=int(getattr(args, "water_success_radius", 1)),
+            success_reward=1.0,
+        )
+    elif getattr(args, "task_mode", "default") == "rest_search_v1":
+        env = RestTaskWrapper(
+            env,
+            success_radius=int(getattr(args, "rest_success_radius", 1)),
+            success_reward=1.0,
+        )
+    return env
 
 
 def apply_goal_shift_v1(env, change_phase: int) -> bool:
@@ -485,6 +700,10 @@ def select_graph_waypoint(
     if hazard_waypoint is not None:
         waypoint_xy = hazard_waypoint
         command["waypoint_xy"] = tuple(int(v) for v in waypoint_xy)
+    if planner_query is not None and goal_xy is None and env is not None:
+        current_xy = np.asarray(env.unwrapped.agent_pos, dtype=np.int32)
+        if int(manhattan(current_xy, waypoint_xy)) == 0:
+            return None
     planner_debug = dict(plan.metadata)
     if plan.target_node_id is not None and plan.target_node_id in memory.nodes:
         planner_debug["selected_node_semantic_tag_confidence"] = dict(
@@ -502,6 +721,79 @@ def select_graph_waypoint(
         "token_sequence": list(plan.token_sequence),
         "maneuver_command": command,
         "planner_debug": planner_debug,
+    }
+
+
+def select_semantic_waypoint_fallback(memory, planner_query, current_node_id=None, source_xy=None, top_k=5):
+    if planner_query is None or memory is None or not hasattr(memory, "candidate_nodes_for_intent"):
+        return None
+    candidate_ids = memory.candidate_nodes_for_intent(
+        planner_query.target_predicate,
+        top_k=top_k,
+    )
+    if not candidate_ids:
+        return None
+
+    selected_node_id = None
+    waypoint_xy = None
+    source_arr = None if source_xy is None else np.asarray(source_xy, dtype=np.int32)
+    for node_id in candidate_ids:
+        node_id = int(node_id)
+        if current_node_id is not None and int(node_id) == int(current_node_id):
+            continue
+        pose_xy = memory.get_mean_xy(node_id, "pose")
+        if pose_xy is None:
+            continue
+        rounded_pose = np.rint(pose_xy).astype(np.int32)
+        if source_arr is not None and int(manhattan(rounded_pose, source_arr)) == 0:
+            continue
+        selected_node_id = node_id
+        waypoint_xy = rounded_pose
+        break
+    if selected_node_id is None or waypoint_xy is None:
+        return None
+    candidate_base_utilities = {}
+    candidate_tag_confidences = {}
+    candidate_intent_scores = {}
+    query_tag_name = str(planner_query.target_predicate.tag_name)
+    for node_id in candidate_ids:
+        node_key = str(node_id)
+        candidate_base_utilities[node_key] = float(memory.node_utility(node_id))
+        candidate_tag_confidences[node_key] = float(
+            memory.nodes[node_id].get("semantic_tag_confidence", {}).get(query_tag_name, 0.0)
+        )
+        candidate_intent_scores[node_key] = float(
+            memory.node_intent_score(node_id, planner_query.target_predicate)
+        )
+
+    return {
+        "waypoint_xy": np.asarray(waypoint_xy, dtype=np.int32).copy(),
+        "target_node_id": selected_node_id,
+        "next_node_id": selected_node_id,
+        "graph_path_length": 0,
+        "utility": float(candidate_intent_scores[str(selected_node_id)]),
+        "token_sequence": [],
+        "maneuver_command": {
+            "command_type": "go_to_waypoint",
+            "waypoint_xy": tuple(int(v) for v in waypoint_xy),
+        },
+        "planner_debug": {
+            "next_node_id": int(selected_node_id),
+            "intent_type": str(planner_query.intent_type.value),
+            "query_tag_name": query_tag_name,
+            "used_intent_query": True,
+            "candidate_node_ids": [int(cid) for cid in candidate_ids],
+            "candidate_base_utilities": candidate_base_utilities,
+            "candidate_tag_confidences": candidate_tag_confidences,
+            "candidate_intent_scores": candidate_intent_scores,
+            "selected_tag_confidence": float(candidate_tag_confidences.get(str(selected_node_id), 0.0)),
+            "selected_intent_score": float(candidate_intent_scores.get(str(selected_node_id), 0.0)),
+            "selected_plan_utility": float(candidate_intent_scores.get(str(selected_node_id), 0.0)),
+            "selected_node_semantic_tag_confidence": dict(
+                memory.nodes[selected_node_id].get("semantic_tag_confidence", {})
+            ),
+            "plan_source": "semantic_pose_fallback",
+        },
     }
 
 
@@ -624,12 +916,14 @@ def _select_rejoin_target_source(args, env, source_xy, goal_xy, graph_waypoint_x
 
 def resolve_active_intent_type(args, agent_state=None, intent_policy=None, scene=None):
     if getattr(args, "intent_mode", "none") == "none":
-        return None
+        return None, "intent_mode_none"
     if getattr(args, "intent_selection_mode", "fixed") == "state_v1":
         if agent_state is None or intent_policy is None:
-            return parse_intent_type(args.intent_type)
-        return intent_policy.select_intent(agent_state, scene=scene)
-    return parse_intent_type(args.intent_type)
+            return parse_intent_type(args.intent_type), "state_policy_missing_fallback"
+        if hasattr(intent_policy, "select_intent_with_reason"):
+            return intent_policy.select_intent_with_reason(agent_state, scene=scene)
+        return intent_policy.select_intent(agent_state, scene=scene), "state_policy"
+    return parse_intent_type(args.intent_type), "fixed_intent"
 
 
 def current_planner_query(args, goal_xy=None, active_intent_type=None):
@@ -896,7 +1190,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
     intent_replan_cooldown_steps = max(0, int(getattr(args, "intent_replan_cooldown_steps", 4)))
     goal_rejoin_guard_steps = max(0, int(getattr(args, "goal_rejoin_guard_steps", 4)))
 
-    env = gym.make(args.env_id, render_mode="rgb_array")
+    env = build_env(args)
     rng = np.random.RandomState(args.seed)
     method_name = make_method_name(args.agent_mode, args.songline_policy)
 
@@ -914,6 +1208,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
 
     run_summary = {
         "env_id": args.env_id,
+        "task_mode": getattr(args, "task_mode", "default"),
         "agent_mode": args.agent_mode,
         "songline_policy": args.songline_policy,
         "method": method_name,
@@ -928,6 +1223,16 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "intent_handoff_mode": args.intent_handoff_mode,
         "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
         "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
+        "water_success_radius": int(getattr(args, "water_success_radius", 1)),
+        "rest_success_radius": int(getattr(args, "rest_success_radius", 1)),
+        "thirst_on_threshold": float(getattr(args, "thirst_on_threshold", 0.10)),
+        "thirst_off_threshold": float(getattr(args, "thirst_off_threshold", 0.04)),
+        "water_local_activation_threshold": float(getattr(args, "water_local_activation_threshold", 0.0)),
+        "water_local_hold_threshold": float(getattr(args, "water_local_hold_threshold", 0.0)),
+        "rest_energy_on_threshold": float(getattr(args, "rest_energy_on_threshold", 0.95)),
+        "rest_energy_off_threshold": float(getattr(args, "rest_energy_off_threshold", 0.98)),
+        "rest_local_activation_threshold": float(getattr(args, "rest_local_activation_threshold", 0.0)),
+        "rest_local_hold_threshold": float(getattr(args, "rest_local_hold_threshold", 0.0)),
         "episode_returns": [],
         "episode_lengths": [],
         "successes": [],
@@ -964,6 +1269,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
 
     for ep in range(args.episodes):
         obs, info = env.reset(seed=args.seed + ep)
+        task_info = dict(info or {})
         del obs, info
         change_active = apply_env_change(
             env,
@@ -977,6 +1283,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             trajectory_planner.reset()
 
         goal_xy = get_goal_position(env)
+        water_xy = get_water_position(env)
+        rest_xy = get_rest_position(env)
         episode_return = 0.0
         success = 0
         previous_goal_distance = None
@@ -1002,13 +1310,34 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         active_maneuver_command_type = None
         active_planner_debug = None
         active_intent_type = None
+        active_intent_reason = "episode_init"
         intent_replan_cooldown_left = 0
         goal_rejoin_guard_active = False
         goal_rejoin_guard_steps_left = 0
         goal_rejoin_guard_best_distance = None
         agent_state = AgentState(active_intent=parse_intent_type(args.intent_type))
         intent_policy = (
-            IntentPolicy(hazard_intent=parse_intent_type(args.intent_type))
+            IntentPolicy(
+                hazard_intent=parse_intent_type(args.intent_type),
+                water_intent=(
+                    IntentType.FIND_WATER_SOURCE
+                    if parse_intent_type(args.intent_type) == IntentType.FIND_WATER_SOURCE
+                    else None
+                ),
+                rest_intent=(
+                    IntentType.FIND_SAFE_REST_ZONE
+                    if parse_intent_type(args.intent_type) == IntentType.FIND_SAFE_REST_ZONE
+                    else None
+                ),
+                thirst_on_threshold=float(getattr(args, "thirst_on_threshold", 0.10)),
+                thirst_off_threshold=float(getattr(args, "thirst_off_threshold", 0.04)),
+                water_local_activation_threshold=float(getattr(args, "water_local_activation_threshold", 0.0)),
+                water_local_hold_threshold=float(getattr(args, "water_local_hold_threshold", 0.0)),
+                rest_energy_on_threshold=float(getattr(args, "rest_energy_on_threshold", 0.95)),
+                rest_energy_off_threshold=float(getattr(args, "rest_energy_off_threshold", 0.98)),
+                rest_local_activation_threshold=float(getattr(args, "rest_local_activation_threshold", 0.0)),
+                rest_local_hold_threshold=float(getattr(args, "rest_local_hold_threshold", 0.0)),
+            )
             if args.intent_selection_mode == "state_v1"
             else None
         )
@@ -1035,6 +1364,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         has_post_hazard_progress = 0
         has_resume_to_goal_progress = 0
         has_goal_rejoin_materialization_failure = 0
+        water_task_success = 0
+        rest_task_success = 0
         record_demo_episode = bool(
             getattr(args, "record_demo", False)
             and int(ep + 1) == int(getattr(args, "demo_episode", 1))
@@ -1056,6 +1387,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                         "pos": tuple(int(v) for v in env.unwrapped.agent_pos),
                         "subgoal": None,
                         "distance_after": None if goal_xy is None else int(manhattan(np.array(env.unwrapped.agent_pos, dtype=np.int32), goal_xy)),
+                        "water_distance": None if water_xy is None else int(manhattan(np.array(env.unwrapped.agent_pos, dtype=np.int32), water_xy)),
+                        "rest_distance": None if rest_xy is None else int(manhattan(np.array(env.unwrapped.agent_pos, dtype=np.int32), rest_xy)),
                         "reward": 0.0,
                         "event": "episode_start",
                     }
@@ -1092,6 +1425,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             trace_goal_rejoin_stable_waypoint_available = 0
             trace_previous_active_intent = None if active_intent_type is None else str(active_intent_type.value)
             trace_new_active_intent = trace_previous_active_intent
+            trace_intent_switch_reason = active_intent_reason
             trace_previous_target_node_id = active_target_node_id
             trace_new_target_node_id = active_target_node_id
 
@@ -1135,15 +1469,17 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                         scene=scene,
                         token_label=token_label,
                     )
-                    active_intent_type = resolve_active_intent_type(
+                    active_intent_type, active_intent_reason = resolve_active_intent_type(
                         args,
                         agent_state=agent_state,
                         intent_policy=intent_policy,
                         scene=scene,
                     )
                     agent_state.active_intent = active_intent_type
+                    agent_state.active_intent_reason = str(active_intent_reason)
                     trace_previous_active_intent = None if prior_active_intent_type is None else str(prior_active_intent_type.value)
                     trace_new_active_intent = None if active_intent_type is None else str(active_intent_type.value)
+                    trace_intent_switch_reason = str(active_intent_reason)
                     trace_intent_switched = int(
                         prior_active_intent_type is not None and prior_active_intent_type != active_intent_type
                     )
@@ -1277,6 +1613,18 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                 goal_xy=goal_xy,
                                 planner_query=planner_query,
                             )
+                            if (
+                                path_plan is None
+                                and planner_query is not None
+                                and goal_xy is None
+                            ):
+                                path_plan = select_semantic_waypoint_fallback(
+                                    memory,
+                                    planner_query=planner_query,
+                                    current_node_id=current_phrase_node(memory),
+                                    source_xy=agent_xy,
+                                    top_k=args.top_k_goals,
+                                )
                             if path_plan is not None:
                                 planner_debug = dict(path_plan.get("planner_debug", {}))
                                 if active_intent_type is not None:
@@ -1367,6 +1715,23 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                     if hazard_phase_active:
                                         hazard_phase_intervened = True
                                     trace_new_target_node_id = active_target_node_id
+                            elif planner_query is not None:
+                                active_planner_debug = {
+                                    "used_intent_query": True,
+                                    "intent_type": None if active_intent_type is None else str(active_intent_type.value),
+                                    "resolved_active_intent_type": None if active_intent_type is None else str(active_intent_type.value),
+                                    "query_tag_name": planner_query_tag_name,
+                                    "candidate_node_ids": [],
+                                    "candidate_base_utilities": {},
+                                    "candidate_tag_confidences": {},
+                                    "candidate_intent_scores": {},
+                                    "selected_tag_confidence": None,
+                                    "selected_node_semantic_tag_confidence": {},
+                                    "selected_plan_utility": 0.0,
+                                    "plan_source": "semantic_query_empty",
+                                    "goal_rejoin_target_materialized": False,
+                                    "goal_rejoin_target_source": "none",
+                                }
                             elif trace_forced_goal_rejoin_replan:
                                 active_planner_debug = {
                                     "used_intent_query": bool(planner_query is not None),
@@ -1559,12 +1924,17 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                 resume_to_goal_armed = 1
 
             obs, reward, terminated, truncated, info = env.step(action)
+            step_info = dict(info or {})
             del obs, info
 
             total_step_idx += 1
             episode_return += float(reward)
+            water_task_success = max(water_task_success, int(step_info.get("water_task_success", 0)))
+            rest_task_success = max(rest_task_success, int(step_info.get("rest_task_success", 0)))
             agent_xy_new = np.array(env.unwrapped.agent_pos, dtype=np.int32)
             distance_after = None if goal_xy is None else manhattan(agent_xy_new, goal_xy)
+            water_distance_after = None if water_xy is None else manhattan(agent_xy_new, water_xy)
+            rest_distance_after = None if rest_xy is None else manhattan(agent_xy_new, rest_xy)
             delta_distance = None
             if distance_before is not None and distance_after is not None:
                 delta_distance = float(distance_before - distance_after)
@@ -1815,6 +2185,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                             "goal_rejoin_stable_waypoint_available": int(trace_goal_rejoin_stable_waypoint_available),
                             "previous_active_intent": trace_previous_active_intent,
                             "new_active_intent": trace_new_active_intent,
+                            "intent_switch_reason": trace_intent_switch_reason,
                             "previous_target_node_id": trace_previous_target_node_id,
                             "new_target_node_id": trace_new_target_node_id,
                             "agent_state_thirst": float(agent_state.thirst),
@@ -1822,6 +2193,16 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                             "agent_state_risk_budget": float(agent_state.risk_budget),
                             "agent_state_task_phase": str(agent_state.task_phase),
                             "agent_state_active_intent": None if active_intent_type is None else str(active_intent_type.value),
+                            "water_visible": float(risk.get("water_visible", 0.0)),
+                            "water_accessible": float(risk.get("water_accessible", 0.0)),
+                            "water_confidence_local": float(risk.get("water_confidence_local", 0.0)),
+                            "water_pattern_match": float(risk.get("water_pattern_match", 0.0)),
+                            "water_neighbor_context": float(risk.get("water_neighbor_context", 0.0)),
+                            "rest_visible": float(risk.get("rest_visible", 0.0)),
+                            "rest_accessible": float(risk.get("rest_accessible", 0.0)),
+                            "rest_confidence_local": float(risk.get("rest_confidence_local", 0.0)),
+                            "rest_pattern_match": float(risk.get("rest_pattern_match", 0.0)),
+                            "rest_neighbor_context": float(risk.get("rest_neighbor_context", 0.0)),
                             "goal_visible": int(risk.get("goal_visible", 0.0)),
                             "hazard_front": int(risk.get("hazard_front", 0.0)),
                             "hazard_near": int(risk.get("hazard_near", 0.0)),
@@ -1879,6 +2260,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                 "subgoal": None if subgoal_xy is None else tuple(int(v) for v in subgoal_xy),
                                 "distance_after": None if distance_after is None else int(distance_after),
                                 "reward": float(reward),
+                                "water_distance": None if water_distance_after is None else int(water_distance_after),
+                                "rest_distance": None if rest_distance_after is None else int(rest_distance_after),
                                 "event": ",".join(event_bits),
                             }
                         )
@@ -1931,6 +2314,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         episode_metrics = {
             "episode": ep + 1,
             "env_id": args.env_id,
+            "task_mode": getattr(args, "task_mode", "default"),
             "change_active": int(change_active),
             "env_change_mode": args.env_change_mode,
             "change_after_episode": int(args.change_after_episode),
@@ -1940,9 +2324,22 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "intent_handoff_mode": args.intent_handoff_mode,
             "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
             "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
+            "water_success_radius": int(getattr(args, "water_success_radius", 1)),
+            "rest_success_radius": int(getattr(args, "rest_success_radius", 1)),
+            "thirst_on_threshold": float(getattr(args, "thirst_on_threshold", 0.10)),
+            "thirst_off_threshold": float(getattr(args, "thirst_off_threshold", 0.04)),
+            "water_local_activation_threshold": float(getattr(args, "water_local_activation_threshold", 0.0)),
+            "water_local_hold_threshold": float(getattr(args, "water_local_hold_threshold", 0.0)),
+            "rest_energy_on_threshold": float(getattr(args, "rest_energy_on_threshold", 0.95)),
+            "rest_energy_off_threshold": float(getattr(args, "rest_energy_off_threshold", 0.98)),
+            "rest_local_activation_threshold": float(getattr(args, "rest_local_activation_threshold", 0.0)),
+            "rest_local_hold_threshold": float(getattr(args, "rest_local_hold_threshold", 0.0)),
             "intent_active": int(args.intent_mode != "none"),
             "has_goal_rejoin_materialization_failure": int(has_goal_rejoin_materialization_failure),
+            "water_task_success": int(water_task_success),
+            "rest_task_success": int(rest_task_success),
             "active_intent_type": None if active_intent_type is None else str(active_intent_type.value),
+            "intent_switch_reason": str(active_intent_reason),
             "agent_task_phase": str(agent_state.task_phase),
             "agent_thirst": float(agent_state.thirst),
             "agent_energy": float(agent_state.energy),
@@ -2022,6 +2419,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
     summary.update(
         {
             "env_id": args.env_id,
+            "task_mode": getattr(args, "task_mode", "default"),
             "agent_mode": args.agent_mode,
             "songline_policy": args.songline_policy,
             "method": method_name,
@@ -2036,6 +2434,16 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "intent_handoff_mode": args.intent_handoff_mode,
             "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
             "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
+            "water_success_radius": int(getattr(args, "water_success_radius", 1)),
+            "rest_success_radius": int(getattr(args, "rest_success_radius", 1)),
+            "thirst_on_threshold": float(getattr(args, "thirst_on_threshold", 0.10)),
+            "thirst_off_threshold": float(getattr(args, "thirst_off_threshold", 0.04)),
+            "water_local_activation_threshold": float(getattr(args, "water_local_activation_threshold", 0.0)),
+            "water_local_hold_threshold": float(getattr(args, "water_local_hold_threshold", 0.0)),
+            "rest_energy_on_threshold": float(getattr(args, "rest_energy_on_threshold", 0.95)),
+            "rest_energy_off_threshold": float(getattr(args, "rest_energy_off_threshold", 0.98)),
+            "rest_local_activation_threshold": float(getattr(args, "rest_local_activation_threshold", 0.0)),
+            "rest_local_hold_threshold": float(getattr(args, "rest_local_hold_threshold", 0.0)),
         }
     )
 
@@ -2067,6 +2475,12 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--env_id", type=str, default="MiniGrid-Empty-Random-6x6-v0")
+    parser.add_argument(
+        "--task_mode",
+        type=str,
+        default="default",
+        choices=["default", "water_search_v1", "rest_search_v1"],
+    )
     parser.add_argument(
         "--agent_mode",
         type=str,
@@ -2116,7 +2530,7 @@ def parse_args():
         "--intent_mode",
         type=str,
         default="none",
-        choices=["none", "safe_exit_v1", "hazard_recovery_v1", "goal_region_v1"],
+        choices=["none", "safe_exit_v1", "hazard_recovery_v1", "goal_region_v1", "water_v1", "rest_v1"],
     )
     parser.add_argument(
         "--intent_selection_mode",
@@ -2128,7 +2542,7 @@ def parse_args():
         "--intent_type",
         type=str,
         default="reach_safe_exit",
-        choices=["reach_safe_exit", "hazard_recovery_exit", "find_goal_region", "find_water_source"],
+        choices=["reach_safe_exit", "hazard_recovery_exit", "find_goal_region", "find_water_source", "find_safe_rest_zone"],
     )
     parser.add_argument(
         "--intent_handoff_mode",
@@ -2167,6 +2581,16 @@ def parse_args():
     parser.add_argument("--demo_frame_stride", type=int, default=1)
     parser.add_argument("--demo_fps", type=int, default=3)
     parser.add_argument("--intent_replan_cooldown_steps", type=int, default=4)
+    parser.add_argument("--water_success_radius", type=int, default=1)
+    parser.add_argument("--rest_success_radius", type=int, default=1)
+    parser.add_argument("--thirst_on_threshold", type=float, default=0.10)
+    parser.add_argument("--thirst_off_threshold", type=float, default=0.04)
+    parser.add_argument("--water_local_activation_threshold", type=float, default=0.0)
+    parser.add_argument("--water_local_hold_threshold", type=float, default=0.0)
+    parser.add_argument("--rest_energy_on_threshold", type=float, default=0.95)
+    parser.add_argument("--rest_energy_off_threshold", type=float, default=0.98)
+    parser.add_argument("--rest_local_activation_threshold", type=float, default=0.0)
+    parser.add_argument("--rest_local_hold_threshold", type=float, default=0.0)
     parser.add_argument("--tokenizer_mode", type=str, default="hash_sign", choices=["argmax", "hash_sign"])
     parser.add_argument("--tokenizer_proj_dim", type=int, default=16)
     parser.add_argument("--out_dir", type=str, default="tmp/songline_minigrid")

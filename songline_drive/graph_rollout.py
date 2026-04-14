@@ -77,11 +77,16 @@ class GraphRolloutPlanner:
         query_tag_name = None if planner_query is None else str(planner_query.target_predicate.tag_name)
         candidate_base_utilities = {}
         candidate_tag_confidences = {}
+        candidate_intent_scores = {}
         for node_id in candidate_ids:
             candidate_base_utilities[str(node_id)] = float(self.node_utility(graph, node_id))
             if query_tag_name is not None:
                 candidate_tag_confidences[str(node_id)] = float(
                     graph.nodes[node_id].get("semantic_tag_confidence", {}).get(query_tag_name, 0.0)
+                )
+            if planner_query is not None and hasattr(graph, "node_intent_score"):
+                candidate_intent_scores[str(node_id)] = float(
+                    graph.node_intent_score(node_id, planner_query.target_predicate)
                 )
         plans: List[ManeuverPlan] = []
         for node_id in candidate_ids:
@@ -123,7 +128,9 @@ class GraphRolloutPlanner:
                         "candidate_node_ids": [int(cid) for cid in candidate_ids],
                         "candidate_base_utilities": candidate_base_utilities,
                         "candidate_tag_confidences": candidate_tag_confidences,
+                        "candidate_intent_scores": candidate_intent_scores,
                         "selected_tag_confidence": float(candidate_tag_confidences.get(str(node_id), 0.0)),
+                        "selected_intent_score": float(candidate_intent_scores.get(str(node_id), 0.0)),
                         "selected_plan_utility": float(path_utility),
                     },
                 )

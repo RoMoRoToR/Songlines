@@ -8,6 +8,10 @@ from songline_drive.types import EgoState, LaneContext, RouteContext, SceneState
 class MiniGridSceneEncoder:
     def __init__(self, radius: int = 1):
         self.radius = radius
+        # Use `ball` as a simple future-compatible proxy for a local water marker.
+        self.water_cell_codes = {6}
+        # Use `box` as a simple proxy for a safe rest zone marker.
+        self.rest_cell_codes = {7}
 
     def encode(self, env) -> SceneState:
         unwrapped = env.unwrapped
@@ -83,6 +87,76 @@ class MiniGridSceneEncoder:
                 or lateral_hazard == 1.0
             )
         )
+        water_visible = float(np.any(np.isin(patch, list(self.water_cell_codes))))
+        water_neighbor_count = int(np.sum(np.isin(cardinal_neighbors, list(self.water_cell_codes))))
+        water_pattern_match = float(
+            max(
+                water_visible,
+                min(
+                    1.0,
+                    0.5 * water_visible
+                    + 0.25 * float(open_space_like)
+                    + 0.15 * float(free_neighbor_count >= 2)
+                    + 0.10 * float(wall_neighbor_count >= 1),
+                ),
+            )
+        )
+        water_accessible = float(
+            (water_visible > 0.0 or water_neighbor_count > 0)
+            and front_safe == 1.0
+            and hazard_front == 0.0
+        )
+        water_neighbor_context = float(
+            min(
+                1.0,
+                0.5 * float(water_neighbor_count > 0)
+                + 0.25 * float(free_neighbor_count >= 2)
+                + 0.25 * float(wall_neighbor_count >= 1),
+            )
+        )
+        water_confidence_local = float(
+            min(
+                1.0,
+                0.45 * water_pattern_match
+                + 0.35 * water_accessible
+                + 0.20 * water_neighbor_context,
+            )
+        )
+        rest_visible = float(np.any(np.isin(patch, list(self.rest_cell_codes))))
+        rest_neighbor_count = int(np.sum(np.isin(cardinal_neighbors, list(self.rest_cell_codes))))
+        rest_pattern_match = float(
+            max(
+                rest_visible,
+                min(
+                    1.0,
+                    0.70 * rest_visible
+                    + 0.20 * float(rest_neighbor_count > 0)
+                    + 0.10 * is_safe_zone,
+                ),
+            )
+        )
+        rest_accessible = float(
+            (rest_visible > 0.0 or rest_neighbor_count > 0)
+            and front_safe == 1.0
+            and hazard_front == 0.0
+            and hazard_near == 0.0
+        )
+        rest_neighbor_context = float(
+            min(
+                1.0,
+                0.70 * float(rest_neighbor_count > 0)
+                + 0.20 * is_safe_zone
+                + 0.10 * open_space_like,
+            )
+        )
+        rest_confidence_local = float(
+            min(
+                1.0,
+                0.50 * rest_pattern_match
+                + 0.35 * rest_accessible
+                + 0.15 * rest_neighbor_context,
+            )
+        )
 
         return SceneState(
             ego_state=EgoState(
@@ -146,6 +220,16 @@ class MiniGridSceneEncoder:
                 "place_is_room_center": is_room_center,
                 "place_is_corridor": is_corridor,
                 "place_is_hazard_recovery_route": is_hazard_recovery_route,
+                "water_visible": water_visible,
+                "water_pattern_match": water_pattern_match,
+                "water_accessible": water_accessible,
+                "water_neighbor_context": water_neighbor_context,
+                "water_confidence_local": water_confidence_local,
+                "rest_visible": rest_visible,
+                "rest_pattern_match": rest_pattern_match,
+                "rest_accessible": rest_accessible,
+                "rest_neighbor_context": rest_neighbor_context,
+                "rest_confidence_local": rest_confidence_local,
                 "goal_heading_alignment": float(goal_heading_alignment),
                 "goal_dx": goal_dx,
                 "goal_dy": goal_dy,

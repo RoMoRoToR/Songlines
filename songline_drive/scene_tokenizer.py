@@ -58,6 +58,16 @@ class SceneTokenizer:
 
     def _semantic_tags(self, scene: SceneState):
         rf = scene.risk_features
+        water_visible = float(rf.get("water_visible", 0.0))
+        water_pattern_match = float(rf.get("water_pattern_match", 0.0))
+        water_accessible = float(rf.get("water_accessible", 0.0))
+        water_neighbor_context = float(rf.get("water_neighbor_context", 0.0))
+        water_confidence_local = float(rf.get("water_confidence_local", 0.0))
+        rest_visible = float(rf.get("rest_visible", 0.0))
+        rest_pattern_match = float(rf.get("rest_pattern_match", 0.0))
+        rest_accessible = float(rf.get("rest_accessible", 0.0))
+        rest_neighbor_context = float(rf.get("rest_neighbor_context", 0.0))
+        rest_confidence_local = float(rf.get("rest_confidence_local", 0.0))
         return {
             "safe_exit": float(rf.get("place_is_safe_zone", 0.0)),
             "hazard_recovery_route": float(rf.get("place_is_hazard_recovery_route", 0.0)),
@@ -65,6 +75,38 @@ class SceneTokenizer:
             "hazard_edge": float(rf.get("place_is_hazard_edge", 0.0)),
             "room_center": float(rf.get("place_is_room_center", 0.0)),
             "corridor": float(rf.get("place_is_corridor", 0.0)),
+            "water_source": float(
+                min(
+                    1.0,
+                    0.55 * water_confidence_local
+                    + 0.25 * water_accessible
+                    + 0.20 * water_visible,
+                )
+            ),
+            "water_candidate": float(
+                min(
+                    1.0,
+                    0.60 * water_pattern_match
+                    + 0.40 * water_neighbor_context,
+                )
+            ),
+            "water_nearby": float(max(water_visible, water_neighbor_context)),
+            "safe_rest_zone": float(
+                min(
+                    1.0,
+                    0.60 * rest_confidence_local
+                    + 0.25 * rest_accessible
+                    + 0.15 * rest_visible,
+                )
+            ),
+            "rest_candidate": float(
+                min(
+                    1.0,
+                    0.65 * rest_pattern_match
+                    + 0.35 * rest_neighbor_context,
+                )
+            ),
+            "rest_nearby": float(max(rest_visible, rest_neighbor_context, rest_accessible)),
         }
 
     def _distance_progress(self, scene: SceneState) -> float:

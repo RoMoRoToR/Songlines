@@ -280,6 +280,86 @@ Adaptive:
 * не считать отрицательный результат Sprint 1 багом;
 * следующий meaningful шаг — state-conditioned intention selection, а не blind tuning static predicate.
 
+## Water semantic intention demonstrator
+
+Отдельная water-line теперь тоже доведена до рабочего состояния.
+
+Главный результат:
+
+* water-case уже можно считать первым рабочим demonstrator перехода от `goal_xy` к semantic target.
+
+Что именно уже подтверждено:
+
+* `FIND_WATER_SOURCE` работает как настоящий `IntentType`, а не как special-case;
+* scene layer пишет water evidence;
+* tokenizer пишет water semantic tags;
+* graph memory хранит water evidence per node;
+* planner умеет materialize-ить water retrieval в реальные target nodes;
+* water-task success считается по достижению water-marker, а не по штатному `Goal`.
+
+То есть вода уже проходит полный контур:
+
+* `scene -> semantic tags -> graph memory -> planner query -> target materialization -> waypoint/action`
+
+### Sprint A / A.1
+
+Уже реализовано:
+
+* `IntentType.FIND_WATER_SOURCE`
+* composite water predicate/query
+* water evidence:
+  * `water_visible`
+  * `water_pattern_match`
+  * `water_accessible`
+  * `water_neighbor_context`
+  * `water_confidence_local`
+* water tags:
+  * `water_source`
+  * `water_candidate`
+  * `water_nearby`
+* minimal water-task wrapper через `task_mode = water_search_v1`
+
+Практический смысл:
+
+* вода больше не только semantic tag в памяти;
+* это уже реальный planner-level retrieval target.
+
+### Sprint B
+
+State-driven water activation тоже уже реализован.
+
+Что подтверждено:
+
+* `thirst` участвует в выборе между `FIND_GOAL_REGION` и `FIND_WATER_SOURCE`;
+* policy использует hysteresis через `thirst_on_threshold` / `thirst_off_threshold`;
+* water intent может удерживаться по local water evidence;
+* trace пишет `intent_switch_reason` и `agent_state_thirst`.
+
+На текущем demo scenario:
+
+* fixed water intent: success **0.667**, steps **20.667**, return **0.667**
+* state-conditioned water v1: success **0.500**, steps **29.500**, return **0.500**
+* state-conditioned water v2: success **0.667**, steps **20.667**, return **0.667**
+
+Честная интерпретация:
+
+* `state_v1` был слишком поздним;
+* evidence-aware `state_v2` доведён до рабочего качества;
+* water-case теперь демонстрирует не только semantic retrieval, но и state-conditioned semantic intention.
+
+### Technical note: water wrapper warning
+
+Отдельный технический хвост тоже закрыт.
+
+Старый warning `gymnasium` про observation space был вызван не grid rewrite, а тем, что wrapper подменял `mission` строкой `"find the water source"`, которая не принадлежала `MissionSpace`.
+
+Исправление:
+
+* `mission` среды больше не мутируется;
+* water-task description теперь пишется в `info["task_mission"]`;
+* `observation_space.contains(obs)` снова истинно на `reset` и `step`;
+* warning исчез в коротком реальном water-run.
+
 ## Sprint 2: state-conditioned intention selection
 
 После Sprint 1 был добавлен минимальный слой:
@@ -750,6 +830,23 @@ PYTHONPATH=. .venv/bin/python scripts/compare_songline_minigrid.py \
   --out_dir /tmp/benchmark_state_conditioned_hazard_recovery_v7
 ```
 
+### Water semantic task compare
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/compare_songline_minigrid.py \
+  --env_ids MiniGrid-Empty-Random-6x6-v0 \
+  --methods milestone_semantic_intent_water_v1 \
+            milestone_state_conditioned_water_v1 \
+            milestone_state_conditioned_water_v2 \
+  --num_seeds 1 \
+  --episodes 6 \
+  --max_steps 40 \
+  --suggest_every 8 \
+  --graph_rollout_horizon 4 \
+  --scene_radius 1 \
+  --out_dir /tmp/songline_water_state_v2_compare
+```
+
 ## Что делать дальше
 
 Самый сильный следующий шаг:
@@ -778,7 +875,14 @@ PYTHONPATH=. .venv/bin/python scripts/compare_songline_minigrid.py \
   * повторные включения recovery intent после rejoin
 * только после этого решать, нужен ли:
   * `orientation-aware stable rejoin waypoint`
-  * или короткий post-rejoin commit.
+  * или короткий post-rejoin commit
+
+Отдельно по water-line:
+
+* water-case уже считать рабочим demonstrator, а не незавершённым plumbing;
+* следующий смысловой шаг для этой ветки:
+  * либо reproducible benchmark/demo block для water-case,
+  * либо после этого multi-agent semantic coordination.
 
 ## Итог в одной фразе
 

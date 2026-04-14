@@ -1,6 +1,76 @@
 
 # Instructions
 
+## Songlines Current Track
+
+Текущий активный исследовательский трек в этом репозитории идёт не через исходный ANS training flow ниже, а через Songlines MiniGrid pipeline:
+
+* основной runtime: [songline_minigrid.py](/Users/taniyashuba/PycharmProjects/Songlines/scripts/songline_minigrid.py)
+* основной compare runner: [compare_songline_minigrid.py](/Users/taniyashuba/PycharmProjects/Songlines/scripts/compare_songline_minigrid.py)
+* архитектурный roadmap по semantic intention и water task: [GOALS_semantic_intention_water.md](/Users/taniyashuba/PycharmProjects/Songlines/docs/GOALS_semantic_intention_water.md)
+* рабочий agent handoff / LavaGap status: [AGENT_PROMPT_songline_repo.md](/Users/taniyashuba/PycharmProjects/Songlines/docs/AGENT_PROMPT_songline_repo.md)
+
+### What Is Already Working
+
+Сейчас в Songlines подтверждено:
+
+* `milestone_semantic_handoff_v1` работает end-to-end;
+* adaptive graph и controlled non-stationarity benchmark уже прогнаны;
+* water-case уже является рабочим semantic-intention demonstrator;
+* `FIND_WATER_SOURCE` materialize-ится в planner-level retrieval;
+* state-conditioned water activation по `thirst` и local water evidence уже реализована;
+* warning `gymnasium` про observation space в water wrapper закрыт.
+
+### Current Water Task Commands
+
+Single run:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/songline_minigrid.py \
+  --env_id MiniGrid-Empty-Random-6x6-v0 \
+  --task_mode water_search_v1 \
+  --episodes 6 \
+  --max_steps 40 \
+  --seed 0 \
+  --agent_mode songline \
+  --songline_policy graph_path \
+  --token_source scene_semantic \
+  --milestone_mode semantic_handoff_v1 \
+  --intent_mode water_v1 \
+  --intent_selection_mode state_v1 \
+  --intent_type find_water_source \
+  --thirst_on_threshold 0.06 \
+  --thirst_off_threshold 0.03 \
+  --water_local_activation_threshold 0.18 \
+  --water_local_hold_threshold 0.12 \
+  --out_dir /tmp/songline_water_state_v2_smoke
+```
+
+Compare:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/compare_songline_minigrid.py \
+  --env_ids MiniGrid-Empty-Random-6x6-v0 \
+  --methods milestone_semantic_intent_water_v1 \
+            milestone_state_conditioned_water_v1 \
+            milestone_state_conditioned_water_v2 \
+  --num_seeds 1 \
+  --episodes 6 \
+  --max_steps 40 \
+  --suggest_every 8 \
+  --graph_rollout_horizon 4 \
+  --scene_radius 1 \
+  --out_dir /tmp/songline_water_state_v2_compare
+```
+
+### Water Wrapper Note
+
+Если снова появится warning вида `The obs returned by the step() method is not within the observation space`, сначала проверь water wrapper:
+
+* нельзя мутировать `mission` строки среды произвольным текстом;
+* описание water-task должно идти через `info["task_mission"]`, а не через подмену `MissionSpace`-controlled mission;
+* это уже исправлено в текущем коде и не должно регрессировать.
+
 ## Training
 For training the complete Active Neural SLAM model on the Exploration task:
 ```
@@ -147,4 +217,3 @@ To silence habitat sim log add the following to your `~/.bashrc` (Linux) or `~/.
 export GLOG_minloglevel=2
 export MAGNUM_LOG="quiet"
 ```
-

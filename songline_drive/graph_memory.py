@@ -416,19 +416,35 @@ class DynamicSonglineGraph:
         node = self.nodes[node_id]
         confs = node.get("semantic_tag_confidence", {})
         tag_value = float(confs.get(predicate.tag_name, 0.0))
-        return tag_value >= float(predicate.min_confidence)
+        if tag_value < float(predicate.min_confidence):
+            return False
+        for tag_name, min_value in predicate.required_tag_thresholds.items():
+            if float(confs.get(tag_name, 0.0)) < float(min_value):
+                return False
+        return True
+
+    def node_intent_score(self, node_id: int, predicate: SemanticTargetPredicate) -> float:
+        node = self.nodes[node_id]
+        confs = node.get("semantic_tag_confidence", {})
+        base_utility = self.node_utility(node_id)
+        score_weights = dict(predicate.score_weights or {predicate.tag_name: 0.5})
+        bonus = 0.0
+        for tag_name, weight in score_weights.items():
+            bonus += float(weight) * float(confs.get(tag_name, 0.0))
+        penalty = 0.0
+        for tag_name, weight in predicate.penalty_weights.items():
+            penalty += float(weight) * float(confs.get(tag_name, 0.0))
+        return float(base_utility + bonus - penalty)
 
     def candidate_nodes_for_intent(self, predicate: SemanticTargetPredicate, top_k: int = 5) -> List[int]:
         scored = []
+        min_visits = int(predicate.metadata.get("min_visits_override", self.min_goal_visits))
         for node_id, node in self.nodes.items():
-            if int(node["visits"]) < self.min_goal_visits:
+            if int(node["visits"]) < min_visits:
                 continue
             if not self.node_matches_intent(node_id, predicate):
                 continue
-
-            base_utility = self.node_utility(node_id)
-            tag_conf = float(node.get("semantic_tag_confidence", {}).get(predicate.tag_name, 0.0))
-            score = base_utility + (0.5 * tag_conf)
+            score = self.node_intent_score(node_id, predicate)
             scored.append((score, node_id))
 
         scored.sort(reverse=True)
