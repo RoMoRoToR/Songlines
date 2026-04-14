@@ -1,0 +1,582 @@
+[
+  {
+    "episode": 1,
+    "step": 0,
+    "token": "reset",
+    "action": null,
+    "intent": null,
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "water_distance": 6,
+    "rest_distance": null,
+    "reward": 0.0,
+    "event": "episode_start"
+  },
+  {
+    "episode": 1,
+    "step": 2,
+    "token": "corridor_follow",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 6,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 4,
+    "token": "corridor_follow",
+    "action": 1,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 6,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 6,
+    "token": "corridor_follow",
+    "action": 2,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 6,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 8,
+    "token": "corridor_follow",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 6,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 10,
+    "token": "corridor_follow",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 6,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 12,
+    "token": "corridor_follow",
+    "action": 2,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 6,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 14,
+    "token": "corridor_follow",
+    "action": 1,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 6,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 16,
+    "token": "corridor_follow",
+    "action": 2,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      2
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 5,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 18,
+    "token": "doorway_approach",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      2
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 5,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 20,
+    "token": "doorway_approach",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      2
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 5,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 22,
+    "token": "doorway_approach",
+    "action": 1,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      2
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 5,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 24,
+    "token": "corridor_follow",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 6,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 26,
+    "token": "corridor_follow",
+    "action": 1,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 6,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 28,
+    "token": "corridor_follow",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 6,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 30,
+    "token": "corridor_follow",
+    "action": 2,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      2
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 5,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 32,
+    "token": "doorway_approach",
+    "action": 1,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      2
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 5,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 34,
+    "token": "corridor_follow",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 6,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 36,
+    "token": "corridor_follow",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      1,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 6,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 38,
+    "token": "doorway_cross",
+    "action": 1,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      2,
+      1
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 5,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 40,
+    "token": "room_center",
+    "action": 1,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      2,
+      2
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 4,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 42,
+    "token": "room_center",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      2,
+      2
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 4,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 44,
+    "token": "room_center",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      3,
+      2
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 3,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 46,
+    "token": "room_center",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      3,
+      2
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 3,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 48,
+    "token": "room_center",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      3,
+      3
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 2,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 50,
+    "token": "room_center",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      3,
+      3
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 2,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 52,
+    "token": "room_center",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      3,
+      3
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 2,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 54,
+    "token": "room_center",
+    "action": 0,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      3,
+      3
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 0.0,
+    "water_distance": 2,
+    "rest_distance": null,
+    "event": ""
+  },
+  {
+    "episode": 1,
+    "step": 55,
+    "token": "room_center",
+    "action": 2,
+    "intent": "find_water_source",
+    "rejoin_source": "none",
+    "hazard_adjacent": 0,
+    "goal_alignment": 0.0,
+    "pos": [
+      4,
+      3
+    ],
+    "subgoal": null,
+    "distance_after": null,
+    "reward": 1.0,
+    "water_distance": 1,
+    "rest_distance": null,
+    "event": "goal_reached"
+  }
+]
