@@ -91,8 +91,10 @@ class DynamicSonglineGraph:
             "uncertainty_count": node.uncertainty_count,
             "last_seen_step": node.last_seen_step,
             "pose_sum": np.zeros(2, dtype=np.float64),
+            "pose_sq_sum": np.zeros(2, dtype=np.float64),
             "pose_count": node.pose_count,
             "goal_sum": np.zeros(2, dtype=np.float64),
+            "goal_sq_sum": np.zeros(2, dtype=np.float64),
             "goal_count": node.goal_count,
             "phase_histogram": {},
             "semantic_tag_counts": {},
@@ -167,10 +169,12 @@ class DynamicSonglineGraph:
 
         if pose_arr is not None:
             node["pose_sum"] += pose_arr
+            node["pose_sq_sum"] += np.square(pose_arr)
             node["pose_count"] += 1
 
         if goal_arr is not None:
             node["goal_sum"] += goal_arr
+            node["goal_sq_sum"] += np.square(goal_arr)
             node["goal_count"] += 1
 
         if reward is not None:
@@ -538,6 +542,72 @@ class DynamicSonglineGraph:
             return None
         return node[f"{key_prefix}_sum"] / float(count)
 
+    def get_waypoint_xy(self, node_id: int) -> Optional[Tuple[float, float]]:
+        pose_xy = self.get_mean_xy(node_id, "pose")
+        if pose_xy is None:
+            return None
+        return float(pose_xy[0]), float(pose_xy[1])
+
+    def get_mean_var_xy(self, node_id: int, key_prefix: str) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+        node = self.nodes[node_id]
+        count = int(node.get(f"{key_prefix}_count", 0))
+        if count <= 0:
+            return None, None
+        mean = node[f"{key_prefix}_sum"] / float(count)
+        sq_sum = node.get(f"{key_prefix}_sq_sum")
+        if sq_sum is None:
+            return mean, None
+        sq_mean = sq_sum / float(count)
+        var = np.maximum(0.0, sq_mean - np.square(mean))
+        return mean, var
+
+    def symbolic_node_snapshot(self, node_id: int) -> Dict[str, object]:
+        node = self.nodes[node_id]
+        pose_mean, pose_var = self.get_mean_var_xy(node_id, "pose")
+        goal_mean, goal_var = self.get_mean_var_xy(node_id, "goal")
+        return {
+            "node_id": int(node_id),
+            "token_type": str(node.get("token_type", "phrase")),
+            "phrase_signature": [int(v) for v in node.get("phrase", ())],
+            "semantic_tag_confidence": dict(node.get("semantic_tag_confidence", {})),
+            "semantic_tag_counts": dict(node.get("semantic_tag_counts", {})),
+            "pose_mean": None if pose_mean is None else [float(v) for v in pose_mean],
+            "pose_var": None if pose_var is None else [float(v) for v in pose_var],
+            "goal_mean": None if goal_mean is None else [float(v) for v in goal_mean],
+            "goal_var": None if goal_var is None else [float(v) for v in goal_var],
+            "phase_histogram": dict(node.get("phase_histogram", {})),
+            "visits": int(node.get("visits", 0)),
+            "freshness": float(node.get("freshness", 0.0)),
+            "confidence": float(node.get("confidence", 0.0)),
+            "utility_fast": float(node.get("progress_fast", 0.0)),
+            "utility_slow": float(node.get("progress_slow", 0.0)),
+            "utility_cached": float(node.get("utility_cached", 0.0)),
+            "last_seen_step": int(node.get("last_seen_step", -1)),
+        }
+
+    def symbolic_transition_snapshot(self, src: int, dst: int) -> Dict[str, object]:
+        edge = self.edge_stats.get(src, {}).get(dst)
+        if edge is None:
+            return {
+                "src": int(src),
+                "dst": int(dst),
+                "weight": int(self.edges.get(src, {}).get(dst, 0)),
+            }
+        return {
+            "src": int(src),
+            "dst": int(dst),
+            "weight": int(edge.weight),
+            "success_fast": float(edge.transition_success_fast),
+            "success_slow": float(edge.transition_success_slow),
+            "risk_fast": float(edge.transition_risk_fast),
+            "risk_slow": float(edge.transition_risk_slow),
+            "cost_fast": float(edge.transition_cost_fast),
+            "cost_slow": float(edge.transition_cost_slow),
+            "freshness": float(edge.freshness),
+            "confidence": float(edge.confidence),
+            "last_seen_step": int(edge.last_seen_step),
+        }
+
     def suggest_subgoal(self, top_k: int = 5):
         self.intervention_attempts += 1
         current = self.current_phrase_id
@@ -592,6 +662,8 @@ class DynamicSonglineGraph:
         phrases = []
         for node_id in sorted(self.nodes.keys()):
             node = self.nodes[node_id]
+            pose_mean, pose_var = self.get_mean_var_xy(node_id, "pose")
+            goal_mean, goal_var = self.get_mean_var_xy(node_id, "goal")
             phrases.append(
                 {
                     "node_id": node_id,
@@ -609,6 +681,11 @@ class DynamicSonglineGraph:
                     "progress_slow": float(node.get("progress_slow", 0.0)),
                     "risk_fast": float(node.get("risk_fast", 0.0)),
                     "risk_slow": float(node.get("risk_slow", 0.0)),
+                    "pose_mean_xy": None if pose_mean is None else [float(v) for v in pose_mean],
+                    "pose_var_xy": None if pose_var is None else [float(v) for v in pose_var],
+                    "goal_mean_xy": None if goal_mean is None else [float(v) for v in goal_mean],
+                    "goal_var_xy": None if goal_var is None else [float(v) for v in goal_var],
+                    "phase_histogram": dict(node.get("phase_histogram", {})),
                     "semantic_tag_counts": node.get("semantic_tag_counts", {}),
                     "semantic_tag_confidence": node.get("semantic_tag_confidence", {}),
                     "last_seen_step": int(node["last_seen_step"]),

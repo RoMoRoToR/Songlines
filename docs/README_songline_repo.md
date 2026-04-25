@@ -397,6 +397,106 @@ State-driven water activation тоже уже реализован.
 * state-conditioned intent не является пустой идеей;
 * но как общий слой он пока не готов.
 
+## Semantic memory and concept planning milestone
+
+После water/rest semantic task line память и planner были доведены до следующего состояния:
+
+* `SymbolicMemory` façade поверх graph stack;
+* `EpisodeRecord` / query debug exports;
+* relation tags;
+* concept clusters;
+* concept-aware recall;
+* concept-level planning.
+
+Практически это означает, что pipeline теперь работает не только как:
+
+* `scene -> token -> graph node -> rollout`
+
+но и как:
+
+* `scene -> semantic evidence -> symbolic memory -> concept recall -> concept-guided node/path selection`
+
+Что уже подтверждено:
+
+* water и rest работают как реальные semantic place tasks;
+* planner умеет `node_only`, `concept_recall_v1`, `concept_plan_v1`;
+* query debug уже пишет cluster-level role, а не только node-level candidate list.
+
+Controlled compare на `MiniGrid-Empty-Random-6x6-v0`, `10` seeds, `20` episodes:
+
+Water:
+
+* `node_only`: success **0.990**, steps **10.52**, return **0.990**
+* `concept_recall_v1`: success **0.990**, steps **10.52**, return **0.990**
+* `concept_plan_v1`: success **0.990**, steps **10.51**, return **0.990**
+
+Rest:
+
+* `node_only`: success **0.990**, steps **10.515**, return **0.990**
+* `concept_recall_v1`: success **0.990**, steps **11.105**, return **0.990**
+* `concept_plan_v1`: success **0.990**, steps **11.070**, return **0.990**
+
+Честная интерпретация:
+
+* архитектурный слой concept-aware planning уже реализован;
+* на простой MiniGrid среде метрики почти насыщены, поэтому сильного aggregate gain нет;
+* следующий meaningful test-bed для этого слоя — более “place-like” 3D environment family.
+
+## MiniWorld stage
+
+Следующий environment stage уже реализован кодово:
+
+* [miniworld_support.py](/Users/taniyashuba/PycharmProjects/Songlines/songline_drive/miniworld_support.py)
+* [songline_miniworld.py](/Users/taniyashuba/PycharmProjects/Songlines/scripts/songline_miniworld.py)
+* [compare_songline_miniworld.py](/Users/taniyashuba/PycharmProjects/Songlines/scripts/compare_songline_miniworld.py)
+
+Поддерживаемые env:
+
+* `MiniWorld-Hallway-v0`
+* `MiniWorld-TMaze-v0`
+* `MiniWorld-WallGap-v0`
+* `MiniWorld-FourRooms-v0`
+
+Что уже протянуто в MiniWorld:
+
+* 3D scene adaptation в `SceneState`;
+* reuse того же `SymbolicMemory`;
+* reuse retrieval modes:
+  * `node_only`
+  * `concept_recall_v1`
+  * `concept_plan_v1`
+* continuous waypoint grounding для 3D node targets.
+
+Что уже честно подтверждено:
+
+* код собирается;
+* `miniworld` установлен в `.venv`;
+* dependency check реализован;
+* текущий runtime blocker локализован вне Songlines-кода.
+
+Текущее состояние на этой машине:
+
+```json
+{
+  "miniworld_available": true,
+  "miniworld_runtime_usable": false,
+  "runtime_error": "Library \"EGL\" not found."
+}
+```
+
+Интерпретация:
+
+* MiniWorld stage уже готов как software layer;
+* полноценный 3D smoke-run и benchmark пока нельзя считать подтверждёнными;
+* следующий шаг — запуск на машине с рабочим display-backed GL или EGL-compatible headless backend.
+
+Минимальный runtime checklist:
+
+1. `PYTHONPATH=. .venv/bin/python scripts/songline_miniworld.py --check_dependencies`
+2. убедиться, что `miniworld_runtime_usable = true`
+3. сначала прогнать `MiniWorld-Hallway-v0`
+4. только потом запускать compare на `Hallway/TMaze/WallGap/FourRooms`
+
 ## Trace-аудит Sprint 2 на LavaGap
 
 Для `MiniGrid-LavaGapS7-v0` был сделан узкий trace-аудит baseline против:

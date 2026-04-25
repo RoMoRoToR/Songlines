@@ -89,15 +89,18 @@ class MiniGridSceneEncoder:
         )
         water_visible = float(np.any(np.isin(patch, list(self.water_cell_codes))))
         water_neighbor_count = int(np.sum(np.isin(cardinal_neighbors, list(self.water_cell_codes))))
+        has_water_evidence = float(water_visible > 0.0 or water_neighbor_count > 0)
         water_pattern_match = float(
-            max(
+            0.0
+            if has_water_evidence <= 0.0
+            else max(
                 water_visible,
                 min(
                     1.0,
-                    0.5 * water_visible
-                    + 0.25 * float(open_space_like)
-                    + 0.15 * float(free_neighbor_count >= 2)
-                    + 0.10 * float(wall_neighbor_count >= 1),
+                    0.60 * water_visible
+                    + 0.25 * float(water_neighbor_count > 0)
+                    + 0.10 * float(open_space_like)
+                    + 0.05 * float(free_neighbor_count >= 2),
                 ),
             )
         )
@@ -107,19 +110,21 @@ class MiniGridSceneEncoder:
             and hazard_front == 0.0
         )
         water_neighbor_context = float(
-            min(
+            0.0
+            if has_water_evidence <= 0.0
+            else min(
                 1.0,
-                0.5 * float(water_neighbor_count > 0)
-                + 0.25 * float(free_neighbor_count >= 2)
-                + 0.25 * float(wall_neighbor_count >= 1),
+                0.70 * float(water_neighbor_count > 0)
+                + 0.20 * water_visible
+                + 0.10 * water_accessible,
             )
         )
         water_confidence_local = float(
             min(
                 1.0,
-                0.45 * water_pattern_match
-                + 0.35 * water_accessible
-                + 0.20 * water_neighbor_context,
+                0.60 * water_visible
+                + 0.25 * water_accessible
+                + 0.15 * float(water_neighbor_count > 0),
             )
         )
         rest_visible = float(np.any(np.isin(patch, list(self.rest_cell_codes))))

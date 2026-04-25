@@ -318,14 +318,108 @@ PYTHONPATH=. .venv/bin/python scripts/visualize_songline_graph_growth.py \
 What is already done:
 - semantic graph memory
 - planner-level semantic retrieval
+- concept-level recall and concept-level planning
 - state-conditioned semantic activation
 - two working semantic tasks
 - spatial graph-growth visualization
 - observation-space integrity fix for task wrappers
+- MiniWorld integration layer for 3D semantic-place evaluation
 
 What is the next likely step:
 - a third semantic place task
 - then multi-agent semantic coordination on top of the same intent/memory stack
+
+## MiniWorld Stage
+
+The next environment family after MiniGrid is now implemented:
+- `MiniWorld-Hallway-v0`
+- `MiniWorld-TMaze-v0`
+- `MiniWorld-WallGap-v0`
+- `MiniWorld-FourRooms-v0`
+
+Implemented files:
+- [songline_drive/miniworld_support.py](./songline_drive/miniworld_support.py)
+- [scripts/songline_miniworld.py](./scripts/songline_miniworld.py)
+- [scripts/compare_songline_miniworld.py](./scripts/compare_songline_miniworld.py)
+
+What is already done in this stage:
+- 3D MiniWorld scene adaptation into `SceneState`
+- reuse of the same semantic graph memory and `SymbolicMemory`
+- reuse of `node_only`, `concept_recall_v1`, `concept_plan_v1`
+- continuous waypoint grounding for MiniWorld node targets
+
+What is not yet validated on this machine:
+- full MiniWorld smoke-run
+- full MiniWorld benchmark
+
+Reason:
+- the Python layer is implemented and `miniworld` is installed
+- but runtime is currently blocked by the system OpenGL backend
+- `scripts/songline_miniworld.py --check_dependencies` currently reports:
+
+```json
+{
+  "miniworld_available": true,
+  "miniworld_runtime_usable": false,
+  "runtime_error": "Library \"EGL\" not found."
+}
+```
+
+This means the current blocker is environment-side, not Songlines-side.
+
+### MiniWorld Commands
+
+List supported MiniWorld envs:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/songline_miniworld.py --list_envs
+```
+
+Check whether MiniWorld can actually run in the current machine:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/songline_miniworld.py --check_dependencies
+```
+
+Hallway smoke-run once EGL or a working display is available:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/songline_miniworld.py \
+  --env_id MiniWorld-Hallway-v0 \
+  --agent_mode songline \
+  --songline_policy graph_path \
+  --token_source scene_semantic \
+  --intent_mode goal_region_v1 \
+  --intent_type find_goal_region \
+  --semantic_retrieval_mode concept_plan_v1 \
+  --episodes 2 \
+  --max_steps 120 \
+  --seed 3 \
+  --out_dir /Users/taniyashuba/PycharmProjects/Songlines/tmp/miniworld_hallway_smoke
+```
+
+Full MiniWorld compare once runtime is usable:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/compare_songline_miniworld.py \
+  --env_ids MiniWorld-Hallway-v0 MiniWorld-TMaze-v0 MiniWorld-WallGap-v0 MiniWorld-FourRooms-v0 \
+  --methods random greedy miniworld_goal_region_node_v1 miniworld_goal_region_concept_v1 miniworld_goal_region_plan_v1 \
+  --episodes 20 \
+  --max_steps 120 \
+  --num_seeds 10 \
+  --out_dir /Users/taniyashuba/PycharmProjects/Songlines/tmp/benchmark_miniworld_semantic_full
+```
+
+### MiniWorld Runtime Checklist
+
+Before running MiniWorld benchmark or demo:
+1. `miniworld` must be installed in `.venv`.
+2. `scripts/songline_miniworld.py --check_dependencies` must report `miniworld_runtime_usable = true`.
+3. The machine must provide either:
+   - a working display-backed OpenGL context, or
+   - an EGL-compatible headless backend.
+4. Start with `MiniWorld-Hallway-v0` smoke-run before any full compare.
+5. Only then run the 4-env compare.
 
 ## Additional Documentation
 

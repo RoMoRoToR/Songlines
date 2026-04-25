@@ -188,6 +188,9 @@
 * `FIND_WATER_SOURCE` уже materialize-ится как planner-level retrieval, а не только как memory tag;
 * state-conditioned water activation (`thirst` + local water evidence) уже реализована и работает;
 * warning `gymnasium` про observation space в water wrapper закрыт.
+* `SymbolicMemory` уже включает episodic memory, relation tags, concept clusters и concept-level recall;
+* planner уже умеет `node_only`, `concept_recall_v1` и `concept_plan_v1`;
+* MiniWorld integration layer уже реализован, но на текущей машине runtime заблокирован отсутствием `EGL`.
 
 ## Что уже известно про water semantic task
 
@@ -510,6 +513,68 @@ Aggregate:
 * не запускать новый широкий benchmark до локального `LavaGap` `v9.1` audit результата.
 * не ломать water demonstrator возвратом к `goal_xy`-anchored logic,
 * не мутировать `mission` внутри water wrapper повторно.
+
+## MiniWorld stage
+
+### Что уже реализовано
+
+Отдельный 3D stage уже добавлен:
+
+* [miniworld_support.py](/Users/taniyashuba/PycharmProjects/Songlines/songline_drive/miniworld_support.py)
+* [songline_miniworld.py](/Users/taniyashuba/PycharmProjects/Songlines/scripts/songline_miniworld.py)
+* [compare_songline_miniworld.py](/Users/taniyashuba/PycharmProjects/Songlines/scripts/compare_songline_miniworld.py)
+
+Поддерживаемые env:
+
+* `MiniWorld-Hallway-v0`
+* `MiniWorld-TMaze-v0`
+* `MiniWorld-WallGap-v0`
+* `MiniWorld-FourRooms-v0`
+
+Что уже протянуто:
+
+* 3D scene adaptation в `SceneState`;
+* continuous waypoint grounding;
+* тот же semantic graph stack;
+* те же retrieval modes:
+  * `node_only`
+  * `concept_recall_v1`
+  * `concept_plan_v1`
+
+### Что уже подтверждено
+
+* Python integration собрана корректно;
+* `py_compile` проходит;
+* `miniworld` установлен в `.venv`;
+* dependency check честно сообщает текущий runtime status.
+
+Текущее состояние на этой машине:
+
+```json
+{
+  "miniworld_available": true,
+  "miniworld_runtime_usable": false,
+  "runtime_error": "Library \"EGL\" not found."
+}
+```
+
+Практический вывод:
+
+* MiniWorld stage уже реализован как код;
+* benchmark и smoke-run пока нельзя считать подтверждёнными, потому что текущий блокер внешний: системный GL/EGL backend.
+
+### Как работать с этой веткой
+
+Перед любым новым MiniWorld изменением:
+
+1. Сначала гонять `scripts/songline_miniworld.py --check_dependencies`.
+2. Не интерпретировать `EGL` failure как баг Songlines.
+3. Не переписывать MiniWorld planner stack до тех пор, пока не появится машина с рабочим GL backend.
+4. Первый обязательный run после фикса окружения:
+   * `MiniWorld-Hallway-v0`
+   * `concept_plan_v1`
+   * короткий smoke-run
+5. Только после этого запускать compare на 4 env.
 
 ## Команды
 

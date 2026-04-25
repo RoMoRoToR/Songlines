@@ -38,6 +38,14 @@ class SceneTokenizer:
             distance_progress=distance_progress,
         )
         semantic_tags = self._semantic_tags(scene)
+        relation_tags = self._relation_tags(
+            scene,
+            route_token=route_token,
+            hazard_context=hazard_context,
+            transition_context=transition_context,
+            semantic_tags=semantic_tags,
+        )
+        semantic_tags.update(relation_tags)
         self.previous_topology = topology_context
         self.previous_route_token = route_token
         self.previous_remaining_distance = float(scene.route_context.remaining_distance)
@@ -107,6 +115,60 @@ class SceneTokenizer:
                 )
             ),
             "rest_nearby": float(max(rest_visible, rest_neighbor_context, rest_accessible)),
+        }
+
+    def _relation_tags(
+        self,
+        scene: SceneState,
+        route_token: str,
+        hazard_context: str,
+        transition_context: str,
+        semantic_tags,
+    ):
+        rf = scene.risk_features
+        water_nearby = float(semantic_tags.get("water_nearby", 0.0))
+        safe_rest_zone = float(semantic_tags.get("safe_rest_zone", 0.0))
+        room_center = float(semantic_tags.get("room_center", 0.0))
+        hazard_edge = float(semantic_tags.get("hazard_edge", 0.0))
+        hazard_recovery_route = float(semantic_tags.get("hazard_recovery_route", 0.0))
+        goal_region = float(semantic_tags.get("goal_region", 0.0))
+        front_safe = float(rf.get("front_safe", 0.0))
+        hazard_near = float(rf.get("hazard_near", 0.0))
+        goal_heading_alignment = float(rf.get("goal_heading_alignment", 0.0))
+        open_space_like = float(rf.get("open_space_like", 0.0))
+
+        near_water = float(min(1.0, 0.70 * water_nearby + 0.30 * float(rf.get("water_accessible", 0.0))))
+        adjacent_hazard = float(min(1.0, max(hazard_edge, 0.75 * hazard_near * front_safe)))
+        post_hazard_goal_rejoin = float(
+            min(
+                1.0,
+                max(
+                    1.0 if route_token == "post_hazard" else 0.0,
+                    0.55 * hazard_recovery_route
+                    + 0.30 * goal_region
+                    + 0.15 * max(0.0, goal_heading_alignment),
+                ),
+            )
+        )
+        if hazard_context not in {"safe", "hazard_near"} and route_token != "post_hazard":
+            post_hazard_goal_rejoin *= 0.5
+        if transition_context == "cross":
+            post_hazard_goal_rejoin = min(1.0, post_hazard_goal_rejoin + 0.15)
+
+        open_safe_rest_zone = float(
+            min(
+                1.0,
+                0.55 * safe_rest_zone
+                + 0.25 * room_center
+                + 0.10 * open_space_like
+                + 0.10 * front_safe,
+            )
+        )
+        return {
+            "near_water": near_water,
+            "adjacent_hazard": adjacent_hazard,
+            "post_hazard_goal_rejoin": post_hazard_goal_rejoin,
+            "open_safe_rest_zone": open_safe_rest_zone,
         }
 
     def _distance_progress(self, scene: SceneState) -> float:

@@ -71,6 +71,87 @@ PYTHONPATH=. .venv/bin/python scripts/compare_songline_minigrid.py \
 * описание water-task должно идти через `info["task_mission"]`, а не через подмену `MissionSpace`-controlled mission;
 * это уже исправлено в текущем коде и не должно регрессировать.
 
+### MiniWorld Current Status
+
+3D MiniWorld stage уже реализован кодово:
+
+* adapter / scene support: [miniworld_support.py](/Users/taniyashuba/PycharmProjects/Songlines/songline_drive/miniworld_support.py)
+* runtime: [songline_miniworld.py](/Users/taniyashuba/PycharmProjects/Songlines/scripts/songline_miniworld.py)
+* compare runner: [compare_songline_miniworld.py](/Users/taniyashuba/PycharmProjects/Songlines/scripts/compare_songline_miniworld.py)
+
+Поддерживаемые env:
+
+* `MiniWorld-Hallway-v0`
+* `MiniWorld-TMaze-v0`
+* `MiniWorld-WallGap-v0`
+* `MiniWorld-FourRooms-v0`
+
+Что уже подтверждено:
+
+* MiniWorld слой использует тот же semantic graph memory / `SymbolicMemory`;
+* retrieval modes `node_only`, `concept_recall_v1`, `concept_plan_v1` протянуты и в 3D runner;
+* Python integration и `py_compile` проходят.
+
+Что пока не подтверждено на этой машине:
+
+* реальный 3D smoke-run,
+* полноценный 3D benchmark,
+
+потому что текущий backend check даёт `Library "EGL" not found.`.
+
+### MiniWorld Commands
+
+List envs:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/songline_miniworld.py --list_envs
+```
+
+Dependency check:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/songline_miniworld.py --check_dependencies
+```
+
+Hallway smoke-run после того, как `--check_dependencies` начнёт возвращать `miniworld_runtime_usable=true`:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/songline_miniworld.py \
+  --env_id MiniWorld-Hallway-v0 \
+  --agent_mode songline \
+  --songline_policy graph_path \
+  --token_source scene_semantic \
+  --intent_mode goal_region_v1 \
+  --intent_type find_goal_region \
+  --semantic_retrieval_mode concept_plan_v1 \
+  --episodes 2 \
+  --max_steps 120 \
+  --seed 3 \
+  --out_dir /Users/taniyashuba/PycharmProjects/Songlines/tmp/miniworld_hallway_smoke
+```
+
+Compare:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/compare_songline_miniworld.py \
+  --env_ids MiniWorld-Hallway-v0 MiniWorld-TMaze-v0 MiniWorld-WallGap-v0 MiniWorld-FourRooms-v0 \
+  --methods random greedy miniworld_goal_region_node_v1 miniworld_goal_region_concept_v1 miniworld_goal_region_plan_v1 \
+  --episodes 20 \
+  --max_steps 120 \
+  --num_seeds 10 \
+  --out_dir /Users/taniyashuba/PycharmProjects/Songlines/tmp/benchmark_miniworld_semantic_full
+```
+
+### MiniWorld Runtime Checklist
+
+Перед любым MiniWorld запуском:
+
+1. Убедись, что `.venv` содержит `miniworld`.
+2. Запусти `--check_dependencies`.
+3. Не запускай benchmark, пока `miniworld_runtime_usable` не стал `true`.
+4. Если ошибка остаётся `Library "EGL" not found.`, чинить нужно системный GL/EGL backend, а не Songlines runtime.
+5. После фикса сначала прогоняй `MiniWorld-Hallway-v0`, потом только полный compare.
+
 ## Training
 For training the complete Active Neural SLAM model on the Exploration task:
 ```

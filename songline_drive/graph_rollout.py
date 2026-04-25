@@ -67,7 +67,13 @@ class GraphRolloutPlanner:
         if current_node_id is None:
             return []
 
-        if planner_query is not None and hasattr(graph, "candidate_nodes_for_intent"):
+        if planner_query is not None and hasattr(graph, "candidate_nodes_for_query"):
+            candidate_ids = graph.candidate_nodes_for_query(
+                planner_query,
+                top_k=top_k,
+                current_node_id=current_node_id,
+            )
+        elif planner_query is not None and hasattr(graph, "candidate_nodes_for_intent"):
             candidate_ids = graph.candidate_nodes_for_intent(
                 planner_query.target_predicate,
                 top_k=top_k,
@@ -78,6 +84,8 @@ class GraphRolloutPlanner:
         candidate_base_utilities = {}
         candidate_tag_confidences = {}
         candidate_intent_scores = {}
+        candidate_concept_membership = {}
+        concept_query_debug = {}
         for node_id in candidate_ids:
             candidate_base_utilities[str(node_id)] = float(self.node_utility(graph, node_id))
             if query_tag_name is not None:
@@ -85,9 +93,17 @@ class GraphRolloutPlanner:
                     graph.nodes[node_id].get("semantic_tag_confidence", {}).get(query_tag_name, 0.0)
                 )
             if planner_query is not None and hasattr(graph, "node_intent_score"):
-                candidate_intent_scores[str(node_id)] = float(
-                    graph.node_intent_score(node_id, planner_query.target_predicate)
-                )
+                try:
+                    candidate_intent_scores[str(node_id)] = float(
+                        graph.node_intent_score(node_id, planner_query=planner_query)
+                    )
+                except TypeError:
+                    candidate_intent_scores[str(node_id)] = float(
+                        graph.node_intent_score(node_id, planner_query.target_predicate)
+                    )
+        if planner_query is not None and hasattr(graph, "last_concept_query_debug"):
+            concept_query_debug = dict(getattr(graph, "last_concept_query_debug", {}) or {})
+            candidate_concept_membership = dict(concept_query_debug.get("cluster_membership", {}))
         plans: List[ManeuverPlan] = []
         for node_id in candidate_ids:
             path = graph.shortest_path(current_node_id, node_id)
@@ -107,10 +123,13 @@ class GraphRolloutPlanner:
 
             waypoint_xy = None
             next_node_id = truncated_path[1] if len(truncated_path) > 1 else truncated_path[0]
-            pose_xy = graph.get_mean_xy(next_node_id, "pose")
-            if pose_xy is not None:
-                rounded = np.rint(pose_xy).astype(np.int32)
-                waypoint_xy = (int(rounded[0]), int(rounded[1]))
+            if hasattr(graph, "get_waypoint_xy"):
+                waypoint_xy = graph.get_waypoint_xy(next_node_id)
+            else:
+                pose_xy = graph.get_mean_xy(next_node_id, "pose")
+                if pose_xy is not None:
+                    rounded = np.rint(pose_xy).astype(np.int32)
+                    waypoint_xy = (int(rounded[0]), int(rounded[1]))
 
             plans.append(
                 ManeuverPlan(
@@ -129,6 +148,8 @@ class GraphRolloutPlanner:
                         "candidate_base_utilities": candidate_base_utilities,
                         "candidate_tag_confidences": candidate_tag_confidences,
                         "candidate_intent_scores": candidate_intent_scores,
+                        "candidate_concept_membership": candidate_concept_membership,
+                        "concept_query_debug": concept_query_debug,
                         "selected_tag_confidence": float(candidate_tag_confidences.get(str(node_id), 0.0)),
                         "selected_intent_score": float(candidate_intent_scores.get(str(node_id), 0.0)),
                         "selected_plan_utility": float(path_utility),

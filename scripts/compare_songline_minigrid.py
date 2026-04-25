@@ -34,10 +34,20 @@ DEFAULT_METHODS = [
     "milestone_state_conditioned_hazard_recovery_v5",
     "milestone_state_conditioned_hazard_recovery_v6",
     "milestone_state_conditioned_hazard_recovery_v7",
+    "milestone_semantic_intent_hazard_recovery_node_v1",
+    "milestone_semantic_intent_hazard_recovery_concept_v1",
+    "milestone_semantic_intent_hazard_recovery_plan_v1",
+    "milestone_semantic_intent_goal_region_node_v1",
+    "milestone_semantic_intent_goal_region_concept_v1",
+    "milestone_semantic_intent_goal_region_plan_v1",
     "milestone_semantic_intent_water_v1",
+    "milestone_semantic_intent_water_node_v1",
+    "milestone_semantic_intent_water_concept_plan_v1",
     "milestone_state_conditioned_water_v1",
     "milestone_state_conditioned_water_v2",
     "milestone_semantic_intent_rest_v1",
+    "milestone_semantic_intent_rest_node_v1",
+    "milestone_semantic_intent_rest_concept_plan_v1",
     "milestone_state_conditioned_rest_v1",
     "milestone_state_conditioned_rest_v2",
 ]
@@ -368,6 +378,96 @@ def method_to_config(method):
             "intent_handoff_mode": "post_recovery_goal_v1",
             "goal_rejoin_target_mode": "source_select_v2",
         }
+    if method == "milestone_semantic_intent_hazard_recovery_node_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "hazard_recovery_v1",
+            "intent_selection_mode": "fixed",
+            "intent_type": "hazard_recovery_exit",
+            "intent_handoff_mode": "post_recovery_goal_v1",
+            "goal_rejoin_target_mode": "source_select_v2",
+            "semantic_retrieval_mode": "node_only",
+        }
+    if method == "milestone_semantic_intent_hazard_recovery_concept_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "hazard_recovery_v1",
+            "intent_selection_mode": "fixed",
+            "intent_type": "hazard_recovery_exit",
+            "intent_handoff_mode": "post_recovery_goal_v1",
+            "goal_rejoin_target_mode": "source_select_v2",
+            "semantic_retrieval_mode": "concept_recall_v1",
+        }
+    if method == "milestone_semantic_intent_hazard_recovery_plan_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "hazard_recovery_v1",
+            "intent_selection_mode": "fixed",
+            "intent_type": "hazard_recovery_exit",
+            "intent_handoff_mode": "post_recovery_goal_v1",
+            "goal_rejoin_target_mode": "source_select_v2",
+            "semantic_retrieval_mode": "concept_plan_v1",
+        }
+    if method == "milestone_semantic_intent_goal_region_node_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "goal_region_v1",
+            "intent_selection_mode": "fixed",
+            "intent_type": "find_goal_region",
+            "semantic_retrieval_mode": "node_only",
+        }
+    if method == "milestone_semantic_intent_goal_region_concept_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "goal_region_v1",
+            "intent_selection_mode": "fixed",
+            "intent_type": "find_goal_region",
+            "semantic_retrieval_mode": "concept_recall_v1",
+        }
+    if method == "milestone_semantic_intent_goal_region_plan_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "intent_mode": "goal_region_v1",
+            "intent_selection_mode": "fixed",
+            "intent_type": "find_goal_region",
+            "semantic_retrieval_mode": "concept_plan_v1",
+        }
     if method == "milestone_semantic_intent_water_v1":
         return {
             "agent_mode": "songline",
@@ -380,6 +480,35 @@ def method_to_config(method):
             "task_mode": "water_search_v1",
             "intent_mode": "water_v1",
             "intent_type": "find_water_source",
+            "semantic_retrieval_mode": "concept_recall_v1",
+        }
+    if method == "milestone_semantic_intent_water_node_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "task_mode": "water_search_v1",
+            "intent_mode": "water_v1",
+            "intent_type": "find_water_source",
+            "semantic_retrieval_mode": "node_only",
+        }
+    if method == "milestone_semantic_intent_water_concept_plan_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "task_mode": "water_search_v1",
+            "intent_mode": "water_v1",
+            "intent_type": "find_water_source",
+            "semantic_retrieval_mode": "concept_plan_v1",
         }
     if method == "milestone_state_conditioned_water_v1":
         return {
@@ -396,6 +525,7 @@ def method_to_config(method):
             "intent_type": "find_water_source",
             "thirst_on_threshold": 0.10,
             "thirst_off_threshold": 0.04,
+            "semantic_retrieval_mode": "concept_recall_v1",
         }
     if method == "milestone_state_conditioned_water_v2":
         return {
@@ -414,6 +544,7 @@ def method_to_config(method):
             "thirst_off_threshold": 0.03,
             "water_local_activation_threshold": 0.18,
             "water_local_hold_threshold": 0.12,
+            "semantic_retrieval_mode": "concept_recall_v1",
         }
     if method == "milestone_semantic_intent_rest_v1":
         return {
@@ -427,6 +558,35 @@ def method_to_config(method):
             "task_mode": "rest_search_v1",
             "intent_mode": "rest_v1",
             "intent_type": "find_safe_rest_zone",
+            "semantic_retrieval_mode": "concept_recall_v1",
+        }
+    if method == "milestone_semantic_intent_rest_node_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "task_mode": "rest_search_v1",
+            "intent_mode": "rest_v1",
+            "intent_type": "find_safe_rest_zone",
+            "semantic_retrieval_mode": "node_only",
+        }
+    if method == "milestone_semantic_intent_rest_concept_plan_v1":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_semantic",
+            "milestone_mode": "semantic_handoff_v1",
+            "early_hazard_intervention": True,
+            "final_exit_mode": "none",
+            "graph_update_mode": "static",
+            "task_mode": "rest_search_v1",
+            "intent_mode": "rest_v1",
+            "intent_type": "find_safe_rest_zone",
+            "semantic_retrieval_mode": "concept_plan_v1",
         }
     if method == "milestone_state_conditioned_rest_v1":
         return {
@@ -443,6 +603,7 @@ def method_to_config(method):
             "intent_type": "find_safe_rest_zone",
             "rest_energy_on_threshold": 0.95,
             "rest_energy_off_threshold": 0.98,
+            "semantic_retrieval_mode": "concept_recall_v1",
         }
     if method == "milestone_state_conditioned_rest_v2":
         return {
@@ -461,6 +622,7 @@ def method_to_config(method):
             "rest_energy_off_threshold": 0.995,
             "rest_local_activation_threshold": 0.18,
             "rest_local_hold_threshold": 0.12,
+            "semantic_retrieval_mode": "concept_recall_v1",
         }
     raise ValueError(f"Unknown method: {method}")
 
@@ -487,6 +649,8 @@ def parse_args():
         choices=["symbolic_hash", "scene_semantic", "scene_patch_hash"],
     )
     parser.add_argument("--scene_radius", type=int, default=1)
+    parser.add_argument("--disable_local_resource_guidance", action="store_true")
+    parser.add_argument("--disable_goal_rejoin_fallback_assists", action="store_true")
     parser.add_argument("--task_mode", type=str, default="default", choices=["default", "water_search_v1", "rest_search_v1"])
     parser.add_argument("--intent_mode", type=str, default="none", choices=["none", "safe_exit_v1", "hazard_recovery_v1", "goal_region_v1", "water_v1", "rest_v1"])
     parser.add_argument("--intent_selection_mode", type=str, default="fixed", choices=["fixed", "state_v1"])
@@ -500,6 +664,7 @@ def parse_args():
     parser.add_argument("--goal_rejoin_guard_mode", type=str, default="none", choices=["none", "debounce_v1"])
     parser.add_argument("--goal_rejoin_guard_steps", type=int, default=4)
     parser.add_argument("--goal_rejoin_target_mode", type=str, default="none", choices=["none", "fallback_goal_v1", "stable_waypoint_v1", "source_select_v1", "source_select_v2"])
+    parser.add_argument("--semantic_retrieval_mode", type=str, default="concept_recall_v1", choices=["node_only", "concept_recall_v1", "concept_plan_v1"])
     parser.add_argument("--water_success_radius", type=int, default=1)
     parser.add_argument("--rest_success_radius", type=int, default=1)
     parser.add_argument("--thirst_on_threshold", type=float, default=0.10)
@@ -556,6 +721,7 @@ def run_comparison(args):
                     goal_rejoin_guard_mode=cfg.get("goal_rejoin_guard_mode", getattr(args, "goal_rejoin_guard_mode", "none")),
                     goal_rejoin_guard_steps=args.goal_rejoin_guard_steps,
                     goal_rejoin_target_mode=cfg.get("goal_rejoin_target_mode", getattr(args, "goal_rejoin_target_mode", "none")),
+                    semantic_retrieval_mode=cfg.get("semantic_retrieval_mode", getattr(args, "semantic_retrieval_mode", "concept_recall_v1")),
                     water_success_radius=args.water_success_radius,
                     rest_success_radius=args.rest_success_radius,
                     thirst_on_threshold=cfg.get("thirst_on_threshold", getattr(args, "thirst_on_threshold", 0.10)),
@@ -570,6 +736,8 @@ def run_comparison(args):
                     change_after_episode=args.change_after_episode,
                     export_phase_metrics=True,
                     scene_radius=args.scene_radius,
+                    disable_local_resource_guidance=bool(args.disable_local_resource_guidance),
+                    disable_goal_rejoin_fallback_assists=bool(args.disable_goal_rejoin_fallback_assists),
                     tokenizer_mode=args.tokenizer_mode,
                     tokenizer_proj_dim=args.tokenizer_proj_dim,
                     out_dir=run_out_dir,
@@ -598,6 +766,7 @@ def run_comparison(args):
                     "intent_handoff_mode": cfg.get("intent_handoff_mode", getattr(args, "intent_handoff_mode", "none")),
                     "goal_rejoin_guard_mode": cfg.get("goal_rejoin_guard_mode", getattr(args, "goal_rejoin_guard_mode", "none")),
                     "goal_rejoin_target_mode": cfg.get("goal_rejoin_target_mode", getattr(args, "goal_rejoin_target_mode", "none")),
+                    "semantic_retrieval_mode": cfg.get("semantic_retrieval_mode", getattr(args, "semantic_retrieval_mode", "concept_recall_v1")),
                     "water_success_radius": args.water_success_radius,
                     "rest_success_radius": args.rest_success_radius,
                     "thirst_on_threshold": cfg.get("thirst_on_threshold", getattr(args, "thirst_on_threshold", 0.10)),
@@ -608,6 +777,8 @@ def run_comparison(args):
                     "rest_energy_off_threshold": cfg.get("rest_energy_off_threshold", getattr(args, "rest_energy_off_threshold", 0.98)),
                     "rest_local_activation_threshold": cfg.get("rest_local_activation_threshold", getattr(args, "rest_local_activation_threshold", 0.0)),
                     "rest_local_hold_threshold": cfg.get("rest_local_hold_threshold", getattr(args, "rest_local_hold_threshold", 0.0)),
+                    "local_resource_guidance_enabled": int(not args.disable_local_resource_guidance),
+                    "goal_rejoin_fallback_assists_enabled": int(not args.disable_goal_rejoin_fallback_assists),
                     "env_change_mode": args.env_change_mode,
                     "change_after_episode": int(args.change_after_episode),
                     "agent_mode": summary["agent_mode"],
@@ -640,6 +811,19 @@ def run_comparison(args):
                     "conditional_post_hazard_success": float(summary["conditional_post_hazard_success"]),
                     "conditional_resume_to_goal_success": float(summary["conditional_resume_to_goal_success"]),
                     "mean_max_phase_depth": float(summary["mean_max_phase_depth"]),
+                    "query_attempt_count": float(summary["query_attempt_count"]),
+                    "query_nonempty_rate": float(summary["query_nonempty_rate"]),
+                    "retrieval_precision_at_k": float(summary["retrieval_precision_at_k"]),
+                    "query_satisfaction_rate": float(summary["query_satisfaction_rate"]),
+                    "semantic_target_materialization_rate": float(summary["semantic_target_materialization_rate"]),
+                    "post_retrieval_completion_rate": float(summary["post_retrieval_completion_rate"]),
+                    "completion_given_materialized": float(summary["completion_given_materialized"]),
+                    "local_resource_guidance_usage_rate": float(summary["local_resource_guidance_usage_rate"]),
+                    "goal_rejoin_fallback_assist_usage_rate": float(summary["goal_rejoin_fallback_assist_usage_rate"]),
+                    "retrieval_failure_empty_rate": float(summary["retrieval_failure_empty_rate"]),
+                    "retrieval_failure_unsatisfied_rate": float(summary["retrieval_failure_unsatisfied_rate"]),
+                    "semantic_materialization_failure_rate": float(summary["semantic_materialization_failure_rate"]),
+                    "control_failure_after_retrieval_rate": float(summary["control_failure_after_retrieval_rate"]),
                 }
                 run_row.update(growth_stats(run_summary["graph_nodes"]))
                 run_rows.append(run_row)
@@ -667,6 +851,7 @@ def run_comparison(args):
         "intent_handoff_mode",
         "goal_rejoin_guard_mode",
         "goal_rejoin_target_mode",
+        "semantic_retrieval_mode",
         "water_success_radius",
         "rest_success_radius",
         "thirst_on_threshold",
@@ -677,6 +862,8 @@ def run_comparison(args):
         "rest_energy_off_threshold",
         "rest_local_activation_threshold",
         "rest_local_hold_threshold",
+        "local_resource_guidance_enabled",
+        "goal_rejoin_fallback_assists_enabled",
         "intent_active",
         "has_goal_rejoin_materialization_failure",
         "water_task_success",
@@ -716,6 +903,22 @@ def run_comparison(args):
         "post_hazard_to_success",
         "resume_to_goal_to_success",
         "max_phase_depth",
+        "query_attempt_count",
+        "query_nonempty_rate",
+        "retrieval_precision_at_k",
+        "query_satisfaction_rate",
+        "semantic_target_materialization_rate",
+        "semantic_target_materialized_any",
+        "post_retrieval_completion",
+        "completion_given_materialized",
+        "no_retrieval_attempt",
+        "local_resource_guidance_used",
+        "goal_rejoin_fallback_assist_used",
+        "retrieval_failure_empty",
+        "retrieval_failure_unsatisfied",
+        "semantic_materialization_failure",
+        "control_failure_after_retrieval",
+        "failure_taxonomy",
     ]
     write_csv(os.path.join(args.out_dir, "episode_results.csv"), episode_rows, episode_fieldnames)
     with open(os.path.join(args.out_dir, "episode_results.json"), "w") as f:
@@ -750,6 +953,19 @@ def run_comparison(args):
         "conditional_post_hazard_success",
         "conditional_resume_to_goal_success",
         "mean_max_phase_depth",
+        "query_attempt_count",
+        "query_nonempty_rate",
+        "retrieval_precision_at_k",
+        "query_satisfaction_rate",
+        "semantic_target_materialization_rate",
+        "post_retrieval_completion_rate",
+        "completion_given_materialized",
+        "local_resource_guidance_usage_rate",
+        "goal_rejoin_fallback_assist_usage_rate",
+        "retrieval_failure_empty_rate",
+        "retrieval_failure_unsatisfied_rate",
+        "semantic_materialization_failure_rate",
+        "control_failure_after_retrieval_rate",
         "graph_growth_slope_first_half",
         "graph_growth_slope_second_half",
         "graph_growth_slowdown",
@@ -767,6 +983,7 @@ def run_comparison(args):
         "intent_handoff_mode",
         "goal_rejoin_guard_mode",
         "goal_rejoin_target_mode",
+        "semantic_retrieval_mode",
         "water_success_radius",
         "rest_success_radius",
         "thirst_on_threshold",
@@ -777,6 +994,8 @@ def run_comparison(args):
         "rest_energy_off_threshold",
         "rest_local_activation_threshold",
         "rest_local_hold_threshold",
+        "local_resource_guidance_enabled",
+        "goal_rejoin_fallback_assists_enabled",
         "env_change_mode",
         "change_after_episode",
         "agent_mode",
@@ -800,6 +1019,7 @@ def run_comparison(args):
             "intent_handoff_mode",
             "goal_rejoin_guard_mode",
             "goal_rejoin_target_mode",
+            "semantic_retrieval_mode",
             "water_success_radius",
             "rest_success_radius",
             "thirst_on_threshold",
@@ -810,6 +1030,8 @@ def run_comparison(args):
             "rest_energy_off_threshold",
             "rest_local_activation_threshold",
             "rest_local_hold_threshold",
+            "local_resource_guidance_enabled",
+            "goal_rejoin_fallback_assists_enabled",
             "env_change_mode",
             "change_after_episode",
         ],
@@ -828,6 +1050,7 @@ def run_comparison(args):
             "intent_handoff_mode",
             "goal_rejoin_guard_mode",
             "goal_rejoin_target_mode",
+            "semantic_retrieval_mode",
             "water_success_radius",
             "rest_success_radius",
             "thirst_on_threshold",
@@ -838,6 +1061,8 @@ def run_comparison(args):
             "rest_energy_off_threshold",
             "rest_local_activation_threshold",
             "rest_local_hold_threshold",
+            "local_resource_guidance_enabled",
+            "goal_rejoin_fallback_assists_enabled",
             "env_change_mode",
             "change_after_episode",
         ],
@@ -856,6 +1081,7 @@ def run_comparison(args):
         "intent_handoff_mode",
         "goal_rejoin_guard_mode",
         "goal_rejoin_target_mode",
+        "semantic_retrieval_mode",
         "water_success_radius",
         "rest_success_radius",
         "thirst_on_threshold",
@@ -866,6 +1092,8 @@ def run_comparison(args):
         "rest_energy_off_threshold",
         "rest_local_activation_threshold",
         "rest_local_hold_threshold",
+        "local_resource_guidance_enabled",
+        "goal_rejoin_fallback_assists_enabled",
         "env_change_mode",
         "change_after_episode",
         "num_runs",
@@ -889,6 +1117,7 @@ def run_comparison(args):
         "intent_handoff_mode",
         "goal_rejoin_guard_mode",
         "goal_rejoin_target_mode",
+        "semantic_retrieval_mode",
         "water_success_radius",
         "rest_success_radius",
         "thirst_on_threshold",
@@ -899,6 +1128,8 @@ def run_comparison(args):
         "rest_energy_off_threshold",
         "rest_local_activation_threshold",
         "rest_local_hold_threshold",
+        "local_resource_guidance_enabled",
+        "goal_rejoin_fallback_assists_enabled",
         "env_change_mode",
         "change_after_episode",
         "num_runs",
@@ -924,6 +1155,7 @@ def run_comparison(args):
                 "Intent handoff": row["intent_handoff_mode"],
                 "Goal rejoin guard": row["goal_rejoin_guard_mode"],
                 "Goal rejoin target": row["goal_rejoin_target_mode"],
+                "Semantic retrieval": row["semantic_retrieval_mode"],
                 "Water radius": row["water_success_radius"],
                 "Rest radius": row["rest_success_radius"],
                 "Thirst on": row["thirst_on_threshold"],
@@ -934,6 +1166,8 @@ def run_comparison(args):
                 "Rest energy off": row["rest_energy_off_threshold"],
                 "Rest local on": row["rest_local_activation_threshold"],
                 "Rest local hold": row["rest_local_hold_threshold"],
+                "Local resource guidance": row["local_resource_guidance_enabled"],
+                "Goal rejoin fallback assists": row["goal_rejoin_fallback_assists_enabled"],
                 "Env change": row["env_change_mode"],
                 "Change after": row["change_after_episode"],
                 "Success rate": row["success_rate_mean"],
@@ -942,6 +1176,12 @@ def run_comparison(args):
                 "Success delta": row["success_rate_change_delta_mean"],
                 "Avg steps": row["avg_steps_to_goal_mean"],
                 "Avg return": row["avg_return_mean"],
+                "Query nonempty": row["query_nonempty_rate_mean"],
+                "Retrieval precision@k": row["retrieval_precision_at_k_mean"],
+                "Query satisfaction": row["query_satisfaction_rate_mean"],
+                "Target materialization": row["semantic_target_materialization_rate_mean"],
+                "Post retrieval completion": row["post_retrieval_completion_rate_mean"],
+                "Completion given materialized": row["completion_given_materialized_mean"],
                 "Phase depth": row["mean_max_phase_depth_mean"],
                 "Gap aligned frac": row["fraction_gap_aligned_mean"],
                 "Safe crossing frac": row["fraction_safe_crossing_mean"],
@@ -970,6 +1210,7 @@ def run_comparison(args):
             "Intent handoff",
             "Goal rejoin guard",
             "Goal rejoin target",
+            "Semantic retrieval",
             "Water radius",
             "Rest radius",
             "Thirst on",
@@ -980,6 +1221,8 @@ def run_comparison(args):
             "Rest energy off",
             "Rest local on",
             "Rest local hold",
+            "Local resource guidance",
+            "Goal rejoin fallback assists",
             "Env change",
             "Change after",
             "Success rate",
@@ -988,6 +1231,12 @@ def run_comparison(args):
             "Success delta",
             "Avg steps",
             "Avg return",
+            "Query nonempty",
+            "Retrieval precision@k",
+            "Query satisfaction",
+            "Target materialization",
+            "Post retrieval completion",
+            "Completion given materialized",
             "Phase depth",
             "Gap aligned frac",
             "Safe crossing frac",
@@ -1052,6 +1301,30 @@ def run_comparison(args):
         metric="avg_return",
         ylabel="Avg Return",
         out_path=os.path.join(args.out_dir, "comparison_avg_return.png"),
+    )
+    plot_metric_by_env(
+        aggregated_by_env,
+        args.env_ids,
+        args.methods,
+        metric="query_satisfaction_rate",
+        ylabel="Query Satisfaction Rate",
+        out_path=os.path.join(args.out_dir, "comparison_query_satisfaction_rate.png"),
+    )
+    plot_metric_by_env(
+        aggregated_by_env,
+        args.env_ids,
+        args.methods,
+        metric="semantic_target_materialization_rate",
+        ylabel="Semantic Target Materialization Rate",
+        out_path=os.path.join(args.out_dir, "comparison_target_materialization_rate.png"),
+    )
+    plot_metric_by_env(
+        aggregated_by_env,
+        args.env_ids,
+        args.methods,
+        metric="post_retrieval_completion_rate",
+        ylabel="Post-Retrieval Completion Rate",
+        out_path=os.path.join(args.out_dir, "comparison_post_retrieval_completion_rate.png"),
     )
     plot_songline_growth(songline_growth_rows, os.path.join(args.out_dir, "songline_graph_growth.png"))
     plot_metric_by_method(

@@ -15,6 +15,7 @@ from songline_drive.graph_rollout import GraphRolloutPlanner
 from songline_drive.intents import build_planner_query
 from songline_drive.maneuver_selector import ManeuverSelector
 from songline_drive.scene_encoder import MiniGridSceneEncoder
+from songline_drive.symbolic_memory import SymbolicMemory
 from songline_drive.scene_tokenizer import SceneTokenizer
 from songline_drive.trajectory_planner import TrajectoryPlanner
 from songline_drive.types import IntentType
@@ -121,6 +122,104 @@ def get_rest_position(env):
             if cell is not None and cell.type == "box":
                 return np.array([x, y], dtype=np.int32)
     return None
+
+
+def _grid_cell_code(env, x: int, y: int) -> int:
+    grid = env.unwrapped.grid
+    if x < 0 or y < 0 or x >= grid.width or y >= grid.height:
+        return 99
+    cell = grid.get(x, y)
+    if cell is None:
+        return 0
+    if cell.type == "wall":
+        return 1
+    if cell.type == "goal":
+        return 2
+    if cell.type == "lava":
+        return 3
+    if cell.type == "door":
+        return 4
+    if cell.type == "ball":
+        return 6
+    if cell.type == "box":
+        return 7
+    return 8
+
+
+def local_resource_guidance(env, scene, active_intent_type, radius: int = 1):
+    if scene is None or active_intent_type is None:
+        return None
+    intent_name = str(getattr(active_intent_type, "value", active_intent_type))
+    risk = scene.risk_features
+    resource_type = None
+    has_evidence = False
+    if intent_name == "find_water_source":
+        resource_type = "ball"
+        has_evidence = bool(
+            float(risk.get("water_visible", 0.0)) > 0.0
+            or float(risk.get("water_accessible", 0.0)) > 0.0
+        )
+    elif intent_name == "find_safe_rest_zone":
+        resource_type = "box"
+        has_evidence = bool(
+            float(risk.get("rest_visible", 0.0)) > 0.0
+            or float(risk.get("rest_accessible", 0.0)) > 0.0
+        )
+    if resource_type is None or not has_evidence:
+        return None
+
+    agent_xy = np.asarray(env.unwrapped.agent_pos, dtype=np.int32)
+    grid = env.unwrapped.grid
+    resource_positions = []
+    for dy in range(-radius, radius + 1):
+        for dx in range(-radius, radius + 1):
+            x = int(agent_xy[0] + dx)
+            y = int(agent_xy[1] + dy)
+            if x < 0 or y < 0 or x >= grid.width or y >= grid.height:
+                continue
+            cell = grid.get(x, y)
+            if cell is not None and cell.type == resource_type:
+                resource_positions.append((x, y))
+    if not resource_positions:
+        return None
+
+    for rx, ry in resource_positions:
+        if manhattan(agent_xy, (rx, ry)) <= 1:
+            return {
+                "hold_position": True,
+                "waypoint_xy": tuple(int(v) for v in agent_xy),
+                "resource_xy": (int(rx), int(ry)),
+                "resource_type": resource_type,
+            }
+
+    candidates = []
+    for rx, ry in resource_positions:
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx = int(rx + dx)
+            ny = int(ry + dy)
+            cell_code = _grid_cell_code(env, nx, ny)
+            if cell_code not in (0, 2):
+                continue
+            candidates.append(
+                (
+                    manhattan(agent_xy, (nx, ny)),
+                    manhattan((nx, ny), (rx, ry)),
+                    ny,
+                    nx,
+                    (nx, ny),
+                    (rx, ry),
+                )
+            )
+    if not candidates:
+        return None
+    candidates.sort()
+    _, _, _, _, waypoint_xy, resource_xy = candidates[0]
+    return {
+        "hold_position": False,
+        "waypoint_xy": tuple(int(v) for v in waypoint_xy),
+        "resource_xy": tuple(int(v) for v in resource_xy),
+        "resource_type": resource_type,
+    }
 
 
 class WaterTaskWrapper(gym.Wrapper):
@@ -424,6 +523,7 @@ def build_memory(args):
         min_goal_visits=args.min_goal_visits,
         graph_update_mode=args.graph_update_mode,
     )
+    memory = SymbolicMemory(memory)
     planner = GraphRolloutPlanner()
     return tokenizer, encoder, memory, planner
 
@@ -673,13 +773,22 @@ def select_graph_waypoint(
     goal_xy=None,
     planner_query=None,
 ):
-    plans = planner.rollout(
-        graph=memory,
-        current_node_id=current_phrase_node(memory),
-        horizon=rollout_horizon,
-        top_k=top_k,
-        planner_query=planner_query,
-    )
+    if hasattr(memory, "query_paths"):
+        plans = memory.query_paths(
+            planner_query=planner_query,
+            current_node_id=current_phrase_node(memory),
+            planner=planner,
+            horizon=rollout_horizon,
+            top_k=top_k,
+        )
+    else:
+        plans = planner.rollout(
+            graph=memory,
+            current_node_id=current_phrase_node(memory),
+            horizon=rollout_horizon,
+            top_k=top_k,
+            planner_query=planner_query,
+        )
     if not plans:
         return None
 
@@ -705,6 +814,11 @@ def select_graph_waypoint(
         if int(manhattan(current_xy, waypoint_xy)) == 0:
             return None
     planner_debug = dict(plan.metadata)
+    if hasattr(memory, "last_concept_query_debug") and "concept_query_debug" not in planner_debug:
+        planner_debug["concept_query_debug"] = dict(getattr(memory, "last_concept_query_debug", {}) or {})
+        planner_debug["candidate_concept_membership"] = dict(
+            planner_debug["concept_query_debug"].get("cluster_membership", {})
+        )
     if plan.target_node_id is not None and plan.target_node_id in memory.nodes:
         planner_debug["selected_node_semantic_tag_confidence"] = dict(
             memory.nodes[plan.target_node_id].get("semantic_tag_confidence", {})
@@ -725,11 +839,12 @@ def select_graph_waypoint(
 
 
 def select_semantic_waypoint_fallback(memory, planner_query, current_node_id=None, source_xy=None, top_k=5):
-    if planner_query is None or memory is None or not hasattr(memory, "candidate_nodes_for_intent"):
+    if planner_query is None or memory is None or not hasattr(memory, "candidate_nodes_for_query"):
         return None
-    candidate_ids = memory.candidate_nodes_for_intent(
-        planner_query.target_predicate,
+    candidate_ids = memory.candidate_nodes_for_query(
+        planner_query,
         top_k=top_k,
+        current_node_id=current_node_id,
     )
     if not candidate_ids:
         return None
@@ -762,9 +877,7 @@ def select_semantic_waypoint_fallback(memory, planner_query, current_node_id=Non
         candidate_tag_confidences[node_key] = float(
             memory.nodes[node_id].get("semantic_tag_confidence", {}).get(query_tag_name, 0.0)
         )
-        candidate_intent_scores[node_key] = float(
-            memory.node_intent_score(node_id, planner_query.target_predicate)
-        )
+        candidate_intent_scores[node_key] = float(memory.node_intent_score(node_id, planner_query=planner_query))
 
     return {
         "waypoint_xy": np.asarray(waypoint_xy, dtype=np.int32).copy(),
@@ -786,6 +899,10 @@ def select_semantic_waypoint_fallback(memory, planner_query, current_node_id=Non
             "candidate_base_utilities": candidate_base_utilities,
             "candidate_tag_confidences": candidate_tag_confidences,
             "candidate_intent_scores": candidate_intent_scores,
+            "candidate_concept_membership": dict(
+                getattr(memory, "last_concept_query_debug", {}).get("cluster_membership", {})
+            ),
+            "concept_query_debug": dict(getattr(memory, "last_concept_query_debug", {}) or {}),
             "selected_tag_confidence": float(candidate_tag_confidences.get(str(selected_node_id), 0.0)),
             "selected_intent_score": float(candidate_intent_scores.get(str(selected_node_id), 0.0)),
             "selected_plan_utility": float(candidate_intent_scores.get(str(selected_node_id), 0.0)),
@@ -832,19 +949,19 @@ def should_use_goal_rejoin_guard(args) -> bool:
 
 
 def should_use_goal_rejoin_target_fallback(args) -> bool:
-    return getattr(args, "goal_rejoin_target_mode", "none") == "fallback_goal_v1"
+    return goal_rejoin_fallback_assists_enabled(args) and getattr(args, "goal_rejoin_target_mode", "none") == "fallback_goal_v1"
 
 
 def should_use_stable_goal_rejoin_waypoint(args) -> bool:
-    return getattr(args, "goal_rejoin_target_mode", "none") == "stable_waypoint_v1"
+    return goal_rejoin_fallback_assists_enabled(args) and getattr(args, "goal_rejoin_target_mode", "none") == "stable_waypoint_v1"
 
 
 def should_use_source_selected_goal_rejoin(args) -> bool:
-    return getattr(args, "goal_rejoin_target_mode", "none") in {"source_select_v1", "source_select_v2"}
+    return goal_rejoin_fallback_assists_enabled(args) and getattr(args, "goal_rejoin_target_mode", "none") in {"source_select_v1", "source_select_v2"}
 
 
 def should_use_strict_stable_goal_rejoin(args) -> bool:
-    return getattr(args, "goal_rejoin_target_mode", "none") == "source_select_v2"
+    return goal_rejoin_fallback_assists_enabled(args) and getattr(args, "goal_rejoin_target_mode", "none") == "source_select_v2"
 
 
 def _select_rejoin_target_source(args, env, source_xy, goal_xy, graph_waypoint_xy, planner_debug):
@@ -926,12 +1043,38 @@ def resolve_active_intent_type(args, agent_state=None, intent_policy=None, scene
     return parse_intent_type(args.intent_type), "fixed_intent"
 
 
-def current_planner_query(args, goal_xy=None, active_intent_type=None):
+def current_planner_query(args, goal_xy=None, active_intent_type=None, agent_state=None):
     if getattr(args, "intent_mode", "none") == "none":
         return None
     if active_intent_type is None:
         active_intent_type = parse_intent_type(args.intent_type)
-    return build_planner_query(active_intent_type, goal_xy=goal_xy)
+    planner_query = build_planner_query(active_intent_type, goal_xy=goal_xy)
+    retrieval_mode = str(getattr(args, "semantic_retrieval_mode", "concept_recall_v1"))
+    if retrieval_mode == "node_only":
+        planner_query.target_predicate.metadata["use_concept_recall"] = False
+        planner_query.target_predicate.metadata["use_concept_planning"] = False
+        planner_query.metadata["use_concept_recall"] = False
+        planner_query.metadata["use_concept_planning"] = False
+    elif retrieval_mode == "concept_plan_v1":
+        planner_query.target_predicate.metadata["use_concept_recall"] = True
+        planner_query.target_predicate.metadata["use_concept_planning"] = True
+        planner_query.metadata["use_concept_recall"] = True
+        planner_query.metadata["use_concept_planning"] = True
+    else:
+        planner_query.target_predicate.metadata["use_concept_recall"] = True
+        planner_query.target_predicate.metadata["use_concept_planning"] = False
+        planner_query.metadata["use_concept_recall"] = True
+        planner_query.metadata["use_concept_planning"] = False
+    planner_query.metadata["semantic_retrieval_mode"] = retrieval_mode
+    if agent_state is not None:
+        planner_query.metadata["agent_state_snapshot"] = {
+            "thirst": float(getattr(agent_state, "thirst", 0.0)),
+            "energy": float(getattr(agent_state, "energy", 0.0)),
+            "risk_budget": float(getattr(agent_state, "risk_budget", 0.0)),
+            "task_phase": str(getattr(agent_state, "task_phase", "")),
+            "previous_task_phase": str(getattr(agent_state, "previous_task_phase", "")),
+        }
+    return planner_query
 
 
 def export_run_summary(out_dir, run_summary):
@@ -1101,6 +1244,92 @@ def clear_active_graph_plan():
     }
 
 
+def goal_rejoin_fallback_assists_enabled(args) -> bool:
+    return not bool(getattr(args, "disable_goal_rejoin_fallback_assists", False))
+
+
+def local_resource_guidance_enabled(args) -> bool:
+    return not bool(getattr(args, "disable_local_resource_guidance", False))
+
+
+def _episode_query_records(memory, episode_id: int):
+    if memory is None or not hasattr(memory, "query_debug_records"):
+        return []
+    return [
+        record
+        for record in getattr(memory, "query_debug_records", [])
+        if int(getattr(record, "episode_id", -1)) == int(episode_id)
+    ]
+
+
+def compute_episode_query_metrics(memory, episode_id: int, success: int):
+    records = _episode_query_records(memory, episode_id=episode_id)
+    attempts = int(len(records))
+    if attempts <= 0:
+        return {
+            "query_attempt_count": 0,
+            "query_nonempty_rate": 0.0,
+            "retrieval_precision_at_k": 0.0,
+            "query_satisfaction_rate": 0.0,
+            "semantic_target_materialization_rate": 0.0,
+            "semantic_target_materialized_any": 0,
+            "post_retrieval_completion": 0,
+            "completion_given_materialized": 0.0,
+            "no_retrieval_attempt": 1,
+            "retrieval_failure_empty": 0,
+            "retrieval_failure_unsatisfied": 0,
+            "semantic_materialization_failure": 0,
+            "control_failure_after_retrieval": 0,
+            "failure_taxonomy": "no_retrieval_attempt",
+        }
+    nonempty = float(sum(1 for record in records if list(getattr(record, "candidate_node_ids", []))))
+    retrieval_precision_vals = [
+        float(getattr(record, "metadata", {}).get("retrieval_precision_at_k", 0.0))
+        for record in records
+    ]
+    satisfied = float(
+        sum(int(getattr(record, "metadata", {}).get("selected_query_satisfied", 0)) for record in records)
+    )
+    materialized = float(
+        sum(int(getattr(record, "metadata", {}).get("semantic_target_materialized", 0)) for record in records)
+    )
+    materialized_any = int(materialized > 0.0)
+    post_retrieval_completion = int(materialized_any and int(success) > 0)
+    query_nonempty_rate = float(nonempty / max(1, attempts))
+    retrieval_precision_at_k = float(np.mean(retrieval_precision_vals)) if retrieval_precision_vals else 0.0
+    query_satisfaction_rate = float(satisfied / max(1, attempts))
+    semantic_target_materialization_rate = float(materialized / max(1, attempts))
+    completion_given_materialized = float(post_retrieval_completion / max(1, materialized_any))
+
+    if int(success) > 0:
+        taxonomy = "success"
+    elif nonempty <= 0.0:
+        taxonomy = "retrieval_failure_empty"
+    elif satisfied <= 0.0:
+        taxonomy = "retrieval_failure_unsatisfied"
+    elif materialized <= 0.0:
+        taxonomy = "semantic_materialization_failure"
+    else:
+        taxonomy = "control_failure_after_retrieval"
+
+    return {
+        "query_attempt_count": int(attempts),
+        "query_nonempty_rate": float(query_nonempty_rate),
+        "retrieval_precision_at_k": float(retrieval_precision_at_k),
+        "query_satisfaction_rate": float(query_satisfaction_rate),
+        "semantic_target_materialization_rate": float(semantic_target_materialization_rate),
+        "semantic_target_materialized_any": int(materialized_any),
+        "post_retrieval_completion": int(post_retrieval_completion),
+        "completion_given_materialized": float(completion_given_materialized),
+        "no_retrieval_attempt": int(attempts <= 0),
+        "retrieval_failure_empty": int(taxonomy == "retrieval_failure_empty"),
+        "retrieval_failure_unsatisfied": int(taxonomy == "retrieval_failure_unsatisfied"),
+        "semantic_materialization_failure": int(taxonomy == "semantic_materialization_failure"),
+        "control_failure_after_retrieval": int(taxonomy == "control_failure_after_retrieval"),
+        "failure_taxonomy": taxonomy,
+    }
+
+
 def summarise_run(run_summary, memory):
     final_nodes = 0 if memory is None else int(len(memory.nodes))
     final_edges = 0 if memory is None else int(sum(len(v) for v in memory.edges.values()))
@@ -1178,6 +1407,22 @@ def summarise_run(run_summary, memory):
             float(np.sum(run_summary["has_resume_to_goal"])),
         ),
         "mean_max_phase_depth": float(np.mean(run_summary["max_phase_depth"])) if run_summary["max_phase_depth"] else 0.0,
+        "query_attempt_count": float(np.mean(run_summary["query_attempt_count"])) if run_summary["query_attempt_count"] else 0.0,
+        "query_nonempty_rate": float(np.mean(run_summary["query_nonempty_rate"])) if run_summary["query_nonempty_rate"] else 0.0,
+        "retrieval_precision_at_k": float(np.mean(run_summary["retrieval_precision_at_k"])) if run_summary["retrieval_precision_at_k"] else 0.0,
+        "query_satisfaction_rate": float(np.mean(run_summary["query_satisfaction_rate"])) if run_summary["query_satisfaction_rate"] else 0.0,
+        "semantic_target_materialization_rate": float(np.mean(run_summary["semantic_target_materialization_rate"])) if run_summary["semantic_target_materialization_rate"] else 0.0,
+        "post_retrieval_completion_rate": float(np.mean(run_summary["post_retrieval_completion"])) if run_summary["post_retrieval_completion"] else 0.0,
+        "completion_given_materialized": safe_rate(
+            float(np.sum(run_summary["post_retrieval_completion"])),
+            float(np.sum(run_summary["semantic_target_materialized_any"])),
+        ),
+        "local_resource_guidance_usage_rate": float(np.mean(run_summary["local_resource_guidance_used"])) if run_summary["local_resource_guidance_used"] else 0.0,
+        "goal_rejoin_fallback_assist_usage_rate": float(np.mean(run_summary["goal_rejoin_fallback_assist_used"])) if run_summary["goal_rejoin_fallback_assist_used"] else 0.0,
+        "retrieval_failure_empty_rate": float(np.mean(run_summary["retrieval_failure_empty"])) if run_summary["retrieval_failure_empty"] else 0.0,
+        "retrieval_failure_unsatisfied_rate": float(np.mean(run_summary["retrieval_failure_unsatisfied"])) if run_summary["retrieval_failure_unsatisfied"] else 0.0,
+        "semantic_materialization_failure_rate": float(np.mean(run_summary["semantic_materialization_failure"])) if run_summary["semantic_materialization_failure"] else 0.0,
+        "control_failure_after_retrieval_rate": float(np.mean(run_summary["control_failure_after_retrieval"])) if run_summary["control_failure_after_retrieval"] else 0.0,
         "final_nodes": final_nodes,
         "final_edges": final_edges,
     }
@@ -1223,6 +1468,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "intent_handoff_mode": args.intent_handoff_mode,
         "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
         "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
+        "semantic_retrieval_mode": getattr(args, "semantic_retrieval_mode", "concept_recall_v1"),
         "water_success_radius": int(getattr(args, "water_success_radius", 1)),
         "rest_success_radius": int(getattr(args, "rest_success_radius", 1)),
         "thirst_on_threshold": float(getattr(args, "thirst_on_threshold", 0.10)),
@@ -1233,6 +1479,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "rest_energy_off_threshold": float(getattr(args, "rest_energy_off_threshold", 0.98)),
         "rest_local_activation_threshold": float(getattr(args, "rest_local_activation_threshold", 0.0)),
         "rest_local_hold_threshold": float(getattr(args, "rest_local_hold_threshold", 0.0)),
+        "local_resource_guidance_enabled": int(local_resource_guidance_enabled(args)),
+        "goal_rejoin_fallback_assists_enabled": int(goal_rejoin_fallback_assists_enabled(args)),
         "episode_returns": [],
         "episode_lengths": [],
         "successes": [],
@@ -1258,6 +1506,19 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "post_hazard_to_success": [],
         "resume_to_goal_to_success": [],
         "max_phase_depth": [],
+        "query_attempt_count": [],
+        "query_nonempty_rate": [],
+        "retrieval_precision_at_k": [],
+        "query_satisfaction_rate": [],
+        "semantic_target_materialization_rate": [],
+        "semantic_target_materialized_any": [],
+        "post_retrieval_completion": [],
+        "local_resource_guidance_used": [],
+        "goal_rejoin_fallback_assist_used": [],
+        "retrieval_failure_empty": [],
+        "retrieval_failure_unsatisfied": [],
+        "semantic_materialization_failure": [],
+        "control_failure_after_retrieval": [],
         "episode_metrics": [],
     }
 
@@ -1271,6 +1532,12 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         obs, info = env.reset(seed=args.seed + ep)
         task_info = dict(info or {})
         del obs, info
+        if memory is not None and hasattr(memory, "start_episode"):
+            memory.start_episode(
+                episode_id=int(ep + 1),
+                env_id=str(args.env_id),
+                task_mode=str(getattr(args, "task_mode", "default")),
+            )
         change_active = apply_env_change(
             env,
             episode_idx=ep,
@@ -1366,6 +1633,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         has_goal_rejoin_materialization_failure = 0
         water_task_success = 0
         rest_task_success = 0
+        local_resource_guidance_used = 0
+        goal_rejoin_fallback_assist_used = 0
         record_demo_episode = bool(
             getattr(args, "record_demo", False)
             and int(ep + 1) == int(getattr(args, "demo_episode", 1))
@@ -1398,6 +1667,10 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             step_count = step + 1
             unwrapped = env.unwrapped
             agent_xy = np.array(unwrapped.agent_pos, dtype=np.int32)
+            current_graph_node_id = None
+            planner_query = None
+            planner_query_tag_name = None
+            query_debug_should_record = False
             distance_before = None if goal_xy is None else manhattan(agent_xy, goal_xy)
             scene = None
             scene_token = None
@@ -1428,6 +1701,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             trace_intent_switch_reason = active_intent_reason
             trace_previous_target_node_id = active_target_node_id
             trace_new_target_node_id = active_target_node_id
+            local_resource_plan = None
 
             if args.agent_mode == "songline":
                 prev_graph_node_id = memory.current_phrase_id
@@ -1440,26 +1714,32 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     scene_token = tokenizer.tokenize(scene)
                     token = scene_token_to_int(scene_token)
                     token_label = str(scene_token.token_type)
-                is_new_node = memory.update_token(token, total_step_idx)
-                current_graph_node_id = memory.current_phrase_id
+                observe_result = memory.observe(
+                    scene_token=scene_token,
+                    scene_state=scene,
+                    agent_state=agent_state,
+                    step_info={
+                        "phase": "pre_action",
+                        "step_idx": int(total_step_idx),
+                        "token_id": int(token),
+                        "token_label": str(token_label),
+                        "pose_xy": agent_xy,
+                        "goal_xy": goal_xy,
+                        "reward": 0.0,
+                        "risk": scene_risk_proxy(scene) if args.token_source != "symbolic_hash" else None,
+                        "comfort_cost": scene_comfort_proxy(scene) if args.token_source != "symbolic_hash" else None,
+                        "goal_alignment": scene.route_context.goal_alignment if args.token_source != "symbolic_hash" else None,
+                    },
+                )
+                prev_graph_node_id = observe_result.get("previous_graph_node_id")
+                current_graph_node_id = observe_result.get("current_graph_node_id")
+                is_new_node = bool(observe_result.get("is_new_graph_node", False))
                 if is_new_node and memory.current_phrase_id is not None:
                     unique_songline_nodes_this_episode.add(memory.current_phrase_id)
                     if memory.current_phrase_id in seen_songline_nodes:
                         pass
                     else:
                         seen_songline_nodes.add(memory.current_phrase_id)
-                memory.observe(
-                    total_step_idx,
-                    pose_xy=agent_xy,
-                    goal_xy=goal_xy,
-                    reward=0.0,
-                    risk=scene_risk_proxy(scene) if args.token_source != "symbolic_hash" else None,
-                    comfort_cost=scene_comfort_proxy(scene) if args.token_source != "symbolic_hash" else None,
-                    goal_alignment=scene.route_context.goal_alignment if args.token_source != "symbolic_hash" else None,
-                    phase_label=token_label,
-                )
-                if hasattr(scene_token, "semantic_tags") and memory.current_phrase_id is not None:
-                    memory.observe_semantics(memory.current_phrase_id, scene_token.semantic_tags)
                 prior_active_intent_type = active_intent_type
                 prior_task_phase = str(agent_state.task_phase)
                 force_intent_replan = False
@@ -1594,10 +1874,12 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                             or (resume_to_goal_active and resume_to_goal_steps_left > 0)
                         )
                         if force_intent_replan or not preserve_commit:
+                            query_debug_should_record = True
                             planner_query = current_planner_query(
                                 args,
                                 goal_xy=goal_xy,
                                 active_intent_type=active_intent_type,
+                                agent_state=agent_state,
                             )
                             planner_query_tag_name = None
                             if planner_query is not None and getattr(planner_query, "target_predicate", None) is not None:
@@ -1690,6 +1972,10 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                         trace_goal_rejoin_target_materialized = 1
                                         trace_goal_rejoin_target_source = selected_source
                                         trace_goal_rejoin_fallback_used = int(selected_source != "graph_node")
+                                        goal_rejoin_fallback_assist_used = max(
+                                            goal_rejoin_fallback_assist_used,
+                                            int(selected_source != "graph_node"),
+                                        )
                                         waypoint_stats = _target_waypoint_stats(env, agent_xy, subgoal_xy, goal_xy)
                                         trace_rejoin_target_hazard_adjacent = int(waypoint_stats["hazard_adjacent"])
                                         trace_rejoin_target_goal_alignment = float(waypoint_stats["goal_alignment"])
@@ -1797,11 +2083,30 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                     trace_goal_rejoin_target_materialized = 1
                                     trace_goal_rejoin_target_source = fallback_source
                                     trace_goal_rejoin_fallback_used = int(fallback_source != "graph_node")
+                                    goal_rejoin_fallback_assist_used = max(
+                                        goal_rejoin_fallback_assist_used,
+                                        int(fallback_source != "graph_node"),
+                                    )
                                     waypoint_stats = _target_waypoint_stats(env, agent_xy, subgoal_xy, goal_xy)
                                     trace_rejoin_target_hazard_adjacent = int(waypoint_stats["hazard_adjacent"])
                                     trace_rejoin_target_goal_alignment = float(waypoint_stats["goal_alignment"])
                                 if not trace_goal_rejoin_target_materialized:
                                     has_goal_rejoin_materialization_failure = 1
+
+                            if query_debug_should_record and hasattr(memory, "record_query"):
+                                selected_source = "none"
+                                if active_planner_debug is not None:
+                                    selected_source = str(active_planner_debug.get("goal_rejoin_target_source", "none"))
+                                if selected_source in {"none", ""} and active_target_node_id is not None:
+                                    selected_source = "graph_plan"
+                                memory.record_query(
+                                    step_idx=int(total_step_idx),
+                                    current_node_id=current_graph_node_id,
+                                    planner_query=planner_query,
+                                    planner_debug=active_planner_debug,
+                                    selected_node_id=active_target_node_id,
+                                    selected_source=selected_source,
+                                )
 
                 if (
                     args.commit_to_corridor
@@ -1816,6 +2121,14 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     hazard_commit_active = True
                     hazard_commit_dir = int(env.unwrapped.agent_dir)
                     hazard_commit_steps_left = max(hazard_commit_steps_left, 3)
+
+                if local_resource_guidance_enabled(args):
+                    local_resource_plan = local_resource_guidance(
+                        env,
+                        scene=scene,
+                        active_intent_type=active_intent_type,
+                        radius=max(1, int(getattr(args, "scene_radius", 1))),
+                    )
 
             action = random_safe_action(rng)
             if args.agent_mode == "greedy":
@@ -1887,6 +2200,18 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                         }
                         active_maneuver_command_type = str(command.get("command_type"))
                         action = trajectory_planner.next_action(env, command)
+                    elif local_resource_plan is not None:
+                        local_resource_guidance_used = 1
+                        if bool(local_resource_plan.get("hold_position", False)):
+                            active_maneuver_command_type = "hold_local_resource"
+                            action = 0
+                        else:
+                            local_waypoint_xy = np.asarray(local_resource_plan["waypoint_xy"], dtype=np.int32)
+                            active_maneuver_command_type = "go_to_local_resource"
+                            action = trajectory_planner.next_action(
+                                env,
+                                {"command_type": "go_to_waypoint", "waypoint_xy": local_waypoint_xy},
+                            )
                     elif subgoal_xy is not None and rng.rand() > args.epsilon:
                         if hazard_commit_active and hazard_commit_steps_left > 0:
                             command = {
@@ -1963,24 +2288,48 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     post_scene = None
 
                 memory.observe(
-                    total_step_idx,
-                    pose_xy=agent_xy_new,
-                    goal_xy=goal_xy,
-                    reward=float(reward),
-                    progress=delta_distance,
-                    risk=transition_risk,
-                    success=1.0 if float(reward) > 0.0 else 0.0,
-                    comfort_cost=scene_comfort_proxy(post_scene) if post_scene is not None else None,
-                    goal_alignment=post_scene.route_context.goal_alignment if post_scene is not None else None,
-                    phase_label=token_label,
-                )
-                memory.observe_transition(
-                    src=prev_graph_node_id,
-                    dst=current_graph_node_id,
-                    step_idx=total_step_idx,
-                    transition_success=transition_success,
-                    transition_risk=transition_risk,
-                    transition_cost=transition_cost,
+                    scene_token=scene_token,
+                    scene_state=post_scene,
+                    agent_state=agent_state,
+                    step_info={
+                        "phase": "post_action",
+                        "step_idx": int(total_step_idx),
+                        "previous_graph_node_id": None if prev_graph_node_id is None else int(prev_graph_node_id),
+                        "current_graph_node_id": None if current_graph_node_id is None else int(current_graph_node_id),
+                        "token_label": str(token_label),
+                        "pose_xy": agent_xy_new,
+                        "goal_xy": goal_xy,
+                        "reward": float(reward),
+                        "progress": delta_distance,
+                        "risk": transition_risk,
+                        "success": 1.0 if float(reward) > 0.0 else 0.0,
+                        "comfort_cost": scene_comfort_proxy(post_scene) if post_scene is not None else None,
+                        "goal_alignment": post_scene.route_context.goal_alignment if post_scene is not None else None,
+                        "transition_success": transition_success,
+                        "transition_risk": transition_risk,
+                        "transition_cost": transition_cost,
+                        "context_label": str(getattr(agent_state, "task_phase", token_label)),
+                        "active_intent": None if active_intent_type is None else str(active_intent_type.value),
+                        "intent_reason": str(active_intent_reason),
+                        "semantic_tags": {} if scene_token is None else dict(getattr(scene_token, "semantic_tags", {})),
+                        "observations": {
+                            "pos_before": [int(agent_xy[0]), int(agent_xy[1])],
+                            "pos_after": [int(agent_xy_new[0]), int(agent_xy_new[1])],
+                            "distance_before": None if distance_before is None else int(distance_before),
+                            "distance_after": None if distance_after is None else int(distance_after),
+                            "planner_query_intent": None if active_planner_debug is None else active_planner_debug.get("intent_type"),
+                            "planner_query_tag_name": None if active_planner_debug is None else active_planner_debug.get("query_tag_name"),
+                            "target_node_id": None if active_target_node_id is None else int(active_target_node_id),
+                            "goal_rejoin_target_source": str(trace_goal_rejoin_target_source),
+                        },
+                        "outcome": {
+                            "reward": float(reward),
+                            "success_signal": int(float(reward) > 0.0),
+                            "delta_distance": 0.0 if delta_distance is None else float(delta_distance),
+                            "water_task_success": int(water_task_success),
+                            "rest_task_success": int(rest_task_success),
+                        },
+                    },
                 )
 
             if should_use_goal_rejoin_guard(args):
@@ -2159,6 +2508,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                             "planner_candidate_node_ids": "[]" if active_planner_debug is None else json.dumps(active_planner_debug.get("candidate_node_ids", [])),
                             "planner_candidate_base_utilities": "{}" if active_planner_debug is None else json.dumps(active_planner_debug.get("candidate_base_utilities", {}), sort_keys=True),
                             "planner_candidate_tag_confidences": "{}" if active_planner_debug is None else json.dumps(active_planner_debug.get("candidate_tag_confidences", {}), sort_keys=True),
+                            "planner_candidate_concept_membership": "{}" if active_planner_debug is None else json.dumps(active_planner_debug.get("candidate_concept_membership", {}), sort_keys=True),
+                            "planner_concept_query_debug": "{}" if active_planner_debug is None else json.dumps(active_planner_debug.get("concept_query_debug", {}), sort_keys=True),
                             "planner_selected_tag_confidence": None if active_planner_debug is None else active_planner_debug.get("selected_tag_confidence"),
                             "planner_selected_node_semantic_tag_confidence": "{}" if active_planner_debug is None else json.dumps(active_planner_debug.get("selected_node_semantic_tag_confidence", {}), sort_keys=True),
                             "planner_selected_plan_utility": None if active_planner_debug is None else float(active_planner_debug.get("selected_plan_utility", 0.0)),
@@ -2310,6 +2661,11 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             max_phase_depth = 4
         if phase_flags["resume_to_goal"]:
             max_phase_depth = 5
+        episode_query_metrics = compute_episode_query_metrics(
+            memory,
+            episode_id=int(ep + 1),
+            success=int(success),
+        )
 
         episode_metrics = {
             "episode": ep + 1,
@@ -2324,6 +2680,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "intent_handoff_mode": args.intent_handoff_mode,
             "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
             "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
+            "semantic_retrieval_mode": getattr(args, "semantic_retrieval_mode", "concept_recall_v1"),
             "water_success_radius": int(getattr(args, "water_success_radius", 1)),
             "rest_success_radius": int(getattr(args, "rest_success_radius", 1)),
             "thirst_on_threshold": float(getattr(args, "thirst_on_threshold", 0.10)),
@@ -2334,6 +2691,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "rest_energy_off_threshold": float(getattr(args, "rest_energy_off_threshold", 0.98)),
             "rest_local_activation_threshold": float(getattr(args, "rest_local_activation_threshold", 0.0)),
             "rest_local_hold_threshold": float(getattr(args, "rest_local_hold_threshold", 0.0)),
+            "local_resource_guidance_enabled": int(local_resource_guidance_enabled(args)),
+            "goal_rejoin_fallback_assists_enabled": int(goal_rejoin_fallback_assists_enabled(args)),
             "intent_active": int(args.intent_mode != "none"),
             "has_goal_rejoin_materialization_failure": int(has_goal_rejoin_materialization_failure),
             "water_task_success": int(water_task_success),
@@ -2372,7 +2731,10 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "post_hazard_to_success": int(phase_flags["post_hazard"] and success),
             "resume_to_goal_to_success": int(phase_flags["resume_to_goal"] and success),
             "max_phase_depth": int(max_phase_depth),
+            "local_resource_guidance_used": int(local_resource_guidance_used),
+            "goal_rejoin_fallback_assist_used": int(goal_rejoin_fallback_assist_used),
         }
+        episode_metrics.update(episode_query_metrics)
 
         run_summary["episode_returns"].append(float(episode_return))
         run_summary["episode_lengths"].append(int(step_count))
@@ -2401,7 +2763,33 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         run_summary["post_hazard_to_success"].append(int(phase_flags["post_hazard"] and success))
         run_summary["resume_to_goal_to_success"].append(int(phase_flags["resume_to_goal"] and success))
         run_summary["max_phase_depth"].append(int(max_phase_depth))
+        run_summary["query_attempt_count"].append(int(episode_query_metrics["query_attempt_count"]))
+        run_summary["query_nonempty_rate"].append(float(episode_query_metrics["query_nonempty_rate"]))
+        run_summary["retrieval_precision_at_k"].append(float(episode_query_metrics["retrieval_precision_at_k"]))
+        run_summary["query_satisfaction_rate"].append(float(episode_query_metrics["query_satisfaction_rate"]))
+        run_summary["semantic_target_materialization_rate"].append(float(episode_query_metrics["semantic_target_materialization_rate"]))
+        run_summary["semantic_target_materialized_any"].append(int(episode_query_metrics["semantic_target_materialized_any"]))
+        run_summary["post_retrieval_completion"].append(int(episode_query_metrics["post_retrieval_completion"]))
+        run_summary["local_resource_guidance_used"].append(int(local_resource_guidance_used))
+        run_summary["goal_rejoin_fallback_assist_used"].append(int(goal_rejoin_fallback_assist_used))
+        run_summary["retrieval_failure_empty"].append(int(episode_query_metrics["retrieval_failure_empty"]))
+        run_summary["retrieval_failure_unsatisfied"].append(int(episode_query_metrics["retrieval_failure_unsatisfied"]))
+        run_summary["semantic_materialization_failure"].append(int(episode_query_metrics["semantic_materialization_failure"]))
+        run_summary["control_failure_after_retrieval"].append(int(episode_query_metrics["control_failure_after_retrieval"]))
         run_summary["episode_metrics"].append(episode_metrics)
+        if memory is not None and hasattr(memory, "finalize_episode"):
+            memory.finalize_episode(
+                {
+                    "success": int(success),
+                    "return": float(episode_return),
+                    "steps": int(step_count),
+                    "change_active": int(change_active),
+                    "water_task_success": int(water_task_success),
+                    "rest_task_success": int(rest_task_success),
+                    "active_intent_type_final": None if active_intent_type is None else str(active_intent_type.value),
+                    "intent_switch_reason_final": str(active_intent_reason),
+                }
+            )
 
         if verbose:
             print(
@@ -2434,6 +2822,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "intent_handoff_mode": args.intent_handoff_mode,
             "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
             "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
+            "semantic_retrieval_mode": getattr(args, "semantic_retrieval_mode", "concept_recall_v1"),
             "water_success_radius": int(getattr(args, "water_success_radius", 1)),
             "rest_success_radius": int(getattr(args, "rest_success_radius", 1)),
             "thirst_on_threshold": float(getattr(args, "thirst_on_threshold", 0.10)),
@@ -2444,6 +2833,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "rest_energy_off_threshold": float(getattr(args, "rest_energy_off_threshold", 0.98)),
             "rest_local_activation_threshold": float(getattr(args, "rest_local_activation_threshold", 0.0)),
             "rest_local_hold_threshold": float(getattr(args, "rest_local_hold_threshold", 0.0)),
+            "local_resource_guidance_enabled": int(local_resource_guidance_enabled(args)),
+            "goal_rejoin_fallback_assists_enabled": int(goal_rejoin_fallback_assists_enabled(args)),
         }
     )
 
@@ -2564,6 +2955,12 @@ def parse_args():
         choices=["none", "fallback_goal_v1", "stable_waypoint_v1", "source_select_v1", "source_select_v2"],
     )
     parser.add_argument(
+        "--semantic_retrieval_mode",
+        type=str,
+        default="concept_recall_v1",
+        choices=["node_only", "concept_recall_v1", "concept_plan_v1"],
+    )
+    parser.add_argument(
         "--env_change_mode",
         type=str,
         default="none",
@@ -2574,6 +2971,8 @@ def parse_args():
     parser.add_argument("--export_phase_metrics", action="store_true")
     parser.add_argument("--early_hazard_intervention", action="store_true")
     parser.add_argument("--commit_to_corridor", action="store_true")
+    parser.add_argument("--disable_local_resource_guidance", action="store_true")
+    parser.add_argument("--disable_goal_rejoin_fallback_assists", action="store_true")
     parser.add_argument("--debug_trace", action="store_true")
     parser.add_argument("--debug_trace_env_filter", type=str, default="")
     parser.add_argument("--record_demo", action="store_true")
