@@ -2,10 +2,16 @@ import argparse
 import csv
 import json
 import os
+import sys
 from types import SimpleNamespace
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
 
 from scripts.compare_songline_minigrid import run_comparison
 from scripts.songline_minigrid import ensure_dir
@@ -13,32 +19,52 @@ from scripts.songline_minigrid import ensure_dir
 
 TASK_SUITES = {
     "water": {
+        "task_mode": "water_search_v1",
         "env_ids": ["MiniGrid-Empty-Random-6x6-v0"],
         "methods": [
+            "random",
+            "songline_graph_path",
+            "external_sptm_like_patch_graph",
+            "external_learned_bc_grid_obs",
             "milestone_semantic_intent_water_node_v1",
             "milestone_semantic_intent_water_concept_plan_v1",
             "milestone_state_conditioned_water_v2",
         ],
     },
     "rest": {
+        "task_mode": "rest_search_v1",
         "env_ids": ["MiniGrid-Empty-Random-6x6-v0"],
         "methods": [
+            "random",
+            "songline_graph_path",
+            "external_sptm_like_patch_graph",
+            "external_learned_bc_grid_obs",
             "milestone_semantic_intent_rest_node_v1",
             "milestone_semantic_intent_rest_concept_plan_v1",
             "milestone_state_conditioned_rest_v2",
         ],
     },
     "goal_region": {
+        "task_mode": "default",
         "env_ids": ["MiniGrid-Empty-Random-6x6-v0", "MiniGrid-FourRooms-v0"],
         "methods": [
+            "random",
+            "songline_graph_path",
+            "external_sptm_like_patch_graph",
+            "external_learned_bc_grid_obs",
             "milestone_semantic_intent_goal_region_node_v1",
             "milestone_semantic_intent_goal_region_concept_v1",
             "milestone_semantic_intent_goal_region_plan_v1",
         ],
     },
     "hazard_recovery": {
+        "task_mode": "default",
         "env_ids": ["MiniGrid-LavaGapS7-v0"],
         "methods": [
+            "random",
+            "songline_graph_path",
+            "external_sptm_like_patch_graph",
+            "external_learned_bc_grid_obs",
             "milestone_semantic_intent_hazard_recovery_node_v1",
             "milestone_semantic_intent_hazard_recovery_concept_v1",
             "milestone_semantic_intent_hazard_recovery_plan_v1",
@@ -131,7 +157,7 @@ def run_suite(args, task_name, suite_cfg, assist_mode):
         scene_radius=args.scene_radius,
         disable_local_resource_guidance=disable_local_resource_guidance,
         disable_goal_rejoin_fallback_assists=disable_goal_rejoin_fallback_assists,
-        task_mode="default",
+        task_mode=str(suite_cfg.get("task_mode", "default")),
         intent_mode="none",
         intent_selection_mode="fixed",
         intent_type="reach_safe_exit",

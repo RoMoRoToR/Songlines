@@ -354,6 +354,9 @@ class MiniGridSceneEncoder:
         return float(np.dot(heading, goal_vec / goal_norm))
 
     def _get_goal_position(self, env) -> Tuple[int, int]:
+        target_xy = getattr(env, "semantic_target_pos", None)
+        if target_xy is not None:
+            return np.asarray(target_xy, dtype=np.int32).copy()
         grid = env.unwrapped.grid
         for y in range(grid.height):
             for x in range(grid.width):

@@ -2,11 +2,18 @@ import argparse
 import csv
 import json
 import os
+import sys
 from types import SimpleNamespace
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
+from scripts.learned_external_baseline_minigrid import run_learned_baseline_experiment
 from scripts.songline_minigrid import ensure_dir, run_songline_experiment
 
 
@@ -22,6 +29,10 @@ DEFAULT_METHODS = [
     "songline_no_override",
     "songline_subgoal_controller",
     "songline_graph_path",
+    "external_sptm_like_patch_graph",
+    "external_learned_q_table_grid_obs",
+    "external_learned_dqn_grid_obs",
+    "external_learned_bc_grid_obs",
     "milestone_semantic_handoff_v1",
     "milestone_semantic_handoff_v1_adaptive_graph",
     "milestone_semantic_handoff_v1_plus_final_exit",
@@ -94,6 +105,14 @@ def growth_stats(graph_nodes):
 
 
 def write_csv(path, rows, fieldnames):
+    extras = []
+    seen = set(fieldnames)
+    for row in rows:
+        for key in row.keys():
+            if key not in seen:
+                seen.add(key)
+                extras.append(key)
+    fieldnames = list(fieldnames) + extras
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -221,6 +240,50 @@ def method_to_config(method):
         return {"agent_mode": "songline", "songline_policy": "subgoal_controller"}
     if method == "songline_graph_path":
         return {"agent_mode": "songline", "songline_policy": "graph_path"}
+    if method == "external_sptm_like_patch_graph":
+        return {
+            "agent_mode": "songline",
+            "songline_policy": "graph_path",
+            "token_source": "scene_patch_hash",
+            "graph_update_mode": "static",
+        }
+    if method == "external_learned_q_table_grid_obs":
+        return {
+            "agent_mode": "learned_external",
+            "songline_policy": "q_table_grid_obs",
+            "runner_kind": "learned_q_table",
+            "learned_train_steps": 12000,
+            "learned_alpha": 0.4,
+            "learned_eval_epsilon": 0.0,
+        }
+    if method == "external_learned_dqn_grid_obs":
+        return {
+            "agent_mode": "learned_external",
+            "songline_policy": "dqn_grid_obs",
+            "runner_kind": "learned_q_table",
+            "learned_algo": "dqn_mlp",
+            "learned_train_steps": 16000,
+            "learned_eval_epsilon": 0.0,
+            "learned_hidden_dim": 128,
+            "learned_lr": 1e-3,
+            "learned_batch_size": 64,
+            "learned_target_update": 500,
+            "learned_replay_size": 20000,
+            "learned_warmup_steps": 1000,
+        }
+    if method == "external_learned_bc_grid_obs":
+        return {
+            "agent_mode": "learned_external",
+            "songline_policy": "bc_grid_obs",
+            "runner_kind": "learned_q_table",
+            "learned_algo": "bc_oracle",
+            "learned_train_steps": 6000,
+            "learned_hidden_dim": 128,
+            "learned_lr": 1e-3,
+            "learned_batch_size": 64,
+            "learned_bc_epochs": 8,
+            "learned_eval_epsilon": 0.0,
+        }
     if method == "milestone_semantic_handoff_v1":
         return {
             "agent_mode": "songline",
@@ -743,15 +806,34 @@ def run_comparison(args):
                     out_dir=run_out_dir,
                     early_hazard_intervention=cfg.get("early_hazard_intervention", False),
                     commit_to_corridor=cfg.get("commit_to_corridor", False),
+                    learned_train_steps=cfg.get("learned_train_steps", 4000),
+                    learned_algo=cfg.get("learned_algo", "q_table"),
+                    learned_alpha=cfg.get("learned_alpha", 0.4),
+                    learned_gamma=cfg.get("learned_gamma", 0.99),
+                    learned_hidden_dim=cfg.get("learned_hidden_dim", 128),
+                    learned_lr=cfg.get("learned_lr", 1e-3),
+                    learned_batch_size=cfg.get("learned_batch_size", 64),
+                    learned_target_update=cfg.get("learned_target_update", 500),
+                    learned_replay_size=cfg.get("learned_replay_size", 20000),
+                    learned_warmup_steps=cfg.get("learned_warmup_steps", 1000),
+                    learned_bc_epochs=cfg.get("learned_bc_epochs", 6),
+                    learned_eval_epsilon=cfg.get("learned_eval_epsilon", 0.0),
                     debug_trace=False,
                     debug_trace_env_filter="",
                 )
 
                 print(f"[run] env={env_id} seed={seed} method={method}")
-                run_summary, summary = run_songline_experiment(run_args, export_outputs=True, verbose=False)
+                if cfg.get("runner_kind") == "learned_q_table":
+                    run_summary, summary = run_learned_baseline_experiment(run_args, export_outputs=True, verbose=False)
+                else:
+                    run_summary, summary = run_songline_experiment(run_args, export_outputs=True, verbose=False)
 
                 for item in run_summary["episode_metrics"]:
-                    episode_rows.append(item)
+                    stamped = dict(item)
+                    stamped["method"] = method
+                    stamped["agent_mode"] = summary["agent_mode"]
+                    stamped["songline_policy"] = summary["songline_policy"]
+                    episode_rows.append(stamped)
 
                 run_row = {
                     "env_id": env_id,

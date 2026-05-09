@@ -2,6 +2,8 @@ import argparse
 import csv
 import json
 import os
+import re
+from collections import deque
 
 import gymnasium as gym
 import matplotlib.pyplot as plt
@@ -20,6 +22,24 @@ from songline_drive.scene_tokenizer import SceneTokenizer
 from songline_drive.trajectory_planner import TrajectoryPlanner
 from songline_drive.types import IntentType
 from utils.lz_memory import SymbolicTokenizer
+
+
+BABYAI_INTENT_MAP = {
+    "go to the blue ball": "find_water_source",
+    "go to the grey ball": "find_water_source",
+    "go to the gray ball": "find_water_source",
+    "go to the grey box": "find_safe_rest_zone",
+    "go to the gray box": "find_safe_rest_zone",
+    "go to the green door": "find_goal_region",
+    "go to the red key": "hazard_recovery_exit",
+}
+
+BABYAI_OBJECT_TYPE_TO_INTENT = {
+    "ball": "find_water_source",
+    "box": "find_safe_rest_zone",
+    "door": "find_goal_region",
+    "key": "hazard_recovery_exit",
+}
 
 
 def ensure_dir(path: str):
@@ -80,6 +100,37 @@ def scene_token_to_int(scene_token):
     return sum((idx + 1) * ord(ch) for idx, ch in enumerate(token_name))
 
 
+def maybe_perturb_scene_token(scene_token, args, rng):
+    if scene_token is None:
+        return None
+    dropout_prob = float(getattr(args, "semantic_tag_dropout_prob", 0.0))
+    false_positive_prob = float(getattr(args, "semantic_tag_false_positive_prob", 0.0))
+    false_positive_value = float(getattr(args, "semantic_tag_false_positive_value", 0.35))
+    if dropout_prob <= 0.0 and false_positive_prob <= 0.0:
+        return scene_token
+
+    semantic_tags = dict(getattr(scene_token, "semantic_tags", {}) or {})
+    if not semantic_tags:
+        return scene_token
+
+    perturbed = dict(semantic_tags)
+    if dropout_prob > 0.0:
+        for tag_name, value in list(perturbed.items()):
+            if float(value) > 0.0 and float(rng.rand()) < dropout_prob:
+                perturbed[tag_name] = 0.0
+
+    if false_positive_prob > 0.0:
+        for tag_name, value in list(perturbed.items()):
+            if float(value) <= 0.0 and float(rng.rand()) < false_positive_prob:
+                perturbed[tag_name] = float(false_positive_value)
+
+    if perturbed == semantic_tags:
+        return scene_token
+
+    scene_token.semantic_tags = perturbed
+    return scene_token
+
+
 def manhattan(a, b):
     return int(abs(int(a[0]) - int(b[0])) + abs(int(a[1]) - int(b[1])))
 
@@ -89,6 +140,9 @@ def random_safe_action(rng):
 
 
 def get_goal_position(env):
+    target_xy = getattr(env, "semantic_target_pos", None)
+    if target_xy is not None:
+        return np.asarray(target_xy, dtype=np.int32).copy()
     grid = env.unwrapped.grid
     for y in range(grid.height):
         for x in range(grid.width):
@@ -99,6 +153,9 @@ def get_goal_position(env):
 
 
 def get_water_position(env):
+    target_xy = getattr(env, "semantic_target_pos", None)
+    if target_xy is not None and str(getattr(env, "current_intent", "")) == "find_water_source":
+        return np.asarray(target_xy, dtype=np.int32).copy()
     water_xy = getattr(env, "water_pos", None)
     if water_xy is not None:
         return np.asarray(water_xy, dtype=np.int32).copy()
@@ -112,6 +169,9 @@ def get_water_position(env):
 
 
 def get_rest_position(env):
+    target_xy = getattr(env, "semantic_target_pos", None)
+    if target_xy is not None and str(getattr(env, "current_intent", "")) == "find_safe_rest_zone":
+        return np.asarray(target_xy, dtype=np.int32).copy()
     rest_xy = getattr(env, "rest_pos", None)
     if rest_xy is not None:
         return np.asarray(rest_xy, dtype=np.int32).copy()
@@ -144,6 +204,111 @@ def _grid_cell_code(env, x: int, y: int) -> int:
     if cell.type == "box":
         return 7
     return 8
+
+
+def _passable_cell_code(cell_code: int) -> bool:
+    return int(cell_code) in (0, 2, 4, 6, 7, 8)
+
+
+def _oracle_shortest_path_next_cell(env, target_xy):
+    if target_xy is None:
+        return None
+    start = tuple(int(v) for v in np.asarray(env.unwrapped.agent_pos, dtype=np.int32))
+    goal = tuple(int(v) for v in np.asarray(target_xy, dtype=np.int32))
+    if start == goal:
+        return goal
+    grid = env.unwrapped.grid
+    queue = deque([start])
+    parents = {start: None}
+    while queue:
+        x, y = queue.popleft()
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx = int(x + dx)
+            ny = int(y + dy)
+            nxt = (nx, ny)
+            if nxt in parents:
+                continue
+            if nx < 0 or ny < 0 or nx >= grid.width or ny >= grid.height:
+                continue
+            if not _passable_cell_code(_grid_cell_code(env, nx, ny)):
+                continue
+            parents[nxt] = (x, y)
+            if nxt == goal:
+                queue.clear()
+                break
+            queue.append(nxt)
+    if goal not in parents:
+        return None
+    current = goal
+    while parents[current] is not None and parents[current] != start:
+        current = parents[current]
+    return np.asarray(current, dtype=np.int32)
+
+
+def _oracle_controller_action(env, trajectory_planner, target_xy):
+    if target_xy is None:
+        return random_safe_action(np.random.RandomState(0))
+    next_xy = _oracle_shortest_path_next_cell(env, target_xy)
+    waypoint_xy = target_xy if next_xy is None else next_xy
+    return trajectory_planner.next_action(
+        env,
+        {"command_type": "go_to_waypoint", "waypoint_xy": tuple(int(v) for v in np.asarray(waypoint_xy, dtype=np.int32))},
+    )
+
+
+def select_oracle_semantic_waypoint(args, env, active_intent_type, goal_xy, water_xy, rest_xy):
+    intent_name = None if active_intent_type is None else str(getattr(active_intent_type, "value", active_intent_type))
+    if intent_name == "find_goal_region":
+        if goal_xy is not None:
+            return np.asarray(goal_xy, dtype=np.int32).copy(), "oracle_goal_region"
+        return None, "oracle_goal_region_missing"
+    if intent_name == "hazard_recovery_exit":
+        if goal_xy is not None:
+            stable = _stable_goal_rejoin_waypoint(env, goal_xy, avoid_hazard_adjacent=True, max_radius=4)
+            if stable is not None:
+                return np.asarray(stable, dtype=np.int32).copy(), "oracle_stable_rejoin"
+            return np.asarray(goal_xy, dtype=np.int32).copy(), "oracle_goal_fallback"
+        return None, "oracle_hazard_missing"
+    if intent_name == "find_water_source":
+        if water_xy is not None:
+            return np.asarray(water_xy, dtype=np.int32).copy(), "oracle_water"
+        return None, "oracle_water_missing"
+    if intent_name == "find_safe_rest_zone":
+        if rest_xy is not None:
+            return np.asarray(rest_xy, dtype=np.int32).copy(), "oracle_rest"
+        return None, "oracle_rest_missing"
+    return None, "oracle_not_applicable"
+
+
+def make_oracle_path_plan(waypoint_xy, planner_query, source):
+    if waypoint_xy is None:
+        return None
+    waypoint_xy = np.asarray(waypoint_xy, dtype=np.int32).copy()
+    return {
+        "waypoint_xy": waypoint_xy,
+        "graph_path_length": 0,
+        "target_node_id": None,
+        "next_node_id": None,
+        "maneuver_command": {
+            "command_type": "go_to_waypoint",
+            "waypoint_xy": tuple(int(v) for v in waypoint_xy),
+        },
+        "planner_debug": {
+            "used_intent_query": bool(planner_query is not None),
+            "intent_type": None if planner_query is None else str(getattr(planner_query.intent_type, "value", planner_query.intent_type)),
+            "query_tag_name": None if planner_query is None or getattr(planner_query, "target_predicate", None) is None else planner_query.target_predicate.tag_name,
+            "candidate_node_ids": [],
+            "candidate_base_utilities": {},
+            "candidate_tag_confidences": {},
+            "candidate_intent_scores": {},
+            "selected_tag_confidence": None,
+            "selected_node_semantic_tag_confidence": {},
+            "selected_plan_utility": 1.0,
+            "plan_source": str(source),
+            "goal_rejoin_target_materialized": True,
+            "goal_rejoin_target_source": str(source),
+        },
+    }
 
 
 def local_resource_guidance(env, scene, active_intent_type, radius: int = 1):
@@ -394,8 +559,110 @@ class RestTaskWrapper(gym.Wrapper):
         return obs, float(reward), bool(terminated), bool(truncated), info
 
 
+class BabyAISemanticWrapper(gym.Wrapper):
+    def __init__(self, env):
+        super().__init__(env)
+        self.current_mission = ""
+        self.current_intent = "find_goal_region"
+        self.semantic_target_type = None
+        self.semantic_target_color = None
+        self.semantic_target_pos = None
+
+    def _parse_mission(self, mission: str):
+        mission_text = str(mission or "").strip().lower()
+        mission_text = re.sub(r"\s+", " ", mission_text)
+        direct_intent = BABYAI_INTENT_MAP.get(mission_text)
+        object_color = None
+        object_type = None
+        match = re.match(r"go to the ([a-z]+) ([a-z]+)", mission_text)
+        if match:
+            object_color = str(match.group(1))
+            object_type = str(match.group(2))
+        elif mission_text.startswith("go to the "):
+            tail = mission_text.replace("go to the ", "", 1).strip().split()
+            if len(tail) == 1:
+                object_type = str(tail[0])
+            elif len(tail) >= 2:
+                object_color = str(tail[0])
+                object_type = str(tail[1])
+        if direct_intent is not None:
+            intent_name = direct_intent
+        elif object_type is not None:
+            intent_name = BABYAI_OBJECT_TYPE_TO_INTENT.get(object_type, "find_goal_region")
+        else:
+            intent_name = "find_goal_region"
+        return {
+            "mission": mission_text,
+            "intent_name": str(intent_name),
+            "object_type": object_type,
+            "object_color": object_color,
+        }
+
+    def _match_target_cell(self, cell):
+        if cell is None:
+            return False
+        if self.semantic_target_type is not None and str(getattr(cell, "type", "")) != str(self.semantic_target_type):
+            return False
+        cell_color = getattr(cell, "color", None)
+        if self.semantic_target_color is not None and str(cell_color) != str(self.semantic_target_color):
+            return False
+        return True
+
+    def _resolve_target_position(self):
+        grid = self.unwrapped.grid
+        candidates = []
+        agent_xy = np.asarray(self.unwrapped.agent_pos, dtype=np.int32)
+        for y in range(grid.height):
+            for x in range(grid.width):
+                cell = grid.get(x, y)
+                if not self._match_target_cell(cell):
+                    continue
+                dist = manhattan(agent_xy, (x, y))
+                candidates.append((dist, int(y), int(x)))
+        if not candidates:
+            self.semantic_target_pos = None
+            return
+        candidates.sort()
+        _, y, x = candidates[0]
+        self.semantic_target_pos = np.asarray([int(x), int(y)], dtype=np.int32)
+
+    def _augment_info(self, info):
+        info = dict(info or {})
+        info["task_mode"] = "babyai_semantic_v1"
+        info["task_mission"] = str(self.current_mission)
+        info["episode_intent_type"] = str(self.current_intent)
+        info["semantic_target_type"] = self.semantic_target_type
+        info["semantic_target_color"] = self.semantic_target_color
+        info["semantic_target_pos"] = (
+            None if self.semantic_target_pos is None else [int(v) for v in self.semantic_target_pos]
+        )
+        return info
+
+    def reset(self, **kwargs):
+        obs, info = self.env.reset(**kwargs)
+        mission = None
+        if isinstance(obs, dict):
+            mission = obs.get("mission")
+        if mission is None:
+            mission = dict(info or {}).get("mission", "")
+        parsed = self._parse_mission(str(mission or ""))
+        self.current_mission = parsed["mission"]
+        self.current_intent = parsed["intent_name"]
+        self.semantic_target_type = parsed["object_type"]
+        self.semantic_target_color = parsed["object_color"]
+        self._resolve_target_position()
+        return obs, self._augment_info(info)
+
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        self._resolve_target_position()
+        return obs, float(reward), bool(terminated), bool(truncated), self._augment_info(info)
+
+
 def build_env(args):
     env = gym.make(args.env_id, render_mode="rgb_array")
+    if str(getattr(args, "env_id", "")).startswith("BabyAI-"):
+        env = BabyAISemanticWrapper(env)
     if getattr(args, "task_mode", "default") == "water_search_v1":
         env = WaterTaskWrapper(
             env,
@@ -933,6 +1200,13 @@ def parse_intent_type(name: str) -> IntentType:
     return IntentType(name)
 
 
+def effective_intent_type_name(args) -> str:
+    override = getattr(args, "episode_intent_type_override", None)
+    if override not in (None, ""):
+        return str(override)
+    return str(getattr(args, "intent_type", IntentType.FIND_GOAL_REGION.value))
+
+
 def is_defensive_intent(intent_type: IntentType) -> bool:
     return intent_type in {
         IntentType.REACH_SAFE_EXIT,
@@ -1036,18 +1310,18 @@ def resolve_active_intent_type(args, agent_state=None, intent_policy=None, scene
         return None, "intent_mode_none"
     if getattr(args, "intent_selection_mode", "fixed") == "state_v1":
         if agent_state is None or intent_policy is None:
-            return parse_intent_type(args.intent_type), "state_policy_missing_fallback"
+            return parse_intent_type(effective_intent_type_name(args)), "state_policy_missing_fallback"
         if hasattr(intent_policy, "select_intent_with_reason"):
             return intent_policy.select_intent_with_reason(agent_state, scene=scene)
         return intent_policy.select_intent(agent_state, scene=scene), "state_policy"
-    return parse_intent_type(args.intent_type), "fixed_intent"
+    return parse_intent_type(effective_intent_type_name(args)), "fixed_intent"
 
 
 def current_planner_query(args, goal_xy=None, active_intent_type=None, agent_state=None):
     if getattr(args, "intent_mode", "none") == "none":
         return None
     if active_intent_type is None:
-        active_intent_type = parse_intent_type(args.intent_type)
+        active_intent_type = parse_intent_type(effective_intent_type_name(args))
     planner_query = build_planner_query(active_intent_type, goal_xy=goal_xy)
     retrieval_mode = str(getattr(args, "semantic_retrieval_mode", "concept_recall_v1"))
     if retrieval_mode == "node_only":
@@ -1423,6 +1697,9 @@ def summarise_run(run_summary, memory):
         "retrieval_failure_unsatisfied_rate": float(np.mean(run_summary["retrieval_failure_unsatisfied"])) if run_summary["retrieval_failure_unsatisfied"] else 0.0,
         "semantic_materialization_failure_rate": float(np.mean(run_summary["semantic_materialization_failure"])) if run_summary["semantic_materialization_failure"] else 0.0,
         "control_failure_after_retrieval_rate": float(np.mean(run_summary["control_failure_after_retrieval"])) if run_summary["control_failure_after_retrieval"] else 0.0,
+        "oracle_retrieval_activation_rate": float(np.mean(run_summary["oracle_retrieval_activated"])) if run_summary["oracle_retrieval_activated"] else 0.0,
+        "oracle_materialization_activation_rate": float(np.mean(run_summary["oracle_materialization_activated"])) if run_summary["oracle_materialization_activated"] else 0.0,
+        "oracle_controller_activation_rate": float(np.mean(run_summary["oracle_controller_activated"])) if run_summary["oracle_controller_activated"] else 0.0,
         "final_nodes": final_nodes,
         "final_edges": final_edges,
     }
@@ -1469,6 +1746,12 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
         "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
         "semantic_retrieval_mode": getattr(args, "semantic_retrieval_mode", "concept_recall_v1"),
+        "oracle_retrieval_enabled": int(bool(getattr(args, "oracle_retrieval", False))),
+        "oracle_materialization_enabled": int(bool(getattr(args, "oracle_materialization", False))),
+        "oracle_controller_enabled": int(bool(getattr(args, "oracle_controller", False))),
+        "semantic_tag_dropout_prob": float(getattr(args, "semantic_tag_dropout_prob", 0.0)),
+        "semantic_tag_false_positive_prob": float(getattr(args, "semantic_tag_false_positive_prob", 0.0)),
+        "semantic_tag_false_positive_value": float(getattr(args, "semantic_tag_false_positive_value", 0.35)),
         "water_success_radius": int(getattr(args, "water_success_radius", 1)),
         "rest_success_radius": int(getattr(args, "rest_success_radius", 1)),
         "thirst_on_threshold": float(getattr(args, "thirst_on_threshold", 0.10)),
@@ -1519,6 +1802,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "retrieval_failure_unsatisfied": [],
         "semantic_materialization_failure": [],
         "control_failure_after_retrieval": [],
+        "oracle_retrieval_activated": [],
+        "oracle_materialization_activated": [],
+        "oracle_controller_activated": [],
         "episode_metrics": [],
     }
 
@@ -1531,6 +1817,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
     for ep in range(args.episodes):
         obs, info = env.reset(seed=args.seed + ep)
         task_info = dict(info or {})
+        args.episode_intent_type_override = str(task_info.get("episode_intent_type", args.intent_type))
         del obs, info
         if memory is not None and hasattr(memory, "start_episode"):
             memory.start_episode(
@@ -1582,18 +1869,19 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         goal_rejoin_guard_active = False
         goal_rejoin_guard_steps_left = 0
         goal_rejoin_guard_best_distance = None
-        agent_state = AgentState(active_intent=parse_intent_type(args.intent_type))
+        episode_intent_type = parse_intent_type(effective_intent_type_name(args))
+        agent_state = AgentState(active_intent=episode_intent_type)
         intent_policy = (
             IntentPolicy(
-                hazard_intent=parse_intent_type(args.intent_type),
+                hazard_intent=episode_intent_type,
                 water_intent=(
                     IntentType.FIND_WATER_SOURCE
-                    if parse_intent_type(args.intent_type) == IntentType.FIND_WATER_SOURCE
+                    if episode_intent_type == IntentType.FIND_WATER_SOURCE
                     else None
                 ),
                 rest_intent=(
                     IntentType.FIND_SAFE_REST_ZONE
-                    if parse_intent_type(args.intent_type) == IntentType.FIND_SAFE_REST_ZONE
+                    if episode_intent_type == IntentType.FIND_SAFE_REST_ZONE
                     else None
                 ),
                 thirst_on_threshold=float(getattr(args, "thirst_on_threshold", 0.10)),
@@ -1626,6 +1914,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "final_exit_maneuver": 0,
             "resume_to_goal": 0,
         }
+        oracle_retrieval_activated = 0
+        oracle_materialization_activated = 0
+        oracle_controller_activated = 0
         post_hazard_armed = 0
         resume_to_goal_armed = 0
         has_post_hazard_progress = 0
@@ -1712,6 +2003,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                 else:
                     scene = scene_encoder.encode(env)
                     scene_token = tokenizer.tokenize(scene)
+                    scene_token = maybe_perturb_scene_token(scene_token, args=args, rng=rng)
                     token = scene_token_to_int(scene_token)
                     token_label = str(scene_token.token_type)
                 observe_result = memory.observe(
@@ -1884,29 +2176,63 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                             planner_query_tag_name = None
                             if planner_query is not None and getattr(planner_query, "target_predicate", None) is not None:
                                 planner_query_tag_name = planner_query.target_predicate.tag_name
-                            path_plan = select_graph_waypoint(
-                                memory,
-                                rollout_planner,
-                                maneuver_selector,
-                                top_k=args.top_k_goals,
-                                rollout_horizon=args.graph_rollout_horizon,
-                                current_token_label=token_label,
-                                env=env,
-                                goal_xy=goal_xy,
-                                planner_query=planner_query,
-                            )
-                            if (
-                                path_plan is None
-                                and planner_query is not None
-                                and goal_xy is None
+                            oracle_waypoint_xy = None
+                            oracle_waypoint_source = "none"
+                            if planner_query is not None and (
+                                bool(getattr(args, "oracle_retrieval", False))
+                                or bool(getattr(args, "oracle_materialization", False))
                             ):
-                                path_plan = select_semantic_waypoint_fallback(
-                                    memory,
-                                    planner_query=planner_query,
-                                    current_node_id=current_phrase_node(memory),
-                                    source_xy=agent_xy,
-                                    top_k=args.top_k_goals,
+                                oracle_waypoint_xy, oracle_waypoint_source = select_oracle_semantic_waypoint(
+                                    args=args,
+                                    env=env,
+                                    active_intent_type=active_intent_type,
+                                    goal_xy=goal_xy,
+                                    water_xy=water_xy,
+                                    rest_xy=rest_xy,
                                 )
+                            if planner_query is not None and bool(getattr(args, "oracle_retrieval", False)) and oracle_waypoint_xy is not None:
+                                oracle_retrieval_activated = 1
+                                path_plan = make_oracle_path_plan(
+                                    oracle_waypoint_xy,
+                                    planner_query=planner_query,
+                                    source=oracle_waypoint_source,
+                                )
+                            else:
+                                path_plan = select_graph_waypoint(
+                                    memory,
+                                    rollout_planner,
+                                    maneuver_selector,
+                                    top_k=args.top_k_goals,
+                                    rollout_horizon=args.graph_rollout_horizon,
+                                    current_token_label=token_label,
+                                    env=env,
+                                    goal_xy=goal_xy,
+                                    planner_query=planner_query,
+                                )
+                                if (
+                                    path_plan is None
+                                    and planner_query is not None
+                                    and goal_xy is None
+                                ):
+                                    path_plan = select_semantic_waypoint_fallback(
+                                        memory,
+                                        planner_query=planner_query,
+                                        current_node_id=current_phrase_node(memory),
+                                        source_xy=agent_xy,
+                                        top_k=args.top_k_goals,
+                                    )
+                                if (
+                                    path_plan is None
+                                    and planner_query is not None
+                                    and bool(getattr(args, "oracle_materialization", False))
+                                    and oracle_waypoint_xy is not None
+                                ):
+                                    oracle_materialization_activated = 1
+                                    path_plan = make_oracle_path_plan(
+                                        oracle_waypoint_xy,
+                                        planner_query=planner_query,
+                                        source=oracle_waypoint_source,
+                                    )
                             if path_plan is not None:
                                 planner_debug = dict(path_plan.get("planner_debug", {}))
                                 if active_intent_type is not None:
@@ -1939,7 +2265,11 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                             active_graph_path_length = int(path_plan["graph_path_length"])
                                             graph_path_lengths.append(active_graph_path_length)
                                             active_target_node_id = None if path_plan["target_node_id"] is None else int(path_plan["target_node_id"])
-                                            active_next_node_id = int(path_plan["next_node_id"])
+                                            active_next_node_id = (
+                                                None
+                                                if path_plan["next_node_id"] is None
+                                                else int(path_plan["next_node_id"])
+                                            )
                                             active_maneuver_command = dict(path_plan["maneuver_command"])
                                             active_maneuver_command_type = str(active_maneuver_command.get("command_type"))
                                         else:
@@ -1979,6 +2309,31 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                         waypoint_stats = _target_waypoint_stats(env, agent_xy, subgoal_xy, goal_xy)
                                         trace_rejoin_target_hazard_adjacent = int(waypoint_stats["hazard_adjacent"])
                                         trace_rejoin_target_goal_alignment = float(waypoint_stats["goal_alignment"])
+                                    elif bool(getattr(args, "oracle_materialization", False)) and oracle_waypoint_xy is not None:
+                                        oracle_materialization_activated = 1
+                                        subgoal_xy = np.asarray(oracle_waypoint_xy, dtype=np.int32).copy()
+                                        interventions_this_episode += 1
+                                        active_intervention_distance = distance_before
+                                        active_subgoal_key = (int(subgoal_xy[0]), int(subgoal_xy[1]))
+                                        active_graph_path_length = 0
+                                        active_target_node_id = None
+                                        active_next_node_id = None
+                                        active_maneuver_command = {
+                                            "command_type": "go_to_waypoint",
+                                            "waypoint_xy": tuple(int(v) for v in subgoal_xy),
+                                        }
+                                        active_maneuver_command_type = "go_to_waypoint"
+                                        active_planner_debug = planner_debug
+                                        active_planner_debug["goal_rejoin_target_materialized"] = True
+                                        active_planner_debug["goal_rejoin_target_source"] = str(oracle_waypoint_source)
+                                        trace_new_target_node_id = active_target_node_id
+                                        trace_goal_rejoin_target_materialized = 1
+                                        trace_goal_rejoin_target_source = str(oracle_waypoint_source)
+                                        trace_goal_rejoin_fallback_used = 1
+                                        goal_rejoin_fallback_assist_used = max(goal_rejoin_fallback_assist_used, 1)
+                                        waypoint_stats = _target_waypoint_stats(env, agent_xy, subgoal_xy, goal_xy)
+                                        trace_rejoin_target_hazard_adjacent = int(waypoint_stats["hazard_adjacent"])
+                                        trace_rejoin_target_goal_alignment = float(waypoint_stats["goal_alignment"])
                                     else:
                                         active_planner_debug = planner_debug
                                         active_planner_debug["goal_rejoin_target_materialized"] = False
@@ -1992,7 +2347,11 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                     active_graph_path_length = int(path_plan["graph_path_length"])
                                     graph_path_lengths.append(active_graph_path_length)
                                     active_target_node_id = None if path_plan["target_node_id"] is None else int(path_plan["target_node_id"])
-                                    active_next_node_id = int(path_plan["next_node_id"])
+                                    active_next_node_id = (
+                                        None
+                                        if path_plan["next_node_id"] is None
+                                        else int(path_plan["next_node_id"])
+                                    )
                                     active_maneuver_command = dict(path_plan["maneuver_command"])
                                     active_maneuver_command_type = str(active_maneuver_command.get("command_type"))
                                     active_planner_debug = planner_debug
@@ -2175,7 +2534,11 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     else:
                         action = random_safe_action(rng)
                 elif args.songline_policy == "graph_path":
-                    if resume_to_goal_active and resume_to_goal_steps_left > 0:
+                    if bool(getattr(args, "oracle_controller", False)) and subgoal_xy is not None:
+                        oracle_controller_activated = 1
+                        active_maneuver_command_type = "oracle_controller"
+                        action = _oracle_controller_action(env, trajectory_planner, subgoal_xy)
+                    elif resume_to_goal_active and resume_to_goal_steps_left > 0:
                         command = {
                             "command_type": "resume_to_goal",
                             "waypoint_xy": goal_xy if goal_xy is not None else subgoal_xy,
@@ -2671,6 +3034,11 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "episode": ep + 1,
             "env_id": args.env_id,
             "task_mode": getattr(args, "task_mode", "default"),
+            "task_mission": str(task_info.get("task_mission", "")),
+            "episode_intent_type_effective": str(effective_intent_type_name(args)),
+            "semantic_target_type": task_info.get("semantic_target_type"),
+            "semantic_target_color": task_info.get("semantic_target_color"),
+            "semantic_target_pos": task_info.get("semantic_target_pos"),
             "change_active": int(change_active),
             "env_change_mode": args.env_change_mode,
             "change_after_episode": int(args.change_after_episode),
@@ -2681,6 +3049,12 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
             "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
             "semantic_retrieval_mode": getattr(args, "semantic_retrieval_mode", "concept_recall_v1"),
+            "oracle_retrieval_enabled": int(bool(getattr(args, "oracle_retrieval", False))),
+            "oracle_materialization_enabled": int(bool(getattr(args, "oracle_materialization", False))),
+            "oracle_controller_enabled": int(bool(getattr(args, "oracle_controller", False))),
+            "semantic_tag_dropout_prob": float(getattr(args, "semantic_tag_dropout_prob", 0.0)),
+            "semantic_tag_false_positive_prob": float(getattr(args, "semantic_tag_false_positive_prob", 0.0)),
+            "semantic_tag_false_positive_value": float(getattr(args, "semantic_tag_false_positive_value", 0.35)),
             "water_success_radius": int(getattr(args, "water_success_radius", 1)),
             "rest_success_radius": int(getattr(args, "rest_success_radius", 1)),
             "thirst_on_threshold": float(getattr(args, "thirst_on_threshold", 0.10)),
@@ -2693,6 +3067,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "rest_local_hold_threshold": float(getattr(args, "rest_local_hold_threshold", 0.0)),
             "local_resource_guidance_enabled": int(local_resource_guidance_enabled(args)),
             "goal_rejoin_fallback_assists_enabled": int(goal_rejoin_fallback_assists_enabled(args)),
+            "oracle_retrieval_activated": int(oracle_retrieval_activated),
+            "oracle_materialization_activated": int(oracle_materialization_activated),
+            "oracle_controller_activated": int(oracle_controller_activated),
             "intent_active": int(args.intent_mode != "none"),
             "has_goal_rejoin_materialization_failure": int(has_goal_rejoin_materialization_failure),
             "water_task_success": int(water_task_success),
@@ -2776,6 +3153,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         run_summary["retrieval_failure_unsatisfied"].append(int(episode_query_metrics["retrieval_failure_unsatisfied"]))
         run_summary["semantic_materialization_failure"].append(int(episode_query_metrics["semantic_materialization_failure"]))
         run_summary["control_failure_after_retrieval"].append(int(episode_query_metrics["control_failure_after_retrieval"]))
+        run_summary["oracle_retrieval_activated"].append(int(oracle_retrieval_activated))
+        run_summary["oracle_materialization_activated"].append(int(oracle_materialization_activated))
+        run_summary["oracle_controller_activated"].append(int(oracle_controller_activated))
         run_summary["episode_metrics"].append(episode_metrics)
         if memory is not None and hasattr(memory, "finalize_episode"):
             memory.finalize_episode(
@@ -2870,7 +3250,7 @@ def parse_args():
         "--task_mode",
         type=str,
         default="default",
-        choices=["default", "water_search_v1", "rest_search_v1"],
+        choices=["default", "water_search_v1", "rest_search_v1", "babyai_semantic_v1"],
     )
     parser.add_argument(
         "--agent_mode",
@@ -2921,7 +3301,7 @@ def parse_args():
         "--intent_mode",
         type=str,
         default="none",
-        choices=["none", "safe_exit_v1", "hazard_recovery_v1", "goal_region_v1", "water_v1", "rest_v1"],
+        choices=["none", "safe_exit_v1", "hazard_recovery_v1", "goal_region_v1", "water_v1", "rest_v1", "babyai_mission_v1"],
     )
     parser.add_argument(
         "--intent_selection_mode",
@@ -2973,6 +3353,12 @@ def parse_args():
     parser.add_argument("--commit_to_corridor", action="store_true")
     parser.add_argument("--disable_local_resource_guidance", action="store_true")
     parser.add_argument("--disable_goal_rejoin_fallback_assists", action="store_true")
+    parser.add_argument("--oracle_retrieval", action="store_true")
+    parser.add_argument("--oracle_materialization", action="store_true")
+    parser.add_argument("--oracle_controller", action="store_true")
+    parser.add_argument("--semantic_tag_dropout_prob", type=float, default=0.0)
+    parser.add_argument("--semantic_tag_false_positive_prob", type=float, default=0.0)
+    parser.add_argument("--semantic_tag_false_positive_value", type=float, default=0.35)
     parser.add_argument("--debug_trace", action="store_true")
     parser.add_argument("--debug_trace_env_filter", type=str, default="")
     parser.add_argument("--record_demo", action="store_true")

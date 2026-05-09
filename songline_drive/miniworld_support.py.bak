@@ -34,15 +34,13 @@ def canonical_miniworld_env_id(env_id: str) -> str:
 
 def build_miniworld_env(env_id: str, render_mode: str = "rgb_array"):
     ensure_miniworld_available()
-    import platform
-    if platform.system() == "Linux":
-        os.environ.setdefault("PYGLET_HEADLESS", "true")
-        try:
-            import pyglet
+    os.environ.setdefault("PYGLET_HEADLESS", "true")
+    try:
+        import pyglet
 
-            pyglet.options["headless"] = True
-        except Exception:
-            pass
+        pyglet.options["headless"] = True
+    except Exception:
+        pass
     import gymnasium as gym
     try:
         import miniworld  # noqa: F401  # Registers env ids.
@@ -58,15 +56,13 @@ def build_miniworld_env(env_id: str, render_mode: str = "rgb_array"):
 def check_miniworld_runtime() -> Tuple[bool, str]:
     if not is_miniworld_available():
         return False, "miniworld package not installed"
-    import platform
-    if platform.system() == "Linux":
-        os.environ.setdefault("PYGLET_HEADLESS", "true")
-        try:
-            import pyglet
+    os.environ.setdefault("PYGLET_HEADLESS", "true")
+    try:
+        import pyglet
 
-            pyglet.options["headless"] = True
-        except Exception:
-            pass
+        pyglet.options["headless"] = True
+    except Exception:
+        pass
     try:
         import miniworld  # noqa: F401
 
