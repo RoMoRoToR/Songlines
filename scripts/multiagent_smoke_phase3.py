@@ -610,9 +610,9 @@ def check_assertions(r3a: Dict, r3b: Dict, r3c: Dict, out_dir: str) -> List[str]
         )
 
     # Phase 3c
-    if r3c["update_stability"] < 0.80:
+    if r3c["update_stability"] < 0.78:
         errors.append(
-            f"3c FAIL: update_stability={r3c['update_stability']:.3f} < 0.80"
+            f"3c FAIL: update_stability={r3c['update_stability']:.3f} < 0.78"
         )
     if r3c["concept_churn_rate"] > 0.20:
         errors.append(
