@@ -70,28 +70,31 @@ def _xy_close(a: Tuple[float, float], b: Tuple[int, int], tol: float = 0.5) -> b
 
 
 def run_independent(n_ticks: int) -> Dict[str, Any]:
-    """Each agent has private memory + no inter-agent communication."""
-    from distributed_memory.agent_memory import AgentMemory
+    """Each agent has private memory + no inter-agent communication.
 
-    agents = {
-        "scout-N": (AgentMemory("scout-N", env_id=ENV_ID), WATER_N),
-        "scout-E": (AgentMemory("scout-E", env_id=ENV_ID), WATER_E),
-        "scout-S": (AgentMemory("scout-S", env_id=ENV_ID), WATER_S),
-    }
+    Uses the dedicated ``IndependentRuntime`` (variant 1 in the
+    reviewers' taxonomy) — by construction this runtime exposes no
+    cross-agent operation.
+    """
+    from independent_memory import IndependentRuntime
 
-    for aid, (mem, place) in agents.items():
+    rt = IndependentRuntime(env_id=ENV_ID)
+    rt.spawn_agent("scout-N")
+    rt.spawn_agent("scout-E")
+    rt.spawn_agent("scout-S")
+
+    placements = {"scout-N": WATER_N, "scout-E": WATER_E, "scout-S": WATER_S}
+    for aid, place in placements.items():
         for i in range(8):
-            mem.observe(place, {WATER_TAG: 0.93},
-                        episode_id=1, step_idx=i, confidence=0.93)
+            rt.observe(aid, place, {WATER_TAG: 0.93},
+                       episode_id=1, step_idx=i, confidence=0.93)
 
-    # Refresh each agent's local graph (no exchange)
     for _ in range(n_ticks):
-        for aid, (mem, _) in agents.items():
-            mem.refresh_local()
+        rt.tick()
 
     knowledge = {}
-    for aid, (mem, _) in agents.items():
-        results = mem.local_query(WATER_TAG, top_k=10)
+    for aid in placements:
+        results = rt.local_query(aid, WATER_TAG, top_k=10)
         known: List[Tuple[int, int]] = []
         for r in results:
             xy = r.centroid_xy

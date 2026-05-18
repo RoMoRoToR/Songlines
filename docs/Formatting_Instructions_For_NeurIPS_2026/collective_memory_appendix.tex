@@ -1,0 +1,200 @@
+% Collective memory appendix — drop-in section for songlines_symbolic_memory.tex
+%
+% Usage:
+%   In the main .tex, add at the desired location:
+%     \input{collective_memory_appendix.tex}
+%
+%   This file is self-contained and uses only the styles already loaded
+%   by neurips_2026.sty.  It introduces \subsection / \subsubsection
+%   but no top-level \section so it can be placed under an existing one.
+
+\section{Collective semantic memory for multi-agent navigation}
+\label{sec:collective-memory}
+
+The single-agent symbolic memory of Section~5 is extended to a
+multi-agent collective by composing four orthogonal layers.  Each layer
+is gated by an independent mode axis, so any subset can be enabled at
+test time without retraining or refactoring the base agent.
+
+\subsection{Architecture}
+\label{sec:collective-arch}
+
+\paragraph{Phase~1 — event bus.}
+A single \emph{collective memory} object stores an append-only log of
+typed events.  The dominant event type is
+\texttt{place\_observed}$(agent, place\_key, semantic\_tags,
+confidence, seq)$.  Recency-weighted retrieval on a tag returns
+candidate places ranked by $\lambda^{age}\cdot conf$.
+
+\paragraph{Phase~2 — shared concept graph.}
+A \emph{place alignment engine} consolidates events with compatible
+spatial and semantic descriptors into shared concepts $c$, each
+carrying $(member\_places, dominant\_tag, semantic\_profile,
+supporting\_agents)$.  Subsequent queries are answered at the concept
+level rather than the raw event level, giving cross-agent generalisation.
+
+\paragraph{Phase~3 — belief dynamics.}
+Two parallel mechanisms act on the concept graph between refreshes:
+(i) a temporal decay engine multiplies each concept's freshness by
+$\rho^{(\text{seq}-\text{last\_seq})}$ with floor $\epsilon$, and
+(ii) a conflict rule set scans incompatible tag pairs
+$(t^+, t^-)$ and emits per-concept $conflict\_score \in [0,1]$.  The
+recall score becomes
+$score = conf \cdot tag\_match \cdot \log(1+supp) \cdot freshness \cdot (1-\eta_c)$.
+
+\paragraph{Phase~4 — multi-channel semantic field.}
+On top of the canonical graph, a channel-indexed activation field
+$A(k,c)$ is maintained per $(channel, concept)$.  The update rule is
+\begin{equation}
+\label{eq:field-update}
+A_{t+1}(k,c) = \lambda\,A_t(k,c)
+              + \alpha\,B(c)\,I(k,c)
+              + \gamma\,D_t(k,c)
+              - \eta\,X_t(c)
+              - \xi\,U_t(c),
+\end{equation}
+where $B(c)$ is a belief strength aggregating confidence/freshness/support/purity;
+$I(k,c)$ is a channel affinity from $semantic\_profile$ to channel
+weights (with negative weights for competing tags); $D_t$ is a Gaussian
+spatial diffusion term; $X_t$ is the $conflict\_score$ from Phase~3;
+and $U_t$ is an occupancy/reservation pressure (Section~\ref{sec:phase4c}).
+Coefficients $\lambda,\alpha,\eta,\xi,\gamma$ are exposed to the
+adaptive layer of Section~\ref{sec:phase4d}.
+
+\subsubsection{Mode axis}
+
+Phase~4 is gated by a single mode parameter taking values
+\textsc{none}, \textsc{descriptive}, \textsc{read\_only},
+\textsc{coordinated}.  Setting the mode to \textsc{none} reduces the
+adapter to Phase~1 raw retrieval, providing a clean baseline.  Modes
+upgrade monotonically: \textsc{read\_only} reranks Phase~2/3 candidates
+by the field activation; \textsc{coordinated} additionally lets agents
+commit reservations that immediately penalise other agents' queries.
+
+\subsection{Reservation-based deconfliction (Phase~4c)}
+\label{sec:phase4c}
+
+In \textsc{coordinated} mode an agent may commit a soft reservation
+$\langle c, k, agent, ttl \rangle$, which immediately subtracts $\xi$
+from $A(k,c)$ and registers in $U_t$.  Subsequent queries from any
+agent see the penalised activation without waiting for the next field
+refresh.  This is sufficient to deconflict competing claims on the
+same resource: when two agents both query for a target tag, the first
+to commit a reservation pushes its target's activation below the
+runner-up, redirecting the second agent.
+
+\subsection{Outcome-driven adaptive reweighting (Phase~4d)}
+\label{sec:phase4d}
+
+A lightweight tracker accumulates per-concept and per-reservation
+outcomes over a rolling window.  After every $K$ episodes it applies a
+small set of rules:
+\begin{itemize}
+\item Concept with $base\_conflict \ge 0.15$ and failure rate
+      $\ge 0.60$ $\Rightarrow$ $\eta \leftarrow \eta \cdot 1.15$.
+\item Reservation success rate $\ge 0.70$ $\Rightarrow$ $\xi \leftarrow \xi \cdot 1.05$;
+      rate $< 0.30$ $\Rightarrow$ $\xi \leftarrow \xi \cdot 0.95$.
+\item Global failure rate $\ge 0.60$ $\Rightarrow$ $\gamma \leftarrow \gamma \cdot 0.90$.
+\end{itemize}
+All coefficients are clamped to fixed ranges
+($\eta\in[0.10,0.95]$, $\xi\in[0.05,0.60]$, $\gamma\in[0.00,0.30]$).
+The update is intentionally non-neural and entirely interpretable.
+
+\subsection{Diagnostic ablations}
+\label{sec:collective-ablation}
+
+Table~\ref{tab:collective-smoke} summarises eight unit-level smoke
+tests that exercise each phase in isolation, using deterministic
+synthetic scenarios so the result is reproducible across runs.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Per-phase diagnostic smokes.  All deterministic; numbers are
+from a single run (commit \texttt{a388925}).}
+\label{tab:collective-smoke}
+\begin{tabular}{lll}
+\toprule
+Phase & Test & Result \\
+\midrule
+1     & Recall recovers GT top-1 from event bus & top-1 accuracy = 1.0 \\
+2     & Concept consolidation A/B vs. raw events & precision gain $>0$ \\
+3a    & Stale observations suppressed by decay & suppression rate = 1.00 \\
+3b    & Incompatible tags produce conflict penalty & penalty = 0.74 \\
+3c    & Incremental refresh stability & churn = 0.09 \\
+4a    & Cross-channel separation, conflict suppression, decay & sep $=0.177$, suppr $=1.0$ \\
+4b    & Field reranking on contested target & prec@1 maintained, rank stable \\
+4c    & Reservation deconfliction (two consumers, one target) & deconfliction rate = 1.00 \\
+4d    & Adaptive reweighting rules fire correctly & $\eta,\xi,\gamma$ adjust within bounds \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{End-to-end multi-agent navigation}
+\label{sec:collective-multiagent}
+
+To validate the architecture beyond unit-level smokes we built a
+two-agent grid environment with two clean water cells located in
+opposite corners.  Both agents must reach water; agents block each
+other on cell-level collisions.  The same scenario is run under three
+field modes, with $N=10$ seeds and a step limit of 80.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Multi-agent navigation under three field modes.
+Coordinated mode is the only mode that solves the scenario for both
+agents; the failure mode under \textsc{descriptive}/\textsc{read\_only}
+is that both agents commit to the same water cell at $t=0$, and the
+second agent gets stuck once the first occupies it.}
+\label{tab:multiagent-end-to-end}
+\begin{tabular}{lcccc}
+\toprule
+Mode & success (both) & mean steps & dup target rate & hazard hits \\
+\midrule
+descriptive  & 0.00 & 80.0 & 1.00 & 2.0 \\
+read\_only   & 0.00 & 80.0 & 1.00 & 2.0 \\
+coordinated  & 1.00 & 21.0 & 0.00 & 4.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Adaptive convergence in episode loop}
+\label{sec:collective-adaptive-loop}
+
+The adaptive tracker of Section~\ref{sec:phase4d} is connected to a
+20-episode navigation loop with a contested concept whose
+$base\_conflict\approx 0.65$.  After every three episodes the tracker
+records failures for any high-conflict concept whose channel activation
+exceeds a threshold and calls \texttt{adapt()}.
+Figure~\ref{fig:eta-trajectory} (text form below) shows the resulting
+$\eta_{conflict}$ trajectory.
+
+\begin{verbatim}
+episode  0  3  6  9  12 15 18
+eta      0.30 0.30 0.345 0.397 0.456 0.525 0.525
+\end{verbatim}
+
+The coefficient rises monotonically by $+75\%$ over five effective
+adapt cycles and then plateaus once the contested concept's activation
+is suppressed below the failure-recording threshold.  The plateau is
+the desired convergence behaviour: the loop self-stops once the field
+has solved the underlying suppression problem.
+
+\subsection{Invariants}
+
+Four invariants are preserved across all four phases.
+\textbf{I1:} the Phase~1 event bus is append-only and is never written
+to by higher layers.
+\textbf{I2:} the Phase~2 concept graph is the canonical state; the field
+of Phase~4 reads from it but never writes.
+\textbf{I3:} Phase~3 belief dynamics are applied before each field
+refresh; the field's $X_t$ term reads pre-computed
+$conflict\_score$.
+\textbf{I4:} the planner and local controller of Section~5 are not
+modified; the collective layer only reorders candidates and exposes
+reservation primitives.  Setting all mode axes to \textsc{none}
+recovers the single-agent baseline of Section~5.
+
+These invariants make ablation rigorous: switching any single mode off
+is sufficient to attribute an observed effect to a specific phase.
