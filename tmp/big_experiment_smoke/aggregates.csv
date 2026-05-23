@@ -1,0 +1,9 @@
+n_agents,n_waters,layout,arch_label,architecture,broadcast_every_k,hazard_density,n_seeds,success_rate_mean,success_rate_std,mean_t_succ_mean,mean_t_succ_std,p95_t_succ_mean,total_trail_mean,n_hazard_hits_mean,scarcity
+3,2,asymmetric,centralized,centralized,-1,0.0,3,0.6666666666666666,0.0,22.0,0.0,39.0,72.0,0.0,1.5
+3,2,asymmetric,independent,independent,-1,0.0,3,0.6666666666666666,0.0,13.5,0.0,22.0,69.0,0.0,1.5
+3,2,asymmetric,peer(K=1),peer,1,0.0,3,0.6666666666666666,0.0,23.0,0.0,41.0,86.0,0.0,1.5
+3,2,asymmetric,peer(K=4),peer,4,0.0,3,0.6666666666666666,0.0,30.0,0.0,55.0,95.0,0.0,1.5
+3,3,asymmetric,centralized,centralized,-1,0.0,3,1.0,0.0,16.666666666666668,0.0,41.0,35.0,0.0,1.0
+3,3,asymmetric,independent,independent,-1,0.0,3,1.0,0.0,10.666666666666666,0.0,23.0,28.0,0.0,1.0
+3,3,asymmetric,peer(K=1),peer,1,0.0,3,1.0,0.0,16.666666666666668,0.0,41.0,40.0,0.0,1.0
+3,3,asymmetric,peer(K=4),peer,4,0.0,3,1.0,0.0,22.666666666666668,0.0,59.0,52.0,0.0,1.0

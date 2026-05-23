@@ -1,0 +1,59 @@
+{
+  "H1_existence_of_interior_K_star": {
+    "n_cases": 1,
+    "n_interior": 0,
+    "interior_fraction": 0.0,
+    "supports_H1": false,
+    "details": [
+      {
+        "n": "3",
+        "m": "2",
+        "layout": "asymmetric",
+        "k_star": 1,
+        "interior": false,
+        "mean_t_at_k_star": 23.0,
+        "mean_t_at_k1": 23.0,
+        "mean_t_at_k_max": 30.0
+      }
+    ]
+  },
+  "H2_K_star_grows_with_scarcity": {
+    "note": "insufficient \u03c1 variation"
+  },
+  "H3_K_star_is_1_when_no_scarcity": {
+    "n_cases": 1,
+    "n_with_k_star_eq_1": 1,
+    "fraction": 1.0,
+    "supports_H3": true
+  },
+  "headline_mean_t_succ_by_architecture": [
+    {
+      "architecture": "centralized",
+      "n_runs": 6,
+      "mean_t_succ": 19.333333333333336,
+      "ci95_lo": 17.555555555555557,
+      "ci95_hi": 21.11111111111111
+    },
+    {
+      "architecture": "independent",
+      "n_runs": 6,
+      "mean_t_succ": 12.083333333333334,
+      "ci95_lo": 11.138888888888888,
+      "ci95_hi": 13.027777777777779
+    },
+    {
+      "architecture": "peer",
+      "n_runs": 12,
+      "mean_t_succ": 23.083333333333332,
+      "ci95_lo": 20.360416666666666,
+      "ci95_hi": 25.88888888888889
+    }
+  ],
+  "peer_at_K_star_vs_centralized": {
+    "peer_mean": 23.0,
+    "centralized_mean": 22.0,
+    "delta": 1.0,
+    "mann_whitney_p_one_sided": 0.9935136885004782,
+    "supports_peer_better": false
+  }
+}
