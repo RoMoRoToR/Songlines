@@ -30,7 +30,12 @@ CSV_FIELDS = [
     "n_agents", "n_waters", "layout", "architecture",
     "broadcast_every_k", "hazard_density", "seed", "step_limit",
     "n_succeeded", "success_rate", "mean_t_succ", "p95_t_succ",
-    "total_trail", "n_hazard_hits", "scarcity", "tag",
+    "total_trail", "n_hazard_hits", "ticks_played", "scarcity",
+    # Q/R/M/C stage diagnostics
+    "q_star_rate", "r_star_rate", "m_star_rate", "c_star_rate",
+    "p_R_given_Q", "p_M_given_R", "p_C_given_M",
+    "q_tick_rate", "r_tick_rate", "m_tick_rate",
+    "tag",
 ]
 
 

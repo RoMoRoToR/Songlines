@@ -1,0 +1,17 @@
+{
+  "n_episodes_trained": 2000,
+  "n_agents": 3,
+  "n_waters": 2,
+  "layout": "asymmetric",
+  "hazard_density": 0.05,
+  "train_seconds": 100.38617086410522,
+  "train_last100_success_rate_mean": 0.17666666666666667,
+  "eval_success_rate_mean": 0.21333333333333332,
+  "eval_success_rate_std": 0.19931856701387,
+  "eval_mean_steps": 80,
+  "eval_n_succ_distribution": {
+    "0": 21,
+    "1": 26,
+    "2": 3
+  }
+}

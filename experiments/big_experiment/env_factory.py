@@ -36,9 +36,10 @@ GRID_W, GRID_H = 12, 10
 AGENT_COLORS = [
     "#e74c3c", "#3498db", "#27ae60", "#f39c12",
     "#9b59b6", "#1abc9c", "#e67e22", "#34495e",
+    "#16a085", "#c0392b", "#2980b9", "#8e44ad",
 ]
 
-# Eight evenly spread spawn positions (corners + edge midpoints)
+# Twelve evenly spread spawn positions (4 corners + 4 edge midpoints + 4 quarter-edge points)
 SPAWN_POSITIONS_8 = [
     (0, 0),                    # NW corner
     (GRID_W - 1, 0),           # NE corner
@@ -48,6 +49,10 @@ SPAWN_POSITIONS_8 = [
     (GRID_W - 1, GRID_H // 2), # E midpoint
     (GRID_W // 2, GRID_H - 1), # S midpoint
     (0, GRID_H // 2),          # W midpoint
+    (GRID_W // 4, 0),          # N quarter (left)
+    (3 * GRID_W // 4, 0),      # N quarter (right)
+    (0, GRID_H // 4),          # W quarter (top)
+    (GRID_W - 1, GRID_H // 4), # E quarter (top)
 ]
 
 # Natural starting direction so the first FORWARD doesn't immediately leave the grid
@@ -60,6 +65,10 @@ SPAWN_DIRECTIONS_8 = [
     2,   # E midpoint → west
     3,   # S midpoint → north
     0,   # W midpoint → east
+    1,   # N quarter left → south
+    1,   # N quarter right → south
+    0,   # W quarter top → east
+    2,   # E quarter top → west
 ]
 
 
@@ -192,7 +201,7 @@ def build_env(
     step_limit: int = 200,
     observation_radius: int = 2,
 ) -> BuiltEnv:
-    assert 2 <= n_agents <= 8, "supported range 2..8 agents"
+    assert 2 <= n_agents <= 12, "supported range 2..12 agents"
     assert 1 <= n_waters <= n_agents, "M must satisfy 1 <= M <= N"
     assert layout in ("symmetric", "asymmetric", "random")
 

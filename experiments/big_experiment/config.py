@@ -17,9 +17,9 @@ M_BY_N_FULL = {
 }
 LAYOUTS_FULL = ["symmetric", "asymmetric", "random"]
 ARCHITECTURES_FULL = ["independent", "shared", "centralized", "peer"]
-PEER_KS_FULL = [1, 2, 4, 8, 16]
+PEER_KS_FULL = [1, 2, 4, 8, 16, 32, 48, 64]
 HAZARD_DENSITIES_FULL = [0.0, 0.05, 0.10]
-SEEDS_FULL = list(range(20))
+SEEDS_FULL = list(range(40))
 STEP_LIMIT_FULL = 120
 
 

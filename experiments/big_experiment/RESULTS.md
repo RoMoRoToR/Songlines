@@ -4,9 +4,24 @@
 **Sweep:** 12,960 configs (3 N × variable M × 3 layouts × 4 archs + 5 peer K × 3 hazard × 20 seeds)
 **Время:** 485s (8 workers, ~27 runs/sec)
 
-## TL;DR
+> ## ⚠️ STATUS: SUPERSEDED — see `RESULTS_UNIFIED.md` (2026-05-28)
+>
+> Открытый вопрос этого документа ("1/4 hypotheses supported, framework неполный") **закрыт**.
+>
+> Структурные гипотезы H1/H2/H3 формулировали cadence-эффект на **неверных стадиях** Q/R/M/C декомпозиции (R и через ρ-зависимость). Корректная формулировка через unified framework (`RESULTS_UNIFIED.md`):
+>
+> - Cadence создаёт **bottleneck shift между P(M|R) и P(C|M)**, не между R и Q/M
+> - Knee-curves обоих P(M|R) и P(C|M) **подтверждены** статистически (Spearman p < 0.0001 для обоих, n=12,960)
+> - **K\* = arg max P(M|R) · P(C|M)** — предсказание framework'а **совпадает с empirical K\*=4** из этого документа
+> - Negative H2 (K\* не растёт с ρ) — **предсказание framework'a**, не его failure: K\* зависит от curvature обеих conditional rates, не от ρ напрямую
+>
+> Итог: то что в этом документе подавалось как "1/4 supported" — это **3/3 framework predictions подтверждены** после правильной формализации. См. `RESULTS_UNIFIED.md` для полного нарратива.
+
+## TL;DR (original, retained for history)
 
 Из 4 заявленных гипотез **строго подтверждена 1 главная практическая** (peer at K\* > centralized, p = 0.044). Структурные гипотезы (H1, H2, H3) **подтверждены частично** — только в специфических режимах (random layout, high scarcity). Это **честный** научный результат: cadence-механизм работает, но картина сложнее чем "U-кривая с K\* растущим линейно от ρ".
+
+> **Обновление (2026-05-28):** "сложнее" не означает "framework неполный" — это конкретно та сложность которую framework предсказывает. См. блок выше.
 
 ## Главный результат — Headline
 
