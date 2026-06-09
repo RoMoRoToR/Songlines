@@ -5,7 +5,7 @@
 \item {\bf Claims}
     \item[] Question: Do the main claims made in the abstract and introduction accurately reflect the paper's contributions and scope?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The abstract and introduction present the paper primarily as a four-stage diagnostic framework with a reference symbolic-semantic instantiation, and they explicitly scope the evidence to benchmarked navigation environments with a limited portability check (Abstract; Sections~1 and~11).
+    \item[] Justification: The abstract and introduction present the paper primarily as a four-stage diagnostic framework with a reference symbolic-semantic instantiation, and they explicitly scope the evidence to benchmarked navigation environments with a limited portability check (Abstract; Sections~1 and~6).
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the abstract and introduction do not include the claims made in the paper.
@@ -17,7 +17,7 @@
 \item {\bf Limitations}
     \item[] Question: Does the paper discuss the limitations of the work performed by the authors?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The paper includes an explicit ``Limitations and future work'' section that discusses environment difficulty, the observable-query assumption, oracle-only loop closure, and baseline scope (Section~11).
+    \item[] Justification: The paper includes an explicit ``Limitations and future work'' section that discusses environment difficulty, the observable-query and observable-occupancy assumptions, the slope-vs-corollary gap of Proposition~3, the learned-baseline scope, and agent-count scaling (Section~6).
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper has no limitation while the answer \answerNo{} means that the paper has limitations, but those are not discussed in the paper. 
@@ -33,7 +33,7 @@
 \item {\bf Theory assumptions and proofs}
     \item[] Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The paper states the assumptions in Section~4, provides a proof sketch in the main text, and includes a full formal proof of Theorem~1 in the appendix.
+    \item[] Justification: The paper states the conditional stage-Markov property and positivity assumptions in Section~2.2, gives a proof sketch in the main text, and includes a full formal proof of Proposition~1 in Appendix~A together with the multi-agent extension (Proposition~2) and the slope-level argument for Proposition~3.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include theoretical results. 
@@ -47,7 +47,7 @@
     \item {\bf Experimental result reproducibility}
     \item[] Question: Does the paper fully disclose all the information needed to reproduce the main experimental results of the paper to the extent that it affects the main claims and/or conclusions of the paper (regardless of whether the code and data are provided or not)?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The paper specifies the task families, environments, seeds, episode counts, assist modes, baselines, statistical protocol, and benchmark semantics, and it describes how stage events are extracted from runtime logs (Sections~3, 6, and 7).
+    \item[] Justification: The paper specifies the task families, environments, seeds, episode counts, assist modes, baselines, statistical protocol, and benchmark semantics; the single-agent setup is in Section~3.1 and the multi-agent sweep protocol in Section~4.4; the operational stage definitions used to extract $Q^\star,R^\star,M^\star,C^\star$ from runtime logs are in Appendix~B.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include experiments.
@@ -67,7 +67,7 @@
 \item {\bf Open access to data and code}
     \item[] Question: Does the paper provide open access to the data and code, with sufficient instructions to faithfully reproduce the main experimental results, as described in supplemental material?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The paper describes a unified benchmark runner and source-of-truth artifacts. An anonymized public release of the codebase --- single-agent benchmark, multi-agent grid environment, 12{,}960-run sweep driver, Q/R/M/C analyser, oracle-intervention scripts, and exact commands to reproduce every table and figure --- accompanies the submission as supplemental material (anonymized GitHub repository, single-command reproduction of the main multi-agent sweep on a 8-core machine in $\approx 9$ minutes).
+    \item[] Justification: The paper describes a unified benchmark runner and source-of-truth artifacts. An anonymized public release of the codebase --- single-agent benchmark, multi-agent grid environment, 35{,}640-run sweep driver, Q/R/M/C analyser, oracle-intervention scripts, and exact commands to reproduce every table and figure --- accompanies the submission as supplemental material (anonymized GitHub repository; single-command reproduction of the main multi-agent sweep on an 8-core machine in $\approx 22$ minutes, matching Appendix~H).
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that paper does not include experiments requiring code.
@@ -84,7 +84,7 @@
 \item {\bf Experimental setting/details}
     \item[] Question: Does the paper specify all the training and test details (e.g., data splits, hyperparameters, how they were chosen, type of optimizer) necessary to understand the results?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The benchmark protocol, task definitions, assist settings, seeds, episode counts, baseline families, and the learned baseline are described in the main text, together with the measurement and statistical protocols (Section~6).
+    \item[] Justification: The benchmark protocol, task definitions, assist settings, seeds, episode counts, baseline families, and the learned baselines are described in the main text together with the measurement and statistical protocols: single-agent setup in Section~3.1, multi-agent sweep in Section~4.4, and per-baseline hyperparameters in Appendix~G.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include experiments.
@@ -95,7 +95,7 @@
 \item {\bf Experiment statistical significance}
     \item[] Question: Does the paper report error bars suitably and correctly defined or other appropriate information about the statistical significance of the experiments?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The paper reports 95\% bootstrap confidence intervals over seed-level aggregates and describes paired Wilcoxon signed-rank tests with Holm-Bonferroni correction for assist comparisons (Section~6.2; Table~2).
+    \item[] Justification: The paper reports 95\% bootstrap confidence intervals over seed-level aggregates ($B{=}5{,}000$ resamples; Section~3.1, ``Protocol'' paragraph) and uses paired Wilcoxon signed-rank tests with Holm-Bonferroni correction for assist comparisons. CIs are shown in Tables~2, 4, and~5 and in Figures~4--6.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include experiments.
@@ -112,7 +112,7 @@
 \item {\bf Experiments compute resources}
     \item[] Question: For each experiment, does the paper provide sufficient information on the computer resources (type of compute workers, memory, time of execution) needed to reproduce the experiments?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The paper discloses the hardware platform, memory, CPU-only execution mode, the scale of the benchmark, and a representative wall-clock cost for the targeted oracle-intervention sweep in the main text (Section~6.2).
+    \item[] Justification: The paper discloses the hardware platform (10-core ARM CPU, 32\,GB RAM; CPU-only), the scale of each benchmark, and wall-clock costs --- single-agent oracle sweep $<1$ minute (Section~3.1); main multi-agent sweep (35{,}640 runs) $\approx 22$ minutes on 8 cores (Section~4.4); $N{=}12$ scale-up (8{,}640 runs) $\approx 12$ minutes (Appendix~D).
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include experiments.
@@ -136,7 +136,7 @@
 \item {\bf Broader impacts}
     \item[] Question: Does the paper discuss both potential positive societal impacts and negative societal impacts of the work performed?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The paper includes a dedicated ``Broader impacts'' section that discusses the primary methodological benefits of the work and the indirect risks of improving navigation systems without adequate safeguards (Section~10).
+    \item[] Justification: The paper includes a dedicated ``Broader impacts'' section that discusses the primary methodological benefits of the work and the indirect risks of improving navigation systems without adequate safeguards (Section~7).
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that there is no societal impact of the work performed.
@@ -162,7 +162,7 @@
 \item {\bf Licenses for existing assets}
     \item[] Question: Are the creators or original owners of assets (e.g., code, data, models), used in the paper, properly credited and are the license and terms of use explicitly mentioned and properly respected?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The paper cites the upstream benchmark platforms (MiniGrid, BabyAI) in the main references. Appendix~H states that both are MIT-licensed and that the benchmark scripts introduced here will be released under the MIT License at camera-ready.
+    \item[] Justification: The paper cites the upstream benchmark platforms (MiniGrid, BabyAI) in the main references. Appendix~I states that both are MIT-licensed and that the benchmark scripts introduced here will be released under the MIT License at camera-ready.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not use existing assets.
@@ -178,7 +178,7 @@
 \item {\bf New assets}
     \item[] Question: Are new assets introduced in the paper well documented and is the documentation provided alongside the assets?
     \item[] Answer: \answerNo{}
-    \item[] Justification: The submission introduces benchmark scripts and analysis artifacts. A formal anonymized release package with documentation is planned for camera-ready; Appendix~G lists all scripts needed to reproduce each reported result, and Appendix~H states the intended license for the new assets.
+    \item[] Justification: The submission introduces benchmark scripts and analysis artifacts. A formal anonymized release package with documentation is planned for camera-ready; Appendix~H lists all scripts needed to reproduce each reported result, and Appendix~I states the intended license for the new assets.
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not release new assets.

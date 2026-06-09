@@ -1,9 +1,18 @@
-% THESIS: Memory-based agent failures factor into four conditional stages
-% identifiable from trajectory logs, and stage-level diagnostics produce
-% interventions that success-only evaluation cannot.
+% ============================================================
+% THESIS (the narrative spine of the paper):
+%   Memory-based agent failures factor into four conditional stages
+%   identifiable from trajectory logs. Stage-level diagnostics produce
+%   interventions that success-only evaluation cannot, and -- in both
+%   the single-agent and the multi-agent regime -- they localize the
+%   binding constraint to the SAME mechanism: how trajectory evidence
+%   is CONSOLIDATED into persistent, shareable symbolic structure.
+%   That convergence motivates collective semantic memory as the
+%   research target this paper sets up.
 %
-% Every paragraph must either defend or develop this thesis.
-% If a paragraph does neither, cut it.
+% Every section must end on a bridge sentence that advances this arc.
+% If a paragraph neither defends the decomposition nor builds the
+% bridge to collective consolidation, cut it or move it to an appendix.
+% ============================================================
 
 \documentclass{article}
 
@@ -28,6 +37,11 @@
 
 \newcommand{\method}[1]{\texttt{#1}}
 
+% TODO(deanonymization): the figure directory and one script name still
+% contain the internal codename "songline(s)". Before submission, rename
+% the directory and scripts/compare_songline_babyai.py if the codename
+% is searchable to a public repository or preprint.
+
 \title{Q/R/M/C: Stage Decomposition for Memory-Based Navigation in Single Agents and Cadence-Coupled Collectives}
 
 %\author{%
@@ -43,35 +57,46 @@
 
 \begin{abstract}
 Success-only metrics collapse qualitatively different memory-based
-navigation failures into a single scalar, hiding which stage of the
-retrieval pipeline is responsible.
-
-The Q/R/M/C decomposition --- query formation, retrieval
-satisfaction, target materialization, completion after retrieval ---
-is proposed and proved identifiable from trajectory logs under a
-conditional stage-Markov assumption (Theorem~1).
-
+navigation failures into a single scalar, hiding \emph{which stage} of
+the retrieval pipeline is responsible. We propose the Q/R/M/C
+decomposition --- \textbf{Q}uery formation, \textbf{R}etrieval
+satisfaction, target \textbf{M}aterialization, \textbf{C}ompletion
+after retrieval --- and show that, under a conditional stage-Markov
+assumption, the four stage factors are estimable directly from
+standard trajectory logs (Proposition~1).
 \textbf{Single-agent.} On a 10-seed MiniGrid benchmark the framework
 localizes bottlenecks: hazard recovery is retrieval-limited (oracle
 retrieval lifts success $0.39 \to 0.60$) while goal-region rejoin is
 downstream-limited (oracle retrieval rescues semantic-path completion
-without moving end-to-end success).
-
+without moving end-to-end success). Inspection of the framework's own
+logs refines the attribution further: candidate \emph{ranking} is
+near-optimal while candidate \emph{generation} fails at 91\% of
+decision points, exposing a memory-accumulation limit.
 \textbf{Multi-agent.} On a 35{,}640-run sweep with broadcast cadence
 $K \in \{1,2,4,8,16,32,48,64\}$ and 40 seeds, the bottleneck-shift
 signature appears as a strongly negative within-configuration
 correlation between $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$
 (Pearson $-0.61$ at $K\!=\!4$, decaying to $-0.02$ at $K\!=\!64$),
 and mean time-to-success has an interior minimum at $K\!=\!8$.
-
 \textbf{Honest limit.} The strict interior-maximum corollary on the
 conditional product $P(M^\star|R^\star) \cdot P(C^\star|M^\star)$ does
 \emph{not} hold --- the product monotonically approaches the
-independent-agent boundary. This is reported as a feature of the
-framework, not a bug: the slope-level claim of Proposition~2 is
-supported while one of its corollaries is not.
+independent-agent boundary. The slope-level claim of Proposition~3 is
+supported while one of its corollaries is not, and we report the gap
+explicitly.
+Across both regimes the diagnostics converge on a single binding
+constraint --- how trajectory evidence is consolidated into
+persistent, shareable symbolic structure --- motivating
+\emph{collective semantic memory} as the engineering target that the
+framework is built to measure.
 \end{abstract}
 
+% ============================================================
+% 1. INTRODUCTION
+% Thesis of the section: success-only evaluation is blind for
+% memory-based agents; a four-stage decomposition makes failure
+% measurable, and the measurements point at consolidation.
+% ============================================================
 \section{Introduction}
 
 \begin{figure}[t]
@@ -89,48 +114,101 @@ supported while one of its corollaries is not.
   \label{fig:hero}
 \end{figure}
 
-Classical navigation benchmarks often assume that the agent is given an explicit destination coordinate or a dense task reward. Many practical navigation problems are different: the agent must reach a place of a certain \emph{type} --- a safe rest area, a water-like resource, a post-hazard recovery exit, or a goal-associated region --- specified by a semantic pattern rather than a fixed $(x, y)$ waypoint. This setting opens a methodological question: can we measure \emph{where} memory-based semantic navigation breaks down, not only \emph{whether} it succeeds?
+Classical navigation benchmarks often assume that the agent is given an
+explicit destination coordinate or a dense task reward. Many practical
+navigation problems are different: the agent must reach a place of a
+certain \emph{type} --- a safe rest area, a water-like resource, a
+post-hazard recovery exit, or a goal-associated region --- specified by
+a semantic pattern rather than a fixed $(x, y)$ waypoint. The place
+must therefore be \emph{remembered and retrieved by meaning}. This
+setting opens a methodological question: can we measure \emph{where}
+memory-based semantic navigation breaks down, not only \emph{whether}
+it succeeds?
 
-We propose a four-stage diagnostic framework that answers this question for both single agents and multi-agent collectives. The decomposition is Q/R/M/C: \textbf{Q}uery formation, \textbf{R}etrieval satisfaction, target \textbf{M}aterialization, and \textbf{C}ompletion after retrieval. The decomposition factorizes per-episode success and, under a conditional stage-Markov property, is identifiable from trajectory logs (Theorem~1).
+We answer this question with a four-stage diagnostic framework that
+applies to both single agents and multi-agent collectives. The
+decomposition is Q/R/M/C: \textbf{Q}uery formation, \textbf{R}etrieval
+satisfaction, target \textbf{M}aterialization, and \textbf{C}ompletion
+after retrieval. The decomposition factorizes per-episode semantic-path
+completion and, under a conditional stage-Markov property, its factors
+are estimable from trajectory logs (Proposition~1).
+The rest of the paper is one continuous argument in three moves.
 
-\textbf{Single-agent diagnostics.} Success-only metrics collapse qualitatively different failures into a single scalar. In a 10-seed MiniGrid benchmark, water and rest tasks are strong end-to-end (0.95, 0.93 success), but goal-region rejoin and hazard recovery are substantially harder. The four-stage view turns this from a uniform weakness into actionable attribution: hazard recovery is retrieval-limited (oracle retrieval lifts success $0.39 \to 0.60$), while goal-region rejoin is downstream-limited (oracle retrieval rescues semantic-path completion without changing end-to-end success). The framework therefore produces stage-specific prescriptions instead of undifferentiated evaluations.
+\textbf{Move 1 (single agent): stage attribution is non-trivial.}
+Success-only metrics collapse qualitatively different failures into a
+single scalar. In a 10-seed MiniGrid benchmark, water and rest tasks
+are strong end-to-end (0.95, 0.93 success), but goal-region rejoin and
+hazard recovery are substantially harder --- and for \emph{different
+reasons}. Oracle-stage interventions show that hazard recovery is
+retrieval-limited (oracle retrieval lifts success $0.39 \to 0.60$),
+while goal-region rejoin is downstream-limited (oracle retrieval
+rescues semantic-path completion without changing end-to-end success).
+Inspection of the framework's own logs then sharpens the attribution:
+the retrieval bottleneck is not candidate \emph{ranking} (precision
+$96.9\%$ when candidates exist) but candidate \emph{generation} ---
+the memory contains no eligible symbols at 91\% of decision points.
+The single-agent bottleneck is a \emph{memory-accumulation} limit:
+evidence is observed but never consolidated into queryable structure.
 
-\textbf{Multi-agent extension.} When $N$ agents share memory through a
-communication protocol with broadcast cadence $K$, the single-agent
-factorization extends with enlarged conditioning sets
-(Proposition~1$^\star$). The cadence $K$ becomes a structural axis that
-the framework allows investigation of diagnostically rather than
-end-to-end.
+\textbf{Move 2 (multi-agent): consolidation acquires a rate.}
+When $N$ agents share memory through a broadcast protocol with cadence
+$K$, the factorization extends with enlarged conditioning sets
+(Proposition~2), and $K$ becomes a structural axis: it
+is, mechanically, a knob on \emph{how fast private memories consolidate
+into a collective one}. A slope-level claim
+(Proposition~3) predicts a bottleneck shift: as $K$
+decreases, $P(M^\star|R^\star)$ rises (fresher peer memory enables
+reliable commitment) and $P(C^\star|M^\star)$ falls (peers race for
+the same targets). Both slope signs are confirmed on a 35{,}640-run
+sweep ($p < 10^{-4}$), the shift is directly visible as a negative
+within-cadence correlation between the two links, and the resulting
+trade-off produces an interior optimum of mean time-to-success at
+$K\!=\!8$: consolidation has a non-trivial optimal rate.
 
-\textbf{Bottleneck shift between M and C stages.} A slope-level claim
-(Proposition~2) is stated under stylized assumptions on freshness and
-occupancy: as $K$ decreases, $P(M^\star|R^\star)$ rises (fresher peer
-memory enables reliable commitment) and $P(C^\star|M^\star)$ falls
-(peers race for the same targets). Both slope signs are confirmed on
-the 35{,}640-run sweep ($p < 10^{-4}$).
+\textbf{Move 3 (synthesis): both regimes point at the same object.}
+The single-agent diagnosis (consolidation of evidence into symbols is
+the limit) and the multi-agent diagnosis (the rate and cost of sharing
+consolidated memory determine the optimum) converge on one research
+target: \emph{collective semantic memory} --- a shared symbolic
+structure with explicit merge, trust, and staleness rules, rather than
+snapshots exchanged on a timer. Section~\ref{sec:synthesis} states
+this program and shows that Q/R/M/C is the measurement instrument it
+requires: any candidate design is testable by how it moves
+$P(M^\star|R^\star)$ and $P(C^\star|M^\star)$.
 
 \textbf{What the data do and do not support.} A naive reading of the
-two slopes predicts an interior maximum on the conditional product
-$P(M^\star|R^\star) \cdot P(C^\star|M^\star)$. In this environment that
-prediction fails: the product is monotone in $K$ and approaches the
-independent-agent boundary. The interior optimum the framework
-intuitively predicts appears instead on mean time-to-success, with a
-clean minimum at $K\!=\!8$. The gap is reported explicitly --- it is
-the difference between a stage-level operationalisation that can be
+two slopes of Proposition~3 predicts an interior maximum
+on the conditional product
+$P(M^\star|R^\star) \cdot P(C^\star|M^\star)$. In this environment
+that prediction fails: the product is monotone in $K$ and approaches
+the independent-agent boundary. The interior optimum appears instead
+on mean time-to-success. The gap is reported explicitly --- it is the
+difference between a stage-level operationalisation that can be
 \emph{wrong} on specific summaries and a stage-agnostic guess that is
 unfalsifiable.
 
-\textbf{Why this framing is timely.} Embodied and goal-conditioned agents increasingly retrieve places, objects, or tools by meaning \citep{andrychowicz2017hindsight,ghosh2021learning,savva2019habitat}. LLM-agent systems lean on explicit memory layers but evaluate mostly end-to-end \citep{wang2023voyager,shinn2023reflexion,packer2023memgpt}. Multi-agent reinforcement learning likewise increasingly involves communicating populations \citep{lowe2017maddpg,foerster2018ctde}, but the question ``which agent should know what, and when?'' lacks a unified diagnostic vocabulary. Our framework supplies one.
+\textbf{Why this framing is timely.} Embodied and goal-conditioned
+agents increasingly retrieve places, objects, or tools by meaning
+\citep{andrychowicz2017hindsight,ghosh2021learning,savva2019habitat}.
+LLM-agent systems lean on explicit memory layers but evaluate mostly
+end-to-end \citep{wang2023voyager,shinn2023reflexion,packer2023memgpt}.
+Multi-agent reinforcement learning likewise increasingly involves
+communicating populations \citep{lowe2017maddpg,foerster2018ctde}, but
+the question ``which agent should know what, and when?'' lacks a
+unified diagnostic vocabulary. Our framework supplies one.
 
 \textbf{Contributions.}
 \begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
-\item \textbf{Theorem.} A stage-decomposition framework with a
-probabilistic factorization and an identifiability result for single
-agents (Theorem~1) and its multi-agent extension (Proposition~1$^\star$).
+\item \textbf{Framework.} A stage-decomposition of memory-based
+navigation with a probabilistic factorization whose factors are
+estimable from standard trajectory logs, for single agents
+(Proposition~1) and multi-agent collectives
+(Proposition~2).
 
 \item \textbf{Slope-level claim.} A bottleneck-shift claim
-(Proposition~2) about how cadence $K$ trades off the M and C stages,
-verified empirically ($p < 10^{-4}$ on both slopes).
+(Proposition~3) about how cadence $K$ trades off the M
+and C stages, verified empirically ($p < 10^{-4}$ on both slopes),
+with its chronology stated explicitly (\S\ref{sec:shift}).
 
 \item \textbf{System.} A symbolic-semantic memory stack instantiating
 the framework, with four communication architectures (independent,
@@ -138,53 +216,73 @@ shared-bus, central-aggregator, peer-to-peer broadcast).
 
 \item \textbf{Benchmarks.} (a) 10-seed single-agent MiniGrid benchmark
 with oracle stage interventions; (b) 35{,}640-run multi-agent sweep at
-$N\!\in\!\{3,5,8\}$ plus 8{,}640-run scale-up at $N\!=\!12$.
+$N\!\in\!\{3,5,8\}$ plus an 8{,}640-run scale-up at $N\!=\!12$.
 
 \item \textbf{Honest accounting.} Explicit report of what fails: the
 strict interior-maximum corollary on the conditional product does not
 hold in this environment; the interior optimum reappears on the
 efficiency metric.
+
+\item \textbf{Research program.} A data-grounded case that the binding
+constraint in both regimes is consolidation of evidence into shareable
+symbolic structure, motivating collective semantic memory as the next
+target and Q/R/M/C as its evaluation instrument
+(\S\ref{sec:synthesis}).
 \end{enumerate}
 
-\section{Related work}
+% ============================================================
+% 2. THE Q/R/M/C DECOMPOSITION
+% Thesis of the section: four stages are observable from logs and
+% their product is semantic-path completion.
+% ============================================================
+\section{The Q/R/M/C decomposition}
+\label{sec:framework}
 
-Our work sits at the intersection of four areas: semantic navigation, memory-based RL, multi-agent communication, and diagnostic evaluation.
-
-\textbf{Semantic navigation and memory.} Classical cognitive-map and semantic-map perspectives motivate explicit place abstractions \citep{tolman1948cognitive,okeefe1978hippocampus,kuipers2000spatial}. Modern embodied AI combines mapping and planning \citep{gupta2017cognitive} or exposes explicit topological structure (SPTM, \citealp{savinov2018semi}). Goal-conditioned RL typically conditions on explicit goals or embeddings \citep{andrychowicz2017hindsight,ghosh2021learning}; successor-representation work provides predictive structure \citep{dayan1993improving,stachenfeld2017hippocampus,momennejad2017successor}. Our setting differs in that the target is a semantic pattern retrieved from memory rather than a coordinate.
-
-\textbf{Multi-agent communication.} Multi-agent reinforcement learning increasingly relies on learned or hand-designed communication protocols. Centralized training with decentralized execution (CTDE) is the dominant paradigm \citep{lowe2017maddpg,foerster2018ctde}; learned communication channels add a per-step exchange variable \citep{sukhbaatar2016commnet,foerster2016learning}. Our framework is orthogonal: instead of learning a communication policy end-to-end, it diagnoses where in the Q/R/M/C chain a given architecture (independent, centrally aggregated, or peer-to-peer broadcast) succeeds or fails, treating cadence $K$ as a structural axis. Gossip and consensus protocols in distributed systems \citep{boyd2006gossip,xiao2007distributed} provide the closest analogue at the network level; we lift those mechanisms to the cognitive-architecture level.
-
-\textbf{Diagnostic evaluation.} Recent LLM-agent and embodied-AI systems lean on explicit memory layers but evaluate mostly success-only \citep{wang2023voyager,shinn2023reflexion,packer2023memgpt}. Diagnostic-evaluation efforts for navigation typically isolate single failure modes (collision, replanning latency) without a multi-stage decomposition. Our contribution is a probabilistic factorization that (a) admits an identifiability theorem, (b) extends without modification to multi-agent settings, and (c) yields a slope-level prediction about cadence that is testable on logs.
-
-\section{Problem formulation}
-
-The agent operates in a partially observable navigation environment. At each step it receives an observation $o_t$, maintains a memory state $\mathcal{M}_t$, and forms a query $q_t$ encoding the current task intent. A retrieval step returns a candidate set of places matching $q_t$ from $\mathcal{M}_t$; a chosen candidate is materialized into an actionable target; a local controller executes actions until either the target is reached or the episode times out. The target is not a coordinate but a semantic pattern, so success is a function of the chosen candidate's semantic profile, not of any pre-supplied coordinate.
-
-Habitat, AI2-THOR, and ProcTHOR made visually rich navigation evaluation standard \citep{savva2019habitat,kolve2017ai2thor,deitke2022procthor}. We deliberately focus on MiniGrid-class environments to obtain clean and reproducible stage measurements, and use BabyAI only as a portability check. Recent LLM-agent systems also emphasize tool use, reflection, and explicit long-term memory \citep{wang2023voyager,shinn2023reflexion,packer2023memgpt}. We do not claim to solve LLM-agent memory here; rather, we argue that the same Q/R/M/C decomposition is a useful template for evaluating memory-grounded agent decisions beyond navigation.
-
-The central empirical question is therefore not just whether the agent succeeds, but \emph{which stage fails first} when it does not. Two related measurement layers are used. \textbf{Operational rates} count, per query attempt, whether the query yielded a non-empty candidate set, whether the chosen candidate satisfied the semantic predicate, and whether it was materialized into an actionable target; \emph{completion after retrieval} is an episode-level indicator. \textbf{Nested episode-level events} $Q^\star \Rightarrow R^\star \Rightarrow M^\star \Rightarrow C^\star$ are used in the factorization of Section~4 and audited in Section~7.1. Full operational definitions are given in Appendix~B.
-
-\subsection{Notation}
+\subsection{Problem formulation and notation}
 \label{sec:notation}
 
-Symbols are fixed throughout the paper. \textbf{Note on the letter $M$:} ``M'' refers to the \emph{Materialization stage} (or its starred event $M^\star$) everywhere; the number of targets in the multi-agent environment is written $T$ (not $M$).
+The agent operates in a partially observable navigation environment.
+At each step it receives an observation $o_t$, maintains a memory
+state $\mathcal{M}_t$, and forms a query $q_t$ encoding the current
+task intent. A retrieval step returns a candidate set of places
+matching $q_t$ from $\mathcal{M}_t$; a chosen candidate is
+materialized into an actionable target; a local controller executes
+actions until either the target is reached or the episode times out.
+The target is not a coordinate but a semantic pattern, so success is a
+function of the chosen candidate's semantic profile, not of any
+pre-supplied coordinate.
 
-\begin{description}[leftmargin=14pt,itemsep=1pt,topsep=2pt,labelwidth=4em,labelsep=0.5em,style=multiline]
-\item[\textit{Stages.}] $Q$, $R$, $M$, $C$ --- the four stages: \textbf{Q}uery formation, \textbf{R}etrieval, \textbf{M}aterialization, \textbf{C}ompletion after retrieval. They name both the stage and (in expressions like ``the M link'') the corresponding edge of the chain.
-\item[\textit{Events.}] $Q^\star, R^\star, M^\star, C^\star \in \{0, 1\}$ --- episode-level starred events recording whether each stage succeeded (Appendix~B). Nested by construction: $Q^\star{=}1 \Leftarrow R^\star{=}1 \Leftarrow M^\star{=}1 \Leftarrow C^\star{=}1$.
-\item[\textit{Probabilities.}] $P(\cdot)$ --- population-level probability (averaged over the seed distribution and, in the multi-agent case, over agents). $\hat{P}(\cdot)$ --- empirical-frequency estimator computed from logs.
-\item[\textit{Single-agent.}] $q$ --- query; $\mathcal{M}$ --- memory state; $Y$ --- end-to-end task success (can exceed $C^\star$).
-\item[\textit{Multi-agent.}] $N$ --- number of agents in the population. $T$ --- number of targets in the environment (constraint $T \le N$; ``scarcity'' means $N > T$). $i$ --- agent index. $\mathcal{M}_i$ --- agent $i$'s private memory. $q_i$ --- agent $i$'s query.
-\item[\textit{Coupling.}] $\mathcal{C}_K$ --- the peer-broadcast communication protocol with cadence $K \in \mathbb{N}$ (every $K$ ticks each agent broadcasts a memory snapshot, \S\ref{sec:archs}). $\mathcal{M}_{-i}^{(K)}$ --- the latest peer memory snapshots accessible to agent $i$ under $\mathcal{C}_K$ (the \emph{memory coupling} channel). $\mathcal{O}_{-i}$ --- the set of targets already claimed by other agents by the time $i$ acts (the \emph{occupancy coupling} channel).
-\item[\textit{Slope variables.}] $\nu(\mathcal{M}_{-i}^{(K)})$ --- a freshness functional on peer memory; non-decreasing pointwise as $K$ decreases (assumption \textbf{(F)} of Proposition~2). The occupancy slope is assumption \textbf{(O)}.
-\item[\textit{Summary statistics.}] $\Phi(K) := P(M^\star|R^\star;K)\cdot P(C^\star|M^\star;K)$ --- the conditional product, the chain probability $P(M^\star \land C^\star \mid R^\star)$. POM (product-of-means) and MOP (mean-of-products) are two estimators of $\Phi$; they differ by $\mathrm{Cov}(P(M^\star|R^\star), P(C^\star|M^\star))$, which is the Jensen gap (\S\ref{sec:multi-agent-results}). $t_{\mathrm{succ}}$ --- mean time-to-success in environment ticks.
-\end{description}
+Habitat, AI2-THOR, and ProcTHOR made visually rich navigation
+evaluation standard
+\citep{savva2019habitat,kolve2017ai2thor,deitke2022procthor}. We
+deliberately focus on MiniGrid-class environments to obtain clean and
+reproducible stage measurements, and use BabyAI only as a portability
+check. We do not claim to solve LLM-agent memory here; rather, we
+argue that the same Q/R/M/C decomposition is a useful template for
+evaluating memory-grounded agent decisions beyond navigation.
 
-\section{Theoretical framework}
+The central empirical question is therefore not just whether the agent
+succeeds, but \emph{which stage fails first} when it does not. Two
+related measurement layers are used. \textbf{Operational rates} count,
+per query attempt, whether the query yielded a non-empty candidate
+set, whether the chosen candidate satisfied the semantic predicate,
+and whether it was materialized into an actionable target;
+\emph{completion after retrieval} is an episode-level indicator.
+\textbf{Nested episode-level events}
+$Q^\star \Rightarrow R^\star \Rightarrow M^\star \Rightarrow C^\star$
+are used in the factorization below and audited in
+\S\ref{sec:validation}. Full operational definitions are given in
+Appendix~\ref{app:estimators}.
 
-\subsection{Single-agent factorization and identifiability}
+\textbf{Notation.} The four stages are $Q$, $R$, $M$, $C$ with episode-level starred events $Q^\star,R^\star,M^\star,C^\star\!\in\!\{0,1\}$, nested by construction. $P(\cdot)$ denotes the population probability; $\hat{P}(\cdot)$ its empirical-frequency estimator. \textbf{The letter $M$ always refers to the Materialization stage; the number of targets in the multi-agent environment is written $T$ (not $M$, constraint $T{\le}N$, ``scarcity'' = $N{>}T$).} Other symbols: $\mathcal{C}_K$ peer-broadcast protocol with cadence $K$, $\mathcal{M}_{-i}^{(K)}$ peer memory snapshots, $\mathcal{O}_{-i}$ peer occupancy, $\nu(\cdot)$ freshness functional, $\Phi(K){=}P(M^\star|R^\star;K)\!\cdot\!P(C^\star|M^\star;K)$, $t_{\mathrm{succ}}$ mean time-to-success. Full symbol table in Appendix~\ref{app:notation}.
 
-Let $Y$ denote overall episode success, and let $Q^\star, R^\star, M^\star, C^\star$ denote the nested episode-level semantic-path events. The framework factorizes \emph{semantic-path completion} rather than raw task success:
+\subsection{Single-agent factorization}
+\label{sec:single-theory}
+
+Let $Y$ denote overall episode success, and let
+$Q^\star, R^\star, M^\star, C^\star$ denote the nested episode-level
+semantic-path events. The framework factorizes \emph{semantic-path
+completion} rather than raw task success:
 \[
 Q^\star \rightarrow R^\star \rightarrow M^\star \rightarrow C^\star.
 \]
@@ -198,77 +296,54 @@ P(R^\star = 1 \mid Q^\star = 1, q, \mathcal{M}) \\
 P(M^\star = 1 \mid R^\star = 1, q, \mathcal{M})\;
 P(C^\star = 1 \mid M^\star = 1, q, \mathcal{M}).
 \end{align*}
-Overall task success $Y$ can exceed $C^\star$ because some episodes succeed without traversing the full semantic retrieval path.
+Overall task success $Y$ can exceed $C^\star$ because some episodes
+succeed without traversing the full semantic retrieval path.
 
 \paragraph{Assumption 1 (conditional stage-Markov property).}
-Conditioned on the current stage being successful, the probability of the next stage depends only on the current successful stage, the current query, and the current memory state. Formally,
+Conditioned on the current stage being successful, the probability of
+the next stage depends only on the current successful stage, the
+current query, and the current memory state. Formally,
 \[
 P(R^\star \mid Q^\star, q, \mathcal{M}, \text{history}) = P(R^\star \mid Q^\star, q, \mathcal{M}),
 \]
 and analogously for $M^\star$ and $C^\star$.
 
 \paragraph{Assumption 2 (positivity).}
-Each conditioning event used above has non-zero probability on the support of the benchmark.
+Each conditioning event used above has non-zero probability on the
+support of the benchmark.
 
-\paragraph{Theorem 1.}
-Under Assumptions 1--2, the four stage factors are identifiable from trajectory observations and the empirical-frequency estimators are consistent. Proof in Appendix~A.
+\paragraph{Proposition 1 (single-agent estimability).}
+Under Assumptions 1--2, the four stage factors are estimable from
+trajectory observations and the empirical-frequency estimators are
+consistent; their product converges to semantic-path completion.
+Proof in Appendix~\ref{app:proofs}.
+
+The mathematical content is elementary --- a chain-rule factorization
+plus consistency of frequency estimators. The value of the statement
+is operational: it pins down the exact logging discipline (which
+events, conditioned on what) under which the decomposition can be read
+off standard trajectory logs, and it is the contract that every
+experiment in this paper audits against (\S\ref{sec:validation}).
 
 \paragraph{When Assumption~1 may fail.}
-Assumption~1 holds tightly here because $q$ and $\mathcal{M}$ are explicitly logged at every stage event. Two practically relevant violations remain: adaptive in-episode query rewrites not surfaced to the logger, and hidden between-stage memory updates. In those cases the factorization should be read as a projection onto observable traces rather than as a full structural identification claim.
+Assumption~1 holds tightly here because $q$ and $\mathcal{M}$ are
+explicitly logged at every stage event. Two practically relevant
+violations remain: adaptive in-episode query rewrites not surfaced to
+the logger, and hidden between-stage memory updates. In those cases
+the factorization should be read as a projection onto observable
+traces rather than as a full structural identification claim.
 
-\subsection{Multi-agent factorization (Proposition 1$^\star$)}
-\label{sec:multi-agent-extension}
-
-Extend the factorization to a population of $N$ agents that share information through a communication protocol $\mathcal{C}_K$ parameterized by broadcast cadence $K$. Each agent $i$ has its own memory state $\mathcal{M}_i$ and issues its own query $q_i$.
-
-\paragraph{Distributed memory and the cadence protocol.}
-Let $\mathcal{M}_i^{(K)}$ denote the projection of agent $i$'s memory at the moment it queries, after absorbing every peer message received under cadence $K$. Two coupling channels are separated: (i) memory coupling $\mathcal{M}_{-i}^{(K)}$, the latest peer memory snapshots accessible to agent $i$; (ii) occupancy coupling $\mathcal{O}_{-i}$, the set of targets that other agents have already claimed by the time $i$ acts.
-
-\paragraph{Proposition 1$^\star$ (Multi-agent factorization, identifiability).}
-For each agent $i$,
-\[
-P(C^\star_i \mid q_i, \mathcal{M}_i, \mathcal{C}_K)
-=
-P(Q^\star_i \mid q_i, \mathcal{M}_i)\;
-P(R^\star_i \mid Q^\star_i, q_i, \mathcal{M}_i, \mathcal{M}_{-i}^{(K)})
-\]
-\[
-\quad \cdot\;
-P(M^\star_i \mid R^\star_i, q_i, \mathcal{M}_i, \mathcal{M}_{-i}^{(K)})\;
-P(C^\star_i \mid M^\star_i, q_i, \mathcal{O}_{-i}).
-\]
-Under a multi-agent stage-Markov assumption (Appendix~B), the four factors are identifiable from per-agent trajectory logs and the empirical-frequency estimators are consistent.
-
-\paragraph{When Proposition~1$^\star$ may fail.}
-The single-agent stage-Markov property absorbs trajectory history into $(q, \mathcal{M})$. In the multi-agent setting, the analogous absorption requires that dependence on past peer decisions enters only through $\mathcal{M}_{-i}^{(K)}$ at the M stage and through $\mathcal{O}_{-i}$ at the C stage. This step is non-trivial: $\mathcal{O}_{-i}$ summarises target occupancy at decision time but loses information about \emph{how} peers arrived there. The factorization is therefore a projection onto observable per-agent traces under that summary.
-
-Two specific failure modes arise: (i) inter-agent communication side-channels not logged through $\mathcal{C}_K$; (ii) coordinated peer policies whose decision at the C stage depends on hidden peer state not summarised by $\mathcal{O}_{-i}$.
-
-\subsection{Bottleneck shift (Proposition 2)}
-
-\paragraph{Proposition 2 (Bottleneck shift M$\leftrightarrow$C, slope-level claim).}
-Assume scarcity ($N > T$ targets, see Notation \S\ref{sec:notation}) and a peer-broadcast architecture with cadence $K \in \mathbb{N}$. Two stylized assumptions are posited:
-\textbf{(F)} memory freshness $\nu(\mathcal{M}_{-i}^{(K)})$ is non-decreasing pointwise as $K$ decreases, and the probability that agent $i$'s planner locks onto a reachable target is non-decreasing in $\nu$;
-\textbf{(O)} the probability that an arbitrary committed target is already in $\mathcal{O}_{-i}$ is non-increasing as $K$ increases.
-
-Write $P(M^\star|R^\star;K)$ and $P(C^\star|M^\star;K)$ for the population-level conditional probabilities (averaged over agents and the seed distribution of the benchmark); $\hat{P}(\cdot)$ denotes the corresponding empirical-frequency estimator computed from logs. Under (F) and (O),
-\[
-\frac{\partial\, P(M^\star|R^\star;K)}{\partial K^{-1}} > 0,
-\qquad
-\frac{\partial\, P(C^\star|M^\star;K)}{\partial K^{-1}} < 0.
-\]
-Both slope conditions are direct empirical predictions that are testable on logs through $\hat{P}$.
-
-\paragraph{Strict interior-maximum corollary (NOT empirically supported).}
-A naive reading of (F) and (O) suggests that the product $\Phi(K) := P(M^\star|R^\star;K)\!\cdot\! P(C^\star|M^\star;K)$ admits an interior maximum at some $K^\star \in \{2,\ldots,K_{\max}-1\}$. In the 35{,}640-run sweep (Section~\ref{sec:multi-agent-results}) this corollary does \emph{not} hold: $\Phi$ is monotonically increasing in $K$ over $K \in \{4, 8, 16, 32, 48, 64\}$ and continues to increase toward the independent-agent boundary value $\Phi(K\!\to\!\infty) = 0.605$. The slopes (F) and (O) are real, but the M-side gain in $P(M^\star|R^\star)$ at small $K$ is not large enough to overcome the C-side cost; the two effects do not produce an interior peak in $\Phi$ in this environment.
-
-The interior optimum that the framework intuitively predicts does appear, however, on the practically relevant efficiency metric mean time-to-success: this metric has a clear minimum at $K=8$ (Section~\ref{sec:multi-agent-results}), with significantly worse performance at both faster and slower cadences. The conditional product $\Phi$ captures the chain probability $P(M^\star \land C^\star \mid R^\star)$ but ignores the cost of getting through the chain.
-
-\paragraph{Status.} Assumptions (F) and (O) are intuitive but not derived from a generative model. A formal proof would require, e.g., modelling memory updates as a Poisson-renewal process with rate $\lambda$ and occupancy as a birth-death process whose rate scales with $K^{-1}$. Proposition~2 is therefore treated as a slope-level empirical claim verified on data, separating the verified slope conditions from the corollary that does not survive the data. A fully formal version is left for future work.
-
-\subsection{Mechanism-level interpretation}
-
-The same decomposition also admits a stage-structured mechanism reading. Figure~\ref{fig:causal} treats stage outcomes as a directed acyclic graph. Under this interpretation, assist on/off ablations are best viewed as mechanism-targeted perturbations of materialization and post-retrieval execution rather than as undifferentiated sensitivity analyses. In the multi-agent setting, the same graph is replicated per agent and connected through the cadence protocol $\mathcal{C}_K$, which acts on $\mathcal{M}_{-i}^{(K)}$ at the R$\to$M edge and on $\mathcal{O}_{-i}$ at the M$\to$C edge --- the two edges where Proposition~2 predicts the slope shift.
+\paragraph{Mechanism-level reading.}
+The same decomposition admits a stage-structured mechanism
+interpretation. Figure~\ref{fig:causal} treats stage outcomes as a
+directed acyclic graph. Under this interpretation, assist on/off
+ablations are mechanism-targeted perturbations of materialization and
+post-retrieval execution rather than undifferentiated sensitivity
+analyses; in the multi-agent setting the same graph is replicated per
+agent and connected through the cadence protocol $\mathcal{C}_K$,
+which acts on $\mathcal{M}_{-i}^{(K)}$ at the R$\to$M edge and on
+$\mathcal{O}_{-i}$ at the M$\to$C edge --- exactly the two edges where
+Proposition~3 will predict the slope shift.
 
 \begin{figure}[t]
   \centering
@@ -295,71 +370,36 @@ The same decomposition also admits a stage-structured mechanism reading. Figure~
   \label{fig:causal}
 \end{figure}
 
-\section{Symbolic-semantic memory stack and multi-agent architectures}
+\paragraph{Relation to prior work.} Closest are (i) cognitive-map and semantic-map frameworks \citep{tolman1948cognitive,okeefe1978hippocampus,kuipers2000spatial,gupta2017cognitive,savinov2018semi}, (ii) goal-conditioned and successor-representation RL \citep{andrychowicz2017hindsight,ghosh2021learning,dayan1993improving,stachenfeld2017hippocampus,momennejad2017successor}, (iii) multi-agent communication \citep{lowe2017maddpg,foerster2018ctde,sukhbaatar2016commnet,foerster2016learning} and gossip/consensus \citep{boyd2006gossip,xiao2007distributed}, and (iv) LLM-agent memory layers evaluated end-to-end \citep{wang2023voyager,shinn2023reflexion,packer2023memgpt}. Our framework is orthogonal to all four: it \emph{diagnoses} where in the Q/R/M/C chain a given architecture succeeds or fails and lifts the cadence axis from network protocols to a cognitive-architecture parameter (full discussion in Appendix~\ref{app:related-work-extended}).
 
-\subsection{Single-agent pipeline overview}
+% ============================================================
+% 3. SINGLE AGENT
+% Thesis of the section: identically "weak" tasks fail in different
+% places; oracles prove it; the logs refine the diagnosis to a
+% memory-accumulation (consolidation) limit.
+% ============================================================
+\section{Single agent: stage diagnostics localize failure}
+\label{sec:single}
 
-Our system uses a graph substrate but exposes a semantic retrieval interface on top of it. Observations are converted into symbolic scene tokens and semantic tags; these update a memory layer that stores place evidence, episodic traces, transition statistics, and concept/relation records. A planner query is then answered by retrieving candidate places whose semantic profiles match the current task intent and state.
+\subsection{System, tasks, and protocol}
+\label{sec:single-setup}
 
-\subsection{Four multi-agent architectures}
-\label{sec:archs}
+\paragraph{Memory stack.}
+The system uses a graph substrate with a semantic retrieval interface on top: observations $o_t$ are tokenized into symbolic scene tokens and semantic tags that update a memory of place records, transitions, episodic traces, and concept/relation records. Planner queries return candidates by a weighted log-score over required, preferred, and penalty tags. The retrieval machinery is reused across all tasks and architectures; full memory schema, update rules, and scoring formula are in Appendix~\ref{app:schemas}.
 
-Four communication architectures are instantiated; they share the single-agent retrieval substrate but differ in how memory is distributed across agents (Figure~\ref{fig:architectures}).
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\linewidth]{songlines_symbolic_memory_figures/fig_architectures.pdf}
-  \caption{Four multi-agent memory architectures. \textbf{(a)} Independent: per-agent private memory, no exchange. \textbf{(b)} Shared bus: one global memory, every agent reads/writes each tick. \textbf{(c)} Central aggregator: per-agent memories plus a hub that merges them into a consensus report. \textbf{(d)} Peer-to-peer broadcast: per-agent memories with pairwise snapshot exchange every $K$ ticks (the cadence axis of Proposition~2).}
-  \label{fig:architectures}
-\end{figure}
-
-\begin{description}[leftmargin=10pt,topsep=2pt,itemsep=2pt]
-\item[Independent.] Each agent maintains a private event store and concept graph. No inter-agent communication mechanism exists. Lower-bound baseline.
-\item[Shared bus.] All agents publish observations to a single \emph{collective memory} event bus. One shared concept graph is rebuilt from the union of events. Maximally centralized.
-\item[Central aggregator (ConsensusLayer).] Each agent has its own private concept graph; a central layer pulls snapshots and computes a trust-weighted merge, producing a single \emph{consensus report} consumed by all agents.
-\item[Peer-to-peer broadcast (cadence $K$).] Each agent has its own concept graph and its own merged view. Every $K$ ticks each agent broadcasts a snapshot to a passive bus; each agent independently merges its own snapshot with the latest snapshot received from each peer. Different agents may hold different merged views; there is no central report.
-\end{description}
-
-The first three correspond to the three regimes in the multi-agent communication literature: no exchange, CTDE-style aggregation, and decentralized peer communication. The fourth is the architecture for which Propositions~1$^\star$ and~2 are directly applicable, since the cadence $K$ is a tunable parameter rather than a fixed protocol.
-
-\subsection{Memory entities, symbol grounding, and query semantics}
-
-The memory stores symbolic place records (per-place semantic tag confidences, counts, visitation, freshness, geometry); transition records (success, risk, and cost statistics); episodic traces; and concept/relation records. At each step, the tokenizer emits $(z_t, \tau_t, e_t)$ from $o_t$. Per-place tag tables use a Dirichlet-multinomial update; transitions use exponentially smoothed statistics; episodic records attach the active intent and agent state. The planner query supports intent-conditioned retrieval using required, preferred, and penalty tags via a weighted log-score
-$s(p \mid q_t, s_t) = \sum_{\tau \in q^{\mathrm{req}}} \log P(\tau|p)
-+ \alpha \sum_{\tau \in q^{\mathrm{pref}}} \log P(\tau|p)
-- \beta \sum_{\tau \in q^{\mathrm{pen}}} \log P(\tau|p)
-+ \gamma\, u_{\mathrm{epi}}(p, s_t)$. The same retrieval machinery is reused across all tasks and architectures.
-
-\section{Experimental setup}
-
-\subsection{Tasks, methods, and metrics}
-
-Four single-agent task families are evaluated --- water search, safe rest, goal-region rejoin (Empty-6x6 and FourRooms), and hazard recovery (LavaGapS7); the canonical single-agent benchmark uses 10 seeds, 8 episodes per seed, and 2 assist modes. Node-level semantic retrieval, concept-level retrieval/planning, and state-conditioned variants are compared against four baselines: random, graph-only, SPTM-like topological, and a learned behavior-cloned baseline. Reported metrics are end-to-end success, average steps, the four operational stage rates (query/retrieval/materialized/post-retrieval), assist deltas, task-level weakest stage, and method-level weakest stage.
-
-\subsection{Protocol}
-
-All reported means are computed over seed-level aggregates. 95\% bootstrap confidence intervals use $B=5{,}000$ resamples of seed means. Assist on/off comparisons use paired Wilcoxon signed-rank tests with Holm-Bonferroni correction across task families. All single-agent experiments ran on a single 10-core ARM CPU machine with 32\,GB RAM; no accelerator was used. The targeted oracle-intervention sweep (Section~\ref{sec:oracle}) completes in under one minute wall-clock.
-
-\subsection{Single-agent oracle-stage intervention protocol}
-
-For the two hardest task families (goal-region rejoin on FourRooms; hazard recovery on LavaGapS7), four regimes are compared: \emph{base}, \emph{oracle retrieval}, \emph{oracle materialization}, and \emph{oracle controller}, over 10 seeds with 8 episodes per seed. Oracle modes replace exactly one stage-level mechanism while leaving the rest of the pipeline unchanged. A portability check on BabyAI-GoToObjMaze-v0 (5 seeds, 8 episodes) is in Appendix~D.
-
-\subsection{Multi-agent sweep protocol}
-\label{sec:multi-agent-protocol}
-
-The four architectures of Section~\ref{sec:archs} are evaluated on a custom multi-agent grid environment ($12 \times 10$ cells). Each agent must reach any cell tagged with \texttt{water\_source}. Agents observe a local neighborhood, publish observations under their architecture-specific protocol, and choose actions via a single \emph{memory-driven planner} shared across all architectures, so that only the memory layer differs between conditions. The planner has three tiers: (i) navigate toward the closest unoccupied water candidate returned by the memory; (ii) prefer unvisited adjacent cells when no usable candidate exists; (iii) deterministic-RNG fallback.
-
-The sweep crosses $N \in \{3,5,8\}$ agents, $T \le N$ targets, three layouts (\texttt{symmetric}: target near each agent's natural exploration direction, \texttt{asymmetric}: opposite to natural direction, \texttt{random}: uniform positions), three hazard densities $\{0, 0.05, 0.10\}$, the four architectures, eight peer-broadcast cadences $K \in \{1, 2, 4, 8, 16, 32, 48, 64\}$, and 40 seeds. The total is 35{,}640 runs, completed in $\approx 22$ minutes on 8 cores ($\sim 18$ min for the initial $K\!\le\!16$ block; $\sim 4$ min for the extended $K\!\in\!\{32,48,64\}$ block).
-
-For each run, per-agent and per-tick Q/R/M/C indicators are logged (Appendix~B.2); episode-level starred indicators $Q^\star, R^\star, M^\star, C^\star$ are the disjunction over ticks of the corresponding per-tick events.
-
-Within the same multi-agent protocol, an oracle-intervention block is run on the scarcity cases $(N,T) \in \{(3,2),(5,3),(8,5)\}$ at five cadences $K\in\{1,2,4,8,16\}$. Two oracle modes are evaluated: \emph{oracle R} (replace the memory query result with ground-truth water positions) and \emph{oracle M} (force the planner to lock onto the nearest real water cell regardless of occupancy).
-
-\section{Results}
+\paragraph{Tasks, baselines, protocol.}
+Four single-agent task families are evaluated (water, safe-rest, goal-region on Empty-6x6 / FourRooms, hazard recovery on LavaGapS7), 10 seeds $\times$ 8 episodes each, $\times$ 2 assist modes. Semantic stack (node, concept, state-conditioned variants) is compared against four baselines: random, graph-only, SPTM-like, learned BC. Reported: end-to-end success, steps, four operational stage rates, assist deltas, weakest stage per task and per method. All means are seed-aggregated; 95\% bootstrap CIs use $B{=}5{,}000$ resamples; assist comparisons use paired Wilcoxon + Holm-Bonferroni (Appendix~\ref{app:assist}). For the two hardest tasks (FourRooms, LavaGapS7), four oracle regimes (\emph{base}, \emph{oracle R/M/C}) are run — each replaces exactly one stage while leaving the rest of the pipeline unchanged. BabyAI portability check in Appendix~\ref{app:babyai}. All single-agent experiments ran on a 10-core ARM CPU, 32\,GB RAM (CPU-only); oracle sweep $<1$\,min wall-clock.
 
 \subsection{Stage-estimator validation}
+\label{sec:validation}
 
-Before the main benchmark, the factorization is validated. On a synthetic four-stage process with known probabilities the nested-estimator product tracks empirical semantic-path completion across sample sizes. On the real benchmark, the same product matches semantic-path completion rather than overall success (Table~\ref{tab:consistency}).
+Before the main benchmark, the factorization is validated. On a
+synthetic four-stage process with known probabilities the
+nested-estimator product tracks empirical semantic-path completion
+across sample sizes. On the real benchmark, the same product matches
+semantic-path completion rather than overall success
+(Table~\ref{tab:consistency}) --- exactly the contract of
+Proposition~1.
 
 \begin{table*}[t]
   \caption{Stage-factor consistency audit for the best semantic method in each task family. The product of nested conditional estimators matches semantic-path completion; overall success can be higher because some episodes succeed without traversing the full semantic retrieval path.}
@@ -378,29 +418,26 @@ Before the main benchmark, the factorization is validated. On a synthetic four-s
   \end{tabular}
 \end{table*}
 
-\subsection{Overall task-family summary}
+\subsection{Success-only summary and what it hides}
+\label{sec:single-results}
 
-Water and rest are strong end-to-end tasks (0.95 and 0.93 success). Goal-region reaches 0.54 success at the task-family level, but the bottleneck sits downstream of candidate selection (Section~\ref{sec:oracle}). Hazard recovery is the hardest retrieval-sensitive task at 0.40 success, with retrieval satisfaction as the weakest stage.
+Water and rest are strong end-to-end tasks (0.95 and 0.93 success; Figure~\ref{fig:hero}b). Goal-region reaches 0.54 success at the task-family level, but the bottleneck sits downstream of candidate selection (\S\ref{sec:oracle}). Hazard recovery is the hardest retrieval-sensitive task at 0.40 success, with retrieval satisfaction as the weakest stage. Under success-only evaluation the two hard families look like the same kind of weakness; the stage view will show they are opposites. Per-task operational rates with 95\% CIs are in Appendix~\ref{app:single-results-table}.
 
-\begin{table*}[t]
-  \caption{Best semantic result per task family from the final 10-seed benchmark, with 95\% bootstrap CIs. Hazard-recovery is bottlenecked by retrieval; goal-region remains downstream-bottlenecked.}
-  \label{tab:main-results}
-  \centering
-  \scriptsize
-  \setlength{\tabcolsep}{3.5pt}
-  \begin{tabular}{p{1.5cm}p{1.7cm}c c c c c c c}
-    \toprule
-    Task & Best method & Assist & Success (95\% CI) & Steps & Query (op.) & Retrieval (op.) & Mat.\ (op.) & Post (op.) \\
-    \midrule
-    Water & \method{water-cp} & on & 0.95 [0.88, 1.00] & 17.99 & 0.71 & 0.71 & 0.71 & 0.70 \\
-    Rest & \method{rest-s2} & on & 0.93 [0.85, 0.99] & 23.35 & 0.61 & 0.61 & 0.61 & 0.73 \\
-    Goal region & \method{goal-n1} & off & 0.54 [0.52, 0.56] & 49.34 & 0.00 & 0.00 & 0.00 & 0.00 \\
-    Hazard recovery & \method{hazard-s7} & on & 0.40 [0.35, 0.45] & 10.18 & 0.11 & 0.11 & 0.11 & 0.16 \\
-    \bottomrule
-  \end{tabular}
-\end{table*}
-
-\subsection{Baseline comparison}
+\paragraph{Baseline comparison.}
+Table~\ref{tab:baselines} compares the semantic stack against random,
+graph-only, SPTM-like, and learned behavior-cloned baselines. The
+learned baseline dominates the easiest resource tasks (1.00 on water
+and rest) and hazard recovery (0.74), while the semantic stack remains
+strongest on the relation-heavy goal-region family (0.54). The
+relevant contrast for this paper, however, is not the success column:
+the semantic stack is the only method family whose decisions expose
+interpretable Q/R/M/C structure. On the BC baseline the stage events
+are degenerate for the same structural reason as on the multi-agent
+learned baseline analysed in \S\ref{sec:multi-agent-results} --- a
+policy without an explicit query/lock interface cannot emit separable
+stage events, so the diagnostic decomposition has nothing to attach
+to. End-to-end learning and stage diagnostics answer different
+questions; this paper is about the second.
 
 \begin{table*}[t]
   \caption{Baseline comparison. The learned behavior-cloned baseline dominates the easiest resource tasks and hazard recovery, while the semantic stack remains strongest on the relation-heavy goal-region family and remains the only family with interpretable Q/R/M/C structure.}
@@ -419,36 +456,190 @@ Water and rest are strong end-to-end tasks (0.95 and 0.93 success). Goal-region 
   \end{tabular}
 \end{table*}
 
-\subsection{Single-agent oracle-stage interventions}
+\subsection{Oracle-stage interventions localize the bottleneck}
 \label{sec:oracle}
 
-On goal-region the semantic variants solve Empty-6x6 (success 1.00) but collapse on FourRooms (0.075). For hazard recovery in the targeted 10-seed LavaGap sweep, base success 0.39 rises only slightly to 0.43 under oracle controller, but jumps to 0.59 under oracle materialization and 0.60 under oracle retrieval. Hazard recovery is therefore primarily retrieval/materialization-limited rather than controller-limited; goal-region is downstream-limited (oracle retrieval lifts semantic-path completion to 0.08 but does not change end-to-end success). Figure~\ref{fig:oracle-waterfall} shows the per-task attribution as a stacked waterfall. This closes the diagnose$\to$intervene$\to$verify loop counterfactually for the single-agent regime.
+On goal-region the semantic variants solve Empty-6x6 ($1.00$ success) but collapse on FourRooms ($0.075$). For hazard recovery (LavaGapS7), base success $0.39$ rises only to $0.43$ under oracle controller, but jumps to $0.59$ under oracle materialization and $0.60$ under oracle retrieval; goal-region rejoin is downstream-limited (oracle R lifts semantic-path completion to $0.08$ without moving end-to-end success). The per-task attribution as a stacked waterfall is in Figure~\ref{fig:oracle-waterfall} (Appendix~\ref{app:waterfall}). Two tasks identical under success-only evaluation fail at opposite ends of the Q/R/M/C chain.
+
+\subsection{The logs refine the diagnosis: a memory-accumulation limit}
+\label{sec:refined-attribution}
+
+Inspecting the framework's own logs sharpens the retrieval attribution. On the 10-seed hazard-recovery run, $349$ retrieval calls were logged: only $32$ ($9.2\%$) returned at least one candidate, and of these $31$ ($96.9\%$ precision) selected a semantically satisfied candidate. The bottleneck is therefore not candidate \emph{ranking} but candidate \emph{generation} --- the symbolic memory does not contain hazard-recovery-tagged nodes at 91\% of decision points. A retrained 2-layer candidate-generation MLP trained on per-state features (test accuracy $0.59$ vs majority-class $0.81$; Appendix~\ref{app:learned-baselines}) confirms that instantaneous state features cannot substitute for the missing structure. The framework's ``retrieval-limited'' attribution thus refines to a \emph{memory-accumulation} limit: candidate generation cannot be solved from state features alone, and the binding constraint is how trajectory evidence is consolidated into persistent symbolic structure. This sets up the multi-agent section: when consolidation becomes a shared process across $N$ agents, it acquires a measurable \emph{rate}.
+
+% ============================================================
+% 4. MULTI-AGENT
+% Thesis of the section: when memory is shared, the exchange cadence
+% is a structural axis; the bottleneck migrates between M and C; the
+% optimum lives at an interior consolidation rate.
+% ============================================================
+\section{Multi-agent: memory as a shared resource}
+\label{sec:multi}
+
+\subsection{Four memory architectures and the cadence axis}
+\label{sec:archs}
+
+Four communication architectures are instantiated; they share the
+single-agent retrieval substrate but differ in how memory is
+distributed across agents (Figure~\ref{fig:architectures}).
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{songlines_symbolic_memory_figures/fig_oracle_waterfall.pdf}
-  \caption{Oracle stage interventions on the two hardest single-agent task families (10 seeds $\times$ 8 episodes). \textbf{(a)} FourRooms goal-rejoin: replacing any single stage with an oracle leaves end-to-end success at $0.07$; the bottleneck is downstream of the stages in the chain. \textbf{(b)} LavaGapS7 hazard recovery: oracle controller adds only $+0.04$, but oracle materialization adds $+0.16$ and oracle retrieval adds a further $+0.01$ to reach $0.60$. The framework localises the bottleneck stage-by-stage.}
-  \label{fig:oracle-waterfall}
+  \includegraphics[width=\linewidth]{songlines_symbolic_memory_figures/fig_architectures.pdf}
+  \caption{Four multi-agent memory architectures. \textbf{(a)} Independent: per-agent private memory, no exchange. \textbf{(b)} Shared bus: one global memory, every agent reads/writes each tick. \textbf{(c)} Central aggregator: per-agent memories plus a hub that merges them into a consensus report. \textbf{(d)} Peer-to-peer broadcast: per-agent memories with pairwise snapshot exchange every $K$ ticks (the cadence axis of Proposition~3).}
+  \label{fig:architectures}
 \end{figure}
 
-\subsection{Refined attribution from the framework's own logs}
-\label{sec:refined-attribution}
+\begin{description}[leftmargin=10pt,topsep=2pt,itemsep=2pt]
+\item[Independent.] Each agent maintains a private event store and concept graph. No inter-agent communication mechanism exists. Lower-bound baseline.
+\item[Shared bus.] All agents publish observations to a single \emph{collective memory} event bus. One shared concept graph is rebuilt from the union of events. Maximally centralized.
+\item[Central aggregator (ConsensusLayer).] Each agent has its own private concept graph; a central layer pulls snapshots and computes a trust-weighted merge, producing a single \emph{consensus report} consumed by all agents.
+\item[Peer-to-peer broadcast (cadence $K$).] Each agent has its own concept graph and its own merged view. Every $K$ ticks each agent broadcasts a snapshot to a passive bus; each agent independently merges its own snapshot with the latest snapshot received from each peer. Different agents may hold different merged views; there is no central report.
+\end{description}
 
-The oracle experiments (Section~\ref{sec:oracle}) localise the hazard-recovery bottleneck to the retrieval stage. To close the loop non-counterfactually, a v2 retriever was attempted using the framework's existing query logs. Two findings emerged.
+The first three correspond to the three regimes in the multi-agent
+communication literature: no exchange, CTDE-style aggregation, and
+decentralized peer communication. The fourth is the architecture for
+which Propositions~2 and~3 are directly
+applicable, since the cadence $K$ is a tunable parameter rather than a
+fixed protocol. Mechanically, $K$ is the rate at which private
+memories consolidate into a collective view --- which is why it is the
+structural axis of this section.
 
-\textbf{Data inspection refines the attribution.} Across the 10-seed hazard-recovery run, $349$ retrieval calls were logged. Only $32$ ($9.2\%$) returned at least one candidate; the remaining $317$ ($90.8\%$) returned empty candidate sets. Of the 32 non-empty calls, $31$ selected a semantically satisfied candidate (precision $96.9\%$). The bottleneck is therefore not candidate \emph{ranking} but candidate \emph{generation}: the symbolic memory simply does not contain hazard-recovery-tagged nodes at 91\% of decision points.
+\subsection{Multi-agent factorization}
+\label{sec:multi-theory}
 
-\textbf{A candidate-generation MLP does not close the gap.} A 2-layer MLP ($18 \to 32 \to 32 \to 1$, BCE with class-weight balancing) was then trained on per-state features (semantic tag profile + agent-state scalars + intent one-hot) to predict whether a node would be candidate-eligible, on a 6/2/2 seed split. Test accuracy is $0.59$ versus a majority-class baseline of $0.81$, and precision at recall $0.70$ is $0.28$. Instantaneous state features alone are insufficient to predict candidate eligibility downstream.
+Extend the factorization to a population of $N$ agents that share
+information through a communication protocol $\mathcal{C}_K$
+parameterized by broadcast cadence $K$. Each agent $i$ has its own
+memory state $\mathcal{M}_i$ and issues its own query $q_i$. Let
+$\mathcal{M}_i^{(K)}$ denote the projection of agent $i$'s memory at
+the moment it queries, after absorbing every peer message received
+under cadence $K$. Two coupling channels are separated: (i) memory
+coupling $\mathcal{M}_{-i}^{(K)}$, the latest peer memory snapshots
+accessible to agent $i$; (ii) occupancy coupling $\mathcal{O}_{-i}$,
+the set of targets that other agents have already claimed by the time
+$i$ acts.
 
-The conclusion is itself the contribution: the framework's ``retrieval-limited'' attribution decomposes further into a \emph{memory-accumulation} limit. Candidate ranking is near-optimal; candidate generation cannot be solved from state features alone; the binding constraint is how trajectory evidence is consolidated into persistent symbolic structure. This sharpens the engineering target identified by the framework. The result is reported as a negative-but-informative intervention; no fabricated v2 success number is presented.
+\paragraph{Proposition 2 (multi-agent factorization, estimability).}
+For each agent $i$,
+\[
+P(C^\star_i \mid q_i, \mathcal{M}_i, \mathcal{C}_K)
+=
+P(Q^\star_i \mid q_i, \mathcal{M}_i)\;
+P(R^\star_i \mid Q^\star_i, q_i, \mathcal{M}_i, \mathcal{M}_{-i}^{(K)})
+\]
+\[
+\quad \cdot\;
+P(M^\star_i \mid R^\star_i, q_i, \mathcal{M}_i, \mathcal{M}_{-i}^{(K)})\;
+P(C^\star_i \mid M^\star_i, q_i, \mathcal{O}_{-i}).
+\]
+Under a multi-agent stage-Markov assumption
+(Appendix~\ref{app:estimators}), the four factors are estimable from
+per-agent trajectory logs and the empirical-frequency estimators are
+consistent.
 
-\subsection{Multi-agent results: stage decomposition and bottleneck shift}
+\paragraph{When Proposition~2 may fail.}
+The single-agent stage-Markov property absorbs trajectory history into
+$(q, \mathcal{M})$. In the multi-agent setting, the analogous
+absorption requires that dependence on past peer decisions enters only
+through $\mathcal{M}_{-i}^{(K)}$ at the M stage and through
+$\mathcal{O}_{-i}$ at the C stage. This step is non-trivial:
+$\mathcal{O}_{-i}$ summarises target occupancy at decision time but
+loses information about \emph{how} peers arrived there. The
+factorization is therefore a projection onto observable per-agent
+traces under that summary. Two specific failure modes arise: (i)
+inter-agent communication side-channels not logged through
+$\mathcal{C}_K$; (ii) coordinated peer policies whose decision at the
+C stage depends on hidden peer state not summarised by
+$\mathcal{O}_{-i}$.
+
+\subsection{Bottleneck shift}
+\label{sec:shift}
+
+\paragraph{Proposition 3 (bottleneck shift M$\leftrightarrow$C, slope-level claim).}
+Assume scarcity ($N > T$ targets, see \S\ref{sec:notation}) and a
+peer-broadcast architecture with cadence $K \in \mathbb{N}$. Two
+stylized assumptions are posited:
+\textbf{(F)} memory freshness $\nu(\mathcal{M}_{-i}^{(K)})$ is
+non-decreasing pointwise as $K$ decreases, and the probability that
+agent $i$'s planner locks onto a reachable target is non-decreasing in
+$\nu$;
+\textbf{(O)} the probability that an arbitrary committed target is
+already in $\mathcal{O}_{-i}$ is non-increasing as $K$ increases.
+Write $P(M^\star|R^\star;K)$ and $P(C^\star|M^\star;K)$ for the
+population-level conditional probabilities (averaged over agents and
+the seed distribution of the benchmark); $\hat{P}(\cdot)$ denotes the
+corresponding empirical-frequency estimator computed from logs. Under
+(F) and (O),
+\[
+\frac{\partial\, P(M^\star|R^\star;K)}{\partial K^{-1}} > 0,
+\qquad
+\frac{\partial\, P(C^\star|M^\star;K)}{\partial K^{-1}} < 0.
+\]
+Both slope conditions are direct empirical predictions that are
+testable on logs through $\hat{P}$.
+
+\paragraph{Strict interior-maximum corollary (NOT empirically supported).}
+A naive reading of (F) and (O) suggests that the product
+$\Phi(K) := P(M^\star|R^\star;K)\!\cdot\! P(C^\star|M^\star;K)$ admits
+an interior maximum at some $K^\star \in \{2,\ldots,K_{\max}-1\}$. In
+the 35{,}640-run sweep (\S\ref{sec:multi-agent-results}) this
+corollary does \emph{not} hold: $\Phi$ is monotonically increasing in
+$K$ over $K \in \{4, 8, 16, 32, 48, 64\}$ and continues to increase
+toward the independent-agent boundary value
+$\Phi(K\!\to\!\infty) = 0.605$. The slopes (F) and (O) are real, but
+the M-side gain in $P(M^\star|R^\star)$ at small $K$ is not large
+enough to overcome the C-side cost; the two effects do not produce an
+interior peak in $\Phi$ in this environment. The interior optimum that
+the framework intuitively predicts does appear, however, on the
+practically relevant efficiency metric mean time-to-success: this
+metric has a clear minimum at $K=8$
+(\S\ref{sec:multi-agent-results}), with significantly worse
+performance at both faster and slower cadences. The conditional
+product $\Phi$ captures the chain probability
+$P(M^\star \land C^\star \mid R^\star)$ but ignores the cost of
+getting through the chain.
+
+\paragraph{Status and chronology.}
+Assumptions (F) and (O) are intuitive but not derived from a
+generative model; a formal proof would require, e.g., modelling memory
+updates as a Poisson-renewal process with rate $\lambda$ and occupancy
+as a birth-death process whose rate scales with $K^{-1}$.
+Proposition~3 is therefore treated as a slope-level
+empirical claim verified on data, separating the verified slope
+conditions from the corollary that does not survive the data. We also
+state the chronology explicitly: Proposition~3 was
+formulated \emph{after} an initial 12{,}960-run sweep conducted under
+four stage-agnostic hypotheses (Appendix~\ref{app:diagnostics}); its
+testable slope consequences were then confirmed on the full
+35{,}640-run sweep and, independently, on the $N\!=\!12$ scale-up
+(Appendix~\ref{app:babyai}). It is a post-hoc structural explanation
+whose predictions were verified on enlarged data, not a pre-registered
+prediction. A fully formal version is left for future work.
+
+\subsection{Sweep protocol}
+\label{sec:multi-agent-protocol}
+
+The four architectures are evaluated on a custom multi-agent grid ($12{\times}10$ cells); each agent must reach a cell tagged \texttt{water\_source}, choosing actions via a shared memory-driven planner so only the memory layer differs. The sweep crosses $N{\in}\{3,5,8\}$, $T{\le}N$, three layouts (symmetric/asymmetric/random), three hazard densities, four architectures, eight peer cadences $K{\in}\{1,2,4,8,16,32,48,64\}$, 40 seeds --- 35{,}640 runs in $\approx 22$ min on 8 cores. Per-agent per-tick Q/R/M/C indicators are logged (Appendix~\ref{app:estimators}); episode-level starred events are the disjunction over ticks. A separate oracle-intervention block on scarcity cases $(N,T){\in}\{(3,2),(5,3),(8,5)\}$ at five cadences evaluates oracle R (memory returns ground-truth water positions) and oracle M (planner locks onto nearest real water).
+
+\subsection{Results: stage decomposition and bottleneck shift}
 \label{sec:multi-agent-results}
 
-The 35{,}640-run multi-agent sweep (Section~\ref{sec:multi-agent-protocol}) is reported below through four observations, structured to mirror the Proposition~2 claim: (i) the conditional decomposition isolates the M and C stages as the differentiating links; (ii) the bottleneck shift appears directly as a negative within-cadence correlation between $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$, peaking at $K\!=\!4$ and decaying to noise at $K\!=\!64$; (iii) on mean time-to-success, the resulting trade-off produces a clean interior optimum at $K\!=\!8$; (iv) on the conditional product $\Phi$, the same trade-off produces a monotone trend rather than an interior peak --- the corollary that does not survive the data. A learned-communication baseline and a multi-agent oracle-intervention loop close the subsection.
+The 35{,}640-run sweep is reported through four observations,
+structured to mirror Proposition~3: (i) the conditional
+decomposition isolates the M and C stages as the differentiating
+links; (ii) the bottleneck shift appears directly as a negative
+within-cadence correlation between $P(M^\star|R^\star)$ and
+$P(C^\star|M^\star)$, peaking at $K\!=\!4$ and decaying to noise at
+$K\!=\!64$; (iii) on mean time-to-success, the resulting trade-off
+produces a clean interior optimum at $K\!=\!8$; (iv) on the
+conditional product $\Phi$, the same trade-off produces a monotone
+trend rather than an interior peak --- the corollary that does not
+survive the data. A learned-communication baseline and a multi-agent
+oracle-intervention loop close the subsection.
 
 \subsubsection{Conditional decomposition reveals where each architecture fails.}
-Table~\ref{tab:multi-agent-cond} shows the per-architecture conditional Q/R/M/C rates; Figure~\ref{fig:conditional-rates} visualises the same trade-off and the resulting efficiency curve. Retrieval conditional $P(R^\star|Q^\star)$ is saturated; the differentiating signal lives at the M and C links. Shared-bus and central-aggregator architectures, as well as fast-broadcast peer (small $K$), have very high $P(M^\star|R^\star)$ but low $P(C^\star|M^\star)$. Independent and slow-broadcast peer (large $K$) show the reverse. This is the M$\leftrightarrow$C trade-off predicted by Proposition~2.
+Figure~\ref{fig:conditional-rates} shows per-architecture conditional Q/R/M/C rates; full numerics with bootstrap CIs are in Appendix~\ref{app:phi-detail}, Table~\ref{tab:multi-agent-cond}. Retrieval conditional $P(R^\star|Q^\star)$ is saturated; the differentiating signal lives at M and C. Shared-bus, central-aggregator, and fast-broadcast peer ($K\le4$) have high $P(M^\star|R^\star)$ but low $P(C^\star|M^\star)$; independent and slow-broadcast peer ($K\ge16$) show the reverse --- the M$\leftrightarrow$C trade-off predicted by Proposition~3.
 
 \begin{figure}[t]
   \centering
@@ -457,134 +648,88 @@ Table~\ref{tab:multi-agent-cond} shows the per-architecture conditional Q/R/M/C 
   \label{fig:conditional-rates}
 \end{figure}
 
-\begin{table*}[t]
-\caption{Per-architecture conditional Q/R/M/C rates from the 35{,}640-run sweep (40 seeds). $P(R^\star|Q^\star)$ is saturated. POM = product-of-means; MOP = mean-of-products (the proper per-configuration expected product). The two summaries disagree systematically at small/intermediate $K$ because the within-cadence correlation between $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$ is strongly negative there (last column) --- the bottleneck-shift signature. \textbf{Bold}: MOP-best of the peer cadences. Mean time-to-success (last column) is the practically relevant efficiency measure; its interior minimum at $K=8$ is the predicted-shape result that survives the data.}
-\label{tab:multi-agent-cond}
-\centering
-\scriptsize
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{l c c c c c c c}
-\toprule
-Architecture & $P(R^\star|Q^\star)$ & $P(M^\star|R^\star)$ & $P(C^\star|M^\star)$ & POM & MOP (95\% CI) & corr & mean $t_{\mathrm{succ}}$ \\
-\midrule
-independent          & 0.99 & 0.68 & 0.88 & 0.598 & 0.605 [0.597, 0.614] & $+0.00$ & 8.02 \\
-shared bus           & 1.00 & 1.00 & 0.60 & 0.600 & 0.595 [0.586, 0.604] & $-0.10$ & 8.33 \\
-central aggregator   & 1.00 & 0.97 & 0.61 & 0.592 & 0.572 [0.564, 0.580] & $-0.48$ & 7.64 \\
-peer ($K=1$)         & 1.00 & 0.97 & 0.60 & 0.585 & 0.573 [0.564, 0.581] & $-0.43$ & 7.80 \\
-peer ($K=2$)         & 1.00 & 0.97 & 0.62 & 0.594 & 0.576 [0.568, 0.584] & $-0.54$ & 7.59 \\
-peer ($K=4$)         & 1.00 & 0.92 & 0.66 & 0.599 & 0.569 [0.561, 0.577] & $-0.61$ & 8.00 \\
-peer ($K=8$)         & 0.99 & 0.69 & 0.87 & 0.597 & 0.586 [0.578, 0.595] & $-0.19$ & \textbf{7.47} \\
-peer ($K=16$)        & 0.99 & 0.67 & 0.89 & 0.592 & 0.590 [0.581, 0.598] & $-0.05$ & 7.87 \\
-peer ($K=32$)        & 0.99 & 0.67 & 0.89 & 0.595 & 0.598 [0.589, 0.606] & $-0.04$ & 8.28 \\
-peer ($K=48$)        & 0.99 & 0.68 & 0.88 & 0.598 & 0.602 [0.593, 0.611] & $-0.02$ & 8.79 \\
-peer ($K=64$)        & 0.99 & 0.68 & 0.88 & 0.599 & \textbf{0.603} [0.594, 0.611] & $-0.02$ & 9.19 \\
-\bottomrule
-\end{tabular}
-\end{table*}
 
-\subsubsection{The bottleneck shift is directly observable as a negative within-configuration correlation.}
-Across all peer-architecture runs, the Spearman correlation of $P(M^\star|R^\star)$ with cadence $K$ is $-0.608$ ($p < 10^{-4}$), and the correlation of $P(C^\star|M^\star)$ with $K$ is $+0.420$ ($p < 10^{-4}$), matching the slope conditions of Proposition~2. The stronger empirical signature, however, is at the per-configuration level. Pearson correlation of $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$ \emph{within} a cadence is $-0.43, -0.54, -0.61, -0.19, -0.05, -0.04, -0.02, -0.02$ at $K\!=\!1,2,4,8,16,32,48,64$ (Table~\ref{tab:multi-agent-cond}; visualised in Figure~\ref{fig:jensen-scatter}). The negative correlation peaks at $K\!=\!4$ and decays to noise by $K\!=\!64$. Configurations where the M link is high are systematically configurations where the C link is low: the bottleneck migrates between the two stages \emph{within} the same $(N, M, \text{layout}, \text{hazard}, \text{seed})$ cell as $K$ varies. This is the bottleneck shift directly visible in the data, independent of any summary statistic. Scaling to $N\!=\!12$ \emph{sharpens} the signature: the peak Pearson rises to $-0.70$ and migrates outward to $K\!=\!8$, consistent with stronger occupancy coupling at higher $N$ delaying the cost-regime transition (Appendix~D.2, Figure~\ref{fig:scale-n12}).
+\subsubsection{Bottleneck shift and interior efficiency optimum.}
+Across all peer runs, Spearman of $P(M^\star|R^\star)$ vs $K$ is $-0.608$ and of $P(C^\star|M^\star)$ vs $K$ is $+0.420$ (both $p<10^{-4}$), matching the slope conditions of Proposition~3. The stronger empirical signature is at the per-configuration level: Pearson of $P(M^\star|R^\star)$ vs $P(C^\star|M^\star)$ \emph{within} a fixed $K$ is $-0.43, -0.54, -0.61, -0.19, -0.05, -0.04, -0.02, -0.02$ at $K{=}1,2,4,8,16,32,48,64$, peaking at $K{=}4$ and decaying to noise by $K{=}64$ (Figure~\ref{fig:jensen-scatter}, Appendix~\ref{app:phi-detail}). Configurations where M is high systematically have low C: the bottleneck migrates between the two stages within the same $(N,T,\text{layout},\text{hazard},\text{seed})$ cell as $K$ varies. On the efficiency metric, mean $t_{\mathrm{succ}}$ has a U-shape with interior minimum at $K{=}8$ (7.47 ticks vs 8.02 for the independent baseline; paired-bootstrap CIs in Appendix~\ref{app:phi-detail}). Scaling to $N{=}12$ \emph{sharpens} the signature: the peak Pearson rises to $-0.70$ and
+migrates outward to $K\!=\!8$, consistent with stronger occupancy
+coupling at higher $N$ delaying the cost-regime transition
+(Appendix~\ref{app:babyai}, Figure~\ref{fig:scale-n12}).
 
-\subsubsection{Consequence on the efficiency metric: interior optimum at $K\!=\!8$.}
-Mean time-to-success has a clean U-shape with a minimum at $K\!=\!8$ ($7.47$ ticks; Figure~\ref{fig:bottleneck-shift} bottom panel). Paired bootstrap on within-configuration differences confirms $\Delta_{\mathrm{paired}}(K{=}8 - K{=}1) = -0.33$, $(K{=}8 - K{=}2) = -0.12$, $(K{=}8 - K{=}16) = -0.40$, $(K{=}8 - K{=}64) = -1.72$, $(K{=}8 - \text{indep}) = -0.55$; all CIs exclude zero. The efficiency metric integrates both the chain probability and the wall-clock cost of getting through it; both effects of the bottleneck shift hurt it at the extremes and the interior optimum survives.
+\paragraph{Honest limit on the conditional product.} The conditional product $\Phi = P(M^\star|R^\star)\!\cdot\!P(C^\star|M^\star)$ does \emph{not} have an interior peak in the tested range: the mean-of-products estimator increases monotonically from $0.569$ at $K{=}4$ to $0.603$ at $K{=}64$ and converges to the independent-agent boundary $0.605$. The slopes of Proposition~3 are supported; the additional interior-maximum corollary is not, in this environment. Jensen-gap detail and POM--MOP comparison in Appendix~\ref{app:phi-detail}.
 
-\subsubsection{Consequence on the conditional product: monotone trend, no interior peak.}
-The conditional product $\Phi = P(M^\star|R^\star)\!\cdot\!P(C^\star|M^\star)$ does \emph{not} have an interior peak in the tested range. The proper per-configuration estimator (mean-of-products) increases monotonically from $0.569$ at $K\!=\!4$ to $0.603$ at $K\!=\!64$ and converges toward the independent-agent boundary value $0.605$. Paired bootstrap: $\Delta(K{=}32 - K{=}16) = +0.008$ (CI $[+0.006, +0.010]$), $\Delta(K{=}48 - K{=}16) = +0.011$, $\Delta(K{=}64 - K{=}16) = +0.012$; independent is significantly above every peer $K$ except $K\!=\!64$ (borderline).
-
-The negative within-cadence covariance documented above is exactly what creates the Jensen-inequality gap between $\Phi$ and the marginal product-of-means: $E[X]\!\cdot\!E[Y] > E[X\!\cdot\!Y]$ when $\mathrm{Cov}(X,Y) < 0$. The mean-of-products is reported as the primary summary because it absorbs the covariance correctly. The slopes of Proposition~2 are real; what fails is the additional corollary that they jointly produce an interior peak in $\Phi$ in this environment. Section~4.3 states this limit explicitly.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.85\linewidth]{songlines_symbolic_memory_figures/fig_bottleneck_shift.pdf}
-  \caption{Bottleneck shift across eight peer cadences (40-seed sweep). Top: $P(M^\star|R^\star)$ falls and $P(C^\star|M^\star)$ rises monotonically in $K$ ($p<10^{-4}$, both Spearman). Bottom: mean time-to-success has an interior minimum at $K=8$ ($7.47$ ticks), below the independent-agent baseline ($8.02$, dashed). Error bars and shaded band are 95\% bootstrap CIs.}
-  \label{fig:bottleneck-shift}
-\end{figure}
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.95\linewidth]{songlines_symbolic_memory_figures/fig_jensen_scatter.pdf}
-  \caption{Per-configuration scatter of $P(M^\star|R^\star)$ vs.\ $P(C^\star|M^\star)$ at three cadences. The strong negative correlation at $K=4$ (Pearson $-0.61$) is the bottleneck-shift signature: the same configurations that succeed at $M$ tend to fail at $C$ and vice versa. The correlation decays to noise by $K=64$.}
-  \label{fig:jensen-scatter}
-\end{figure}
-
-\paragraph{Q/R/M/C events on a learned-communication baseline are coarsened, exactly as on the single-agent BC baseline.}
-A CommNet-style policy (Sukhbaatar et al.\ 2016) was trained on the same scarcity scenario ($N\!=\!3$, $T\!=\!2$, asymmetric, hazard $0.05$) for 2000 episodes with REINFORCE + value baseline. Architecture: shared-weights encoder ($131{\to}64{\to}64$), 16-dim linear comm projection mean-pooled over peers, combine MLP, actor/critic heads. Final eval over 50 held-out seeds: success rate $0.19$, mean steps $80$ (budget exhausted). Q/R/M/C profile on the trained policy: $Q^\star\!=\!1.00$ (saturated by construction --- the comm projection is never identically zero), $R^\star\!=\!0.50$, $M^\star\!=\!0.50$ (collapses onto $R$ because the policy lacks a symbolic ``target lock'' separate from ``moved toward target''), $C^\star\!=\!0.19$. On the same scenario the symbolic peer architecture at $K=8$ reaches $0.65$ success with cleanly separable $P(M^\star|R^\star)\!=\!0.69$ and $P(C^\star|M^\star)\!=\!0.87$ (Table~\ref{tab:multi-agent-cond}). The framework's diagnostic claim is preserved \emph{precisely because} learned-communication baselines do not expose meaningful per-stage structure: Q is trivially true, and R/M collapse together. This is the multi-agent counterpart of the single-agent learned-BC baseline analysis (Section~7.3). Full setup, training curve, and ablations are in Appendix~F.
+\paragraph{Learned-communication baseline: stage events are structurally degenerate even at competitive success.}
+A CommNet-style policy \citep{sukhbaatar2016commnet} trained with PPO on the same scenario ($N{=}3$, $T{=}2$) reaches $0.667$ held-out success ($n{=}100$ seeds) --- matching the symbolic peer architecture at $K{=}8$ ($0.65$). Despite this, the Q/R/M/C profile remains structurally degenerate: $Q^\star{=}1.00$ saturated by construction; $R^\star{=}0.997$, $M^\star{=}0.997$ collapsed together ($P(M^\star|R^\star){=}1.00$). This is the verified structural claim: a real-valued comm vector is never informatively empty (Q saturates) and lacks an explicit target-lock interface (R/M merge), regardless of training budget. The multi-agent counterpart of the single-agent learned-BC analysis (\S\ref{sec:single-results}). Full architecture, PPO hyperparameters, and side-by-side REINFORCE vs PPO comparison in Appendix~\ref{app:learned-baselines}.
 
 \paragraph{Multi-agent oracle interventions close the diagnose$\to$intervene$\to$verify loop.}
-On the scarcity cases, mean time-to-success at small/intermediate cadence ($K\in\{1,2,4\}$) is $\sim 10$--$11$ in baseline but drops to $\sim 7.1$ under either oracle R or oracle M (Table~\ref{tab:multi-agent-oracle}). At slow cadence ($K=16$), the baseline is already close to the oracle floor (gap $\sim 0.8$). The oracle interventions confirm that the cadence-induced excess time at small/intermediate $K$ is attributable to the M$\leftrightarrow$C transition; at large $K$ the bottleneck has moved into solo exploration.
+On the scarcity cases, mean $t_{\mathrm{succ}}$ at small/intermediate cadence ($K{\in}\{1,2,4\}$) drops from $\sim10$--$11$ in baseline to $\sim7.1$ under either oracle R or oracle M; at slow cadence ($K{=}16$) the baseline is already within $\sim0.8$ of the oracle floor (Table~\ref{tab:multi-agent-oracle} in Appendix~\ref{app:multi-oracle}). The cadence-induced excess time at small/intermediate $K$ is attributable to the M$\leftrightarrow$C transition; at large $K$ the bottleneck has moved into solo exploration.
 
-\begin{table}[t]
-\caption{Multi-agent oracle interventions on the scarcity cases at three cadences. Mean time-to-success averaged across $(N,T)\in\{(3,2),(5,3),(8,5)\}$, two layouts (asymmetric, random), 15 seeds.}
-\label{tab:multi-agent-oracle}
-\centering
-\small
-\begin{tabular}{c c c c c}
-\toprule
-$K$ & Baseline & Oracle R & Oracle M & Gap to oracle \\
-\midrule
-1  & 10.33 & 7.22 & 7.08 & $-3.11$ \\
-4  & 10.97 & 7.22 & 7.08 & $-3.75$ \\
-16 &  7.98 & 7.22 & 7.08 & $-0.76$ \\
-\bottomrule
-\end{tabular}
-\end{table}
+\paragraph{Bridge.}
+The multi-agent block thus delivers its half of the argument. The
+cadence $K$ is, mechanically, the rate at which private memories
+consolidate into a collective view; the data show that this rate has a
+non-trivial interior optimum ($K\!=\!8$ on $t_{\mathrm{succ}}$), that
+its cost channel is occupancy coupling, and that both effects are
+visible stage-by-stage on the same Q/R/M/C chain used for single
+agents. Consolidation is not only the single-agent limit --- in a
+collective it is a tunable, measurable design axis.
 
-\paragraph{Deconstruction of stage-agnostic prior formulation.}
-Before Proposition~2 was formulated, four operational hypotheses were evaluated on a smaller version of the sweep that tied $K^\star$ to scarcity $\rho = N/T$ (Appendix~E.1). Only the practical claim --- peer at the empirically best $K$ beats centralized in scarcity ($p = 0.044$) --- held cleanly. The framework explains, after the fact, why the others did not: the slope conditions of Proposition~2 are stated in terms of curvatures of $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$, which depend on layout and agent count through $\mathcal{M}_{-i}^{(K)}$ and $\mathcal{O}_{-i}$ rather than on $\rho$ alone. Proposition~2 is not claimed to have been derived before the sweep; the claim is rather that, once the framework is stated, the prior hypotheses are seen as stage-agnostic operationalisations whose failure modes are interpretable.
+% ============================================================
+% 5. SYNTHESIS (new section -- the destination of the arc)
+% Thesis of the section: the single-agent and multi-agent diagnoses
+% converge on one research target: collective semantic memory.
+% ============================================================
+\section{Synthesis: toward collective semantic memory}
+\label{sec:synthesis}
 
-\section{Cross-substrate failure profile}
+The single-agent and multi-agent halves of this paper run on different substrates, with different agents and different questions, yet they return the same answer. The single-agent diagnosis localized the hardest failure not to retrieval mechanics but to \emph{consolidation}: candidate ranking is near-optimal ($96.9\%$ precision when candidates exist), but candidate generation is starved (91\% empty candidate sets), and instantaneous state features cannot substitute for the missing structure (\S\ref{sec:refined-attribution}). The multi-agent diagnosis showed that when consolidation becomes a shared process it acquires a \emph{rate} (the cadence $K$) with a benefit channel at the R$\to$M edge and a cost channel at the M$\to$C edge, whose trade-off produces an interior optimum neither fully centralized nor fully independent architectures can reach. The binding constraint in both regimes is the consolidation of evidence into shared symbolic structure.
 
-\textbf{Single agent.} Goal-region rejoin is a downstream failure: oracle retrieval/materialization lift semantic-path completion to 0.08 on FourRooms, yet end-to-end success stays flat at 0.08. Hazard recovery is the opposite: oracle retrieval/materialization yield +0.20--0.21 success while oracle controller yields only +0.04, locating the bottleneck in semantic selectivity of recovery places.
+We therefore propose \emph{collective semantic memory} --- a shared symbolic structure with explicit \textbf{merge}, \textbf{trust}, and \textbf{staleness} rules --- as the research target the data select. The architectures of \S\ref{sec:archs} are degenerate corners of this design space (shared bus merges everything instantly and pays full occupancy cost; independent never merges and pays full staleness; peer-broadcast exposes exactly one design parameter, the rate $K$). The framework built in this paper is the measurement instrument any candidate design requires: a good consolidation rule must raise $P(M^\star|R^\star)$ without collapsing $P(C^\star|M^\star)$ --- that is, reach the upper-right region of Figure~\ref{fig:jensen-scatter} that no fixed cadence reaches --- and reduce the empty-candidate-set fraction of \S\ref{sec:refined-attribution}. Concrete open problems (adaptive cadence, selective consolidation, intent-weighted trust, substrate generality) are listed in Appendix~\ref{app:open-problems}.
 
-\textbf{Multi-agent.} The bottleneck stage depends on cadence. Fast/intermediate cadences ($K \in \{1,2,4\}$) and centrally aggregated architectures fail at the $M\to C$ transition; the negative within-cadence correlation between $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$ peaks at $-0.61$ at $K=4$. The independent baseline and very slow cadences ($K \ge 32$) fail at the $R\to M$ transition (stale or absent peer memory; long solo exploration). The interior cadence $K=8$ is the only setting in the tested range that minimises mean time-to-success.
+% ============================================================
+% 6. LIMITATIONS
+% ============================================================
+\section{Limitations and future work}
+\label{sec:limitations}
 
-\section{Discussion}
+\textbf{Two environments.} Single-agent runs on MiniGrid/BabyAI; multi-agent on a custom $12{\times}10$ grid. Identical operational $Q^\star,R^\star,M^\star,C^\star$ definitions recover interpretable stage profiles on both substrates, with the same chain ordering and weakest-stage attribution. A multi-agent MiniGrid wrapper unifying the two is the next portability step (Appendix~\ref{app:open-problems}, item 4).
 
-Three payoffs the framework delivers.
+\textbf{Proposition~3 at slope level only.} The two slope conditions hold ($p<10^{-4}$); the strict interior-maximum corollary on $\Phi$ does not (\S\ref{sec:shift}). A version of Proposition~3 stated directly in time-cost would close this gap. Proof under a generative model (Poisson-renewal memory, birth-death occupancy) is future work.
 
-\paragraph{Payoff 1: stage attribution is non-trivial.}
-Tasks that look uniformly weak under success-only evaluation fail for distinct mechanistic reasons. Single-agent: hazard recovery is retrieval-bottlenecked (oracle retrieval lifts success $0.39\!\to\!0.60$) while goal-region rejoin is downstream-bottlenecked (oracle retrieval lifts semantic-path completion to $0.08$ without moving end-to-end success). Multi-agent: shared-bus, central-aggregator, and fast peer broadcast share an $M$-saturation/$C$-collapse profile; independent and slow peer broadcast share an $M$-deficit/$C$-saturation profile. The same Q/R/M/C language separates both pairs.
+\textbf{Estimability under hidden state.} With unlogged in-episode query rewrites or peer side-channels, Propositions~1 and~2 are projections onto logged traces, not full identification.
 
-\paragraph{Payoff 2: cadence is a structural axis observable as a negative-correlation signature.}
-Within a fixed cadence, $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$ are negatively correlated across configurations whenever the bottleneck is migrating between the two stages (Section~\ref{sec:multi-agent-results}, Fig.~\ref{fig:jensen-scatter}). The signature is visible in raw scatter, intensifies under scale-up, and translates into an interior efficiency optimum that architectures without a cadence dimension cannot reach.
+\textbf{Learned baselines.} The CommNet PPO baseline reaches $0.667$ success on the scarcity scenario --- competitive with symbolic peer at $K{=}8$ ($0.65$) --- and confirms Q-saturation ($Q^\star{=}1.00$) and R/M collapse ($P(M^\star|R^\star){=}1.00$) at competitive success. The structural prediction now holds verified, not asserted; ablating on architectures with explicit symbolic target-lock channels is left for future work.
 
-\paragraph{Payoff 3: the framework is honest about what it does not predict.}
-A strict reading of Proposition~2 would also predict an interior maximum on the conditional product $\Phi$. In the data, $\Phi$ is monotone in $K$ over the tested range and converges to the independent-agent boundary; that finding is reported explicitly. The slope-level claim of Proposition~2 is supported; the corollary on this particular summary is not. Treating that gap as a feature rather than a bug --- the corollary requires the M-side gain to dominate the C-side cost, which is an empirical question --- is what separates a stage-level operationalisation from a stage-agnostic guess.
+\textbf{Scale.} Multi-agent sweep bounded at $N{=}12$ (Appendix~\ref{app:babyai}; signature sharpens, peak Pearson $-0.70$ at $K{=}8$, interior $t_{\mathrm{succ}}$ minimum $4.77$). Denser scaling at $N{\ge}16$ and continuous-state environments are future work.
 
-\subsection*{Learned-communication baseline}
-
-A minimal CommNet-style baseline was trained (Section~\ref{sec:multi-agent-results} ``Q/R/M/C events on a learned-communication baseline...''; full setup in Appendix~F). The trained policy reaches $0.19$ success on the scarcity scenario versus $0.65$ for the symbolic peer architecture at $K=8$, with $Q^\star$ saturated at 1.0 and $R/M$ collapsing together. This exemplifies the broader point: end-to-end learned baselines are stronger by some metrics on tasks where the diagnostic decomposition does not apply, but on tasks where it does apply (i.e., where intermediate semantic structure is what is failing) the framework's per-stage attribution is what produces actionable intervention targets. A scaled-up CommNet with curriculum, larger nets, and proper PPO would close the success-rate gap but would not by itself produce stage-separable events.
-
+% ============================================================
+% 7. BROADER IMPACTS + CONCLUSION
+% ============================================================
 \section{Broader impacts}
 
-The paper is primarily about diagnostic evaluation in simulated navigation environments, both single-agent and multi-agent. Its most immediate positive impact is methodological: it can make memory-based agent failures more measurable across architectures, and it makes the cadence axis of distributed multi-agent memory tunable on an empirically grounded efficiency criterion. Potential negative impacts are indirect and would arise mainly if similar diagnostic tools were used to improve agents deployed in safety-critical settings (drone swarms, autonomous vehicles, distributed sensor networks) without adequate safeguards. The current work is best viewed as benchmark-level infrastructure rather than a deployment-ready system.
+The paper proposes diagnostic evaluation for memory-based agents in simulated navigation. Its positive impact is methodological: making memory-based failures more measurable across architectures, and making the cadence axis of distributed multi-agent memory tunable on an empirically grounded criterion. Potential negative impacts are indirect and would arise if similar diagnostics were used to improve agents in safety-critical settings (drone swarms, autonomous vehicles, distributed sensor networks) without adequate safeguards. The current work is benchmark-level infrastructure, not a deployment-ready system.
 
-\section{Limitations and future work}
+\section{Conclusion}
 
-\textbf{Two environments, openly reported.} The single-agent block runs on MiniGrid/BabyAI; the multi-agent sweep runs on a custom $12 \times 10$ grid. The two environments are used because the single-agent and multi-agent claims need two different substrates (MiniGrid is single-agent by construction at the framework level), and the seam is reported openly rather than hidden.
-
-The portability of the Q/R/M/C decomposition across these two substrates is itself evidence that the framework is not environment-specific: identical operational definitions of $Q^\star, R^\star, M^\star, C^\star$ recover an interpretable stage profile on hazard-recovery in MiniGrid (Table~\ref{tab:consistency}) and on water-search in the custom grid (Table~\ref{tab:multi-agent-cond}), with the same chain ordering $Q\!\Rightarrow\!R\!\Rightarrow\!M\!\Rightarrow\!C$ and the same notion of weakest-stage attribution. A version of this paper on a single shared substrate (e.g., a multi-agent MiniGrid wrapper) would tighten the cross-environment narrative; that is the next portability step.
-
-\textbf{Proposition~2 is verified at slope level, not at corollary level.} The two slope conditions hold ($p < 10^{-4}$); the strict interior-maximum corollary on the conditional product does not hold in the data, and that fact is stated explicitly. A formal proof under generative assumptions (Poisson-renewal memory, birth-death occupancy) is future work.
-
-\textbf{Efficiency vs.\ chain-probability metrics.} The interior optimum survives the data on mean time-to-success but not on the conditional product. Whether this is a property of our environment or of the framework's choice of summary statistic is an open question. A version of Proposition~2 stated directly in terms of time-cost would close this gap.
-
-\textbf{Observable-query and observable-occupancy assumptions.} Under hidden in-episode query rewrites or unlogged inter-agent side-channels, both Theorem~1 and Proposition~1$^\star$ are projections onto logged traces rather than full structural identification claims.
-
-\textbf{Cadence assumption.} Proposition~2 assumes a fixed broadcast cadence $K$. An online auto-tuning $K_t$ is the most natural extension.
-
-\textbf{MARL baseline gap.} A CommNet-style baseline with instrumented Q/R/M/C events is the most important missing multi-agent comparison.
-
-\textbf{Agent count.} The multi-agent sweep is bounded at $N=8$ agents.
-
-\textbf{Loop closure refined the attribution.} Per-call labels were extracted from the hazard-recovery query logs and a 2-layer candidate-generation MLP was trained on a $6/2/2$ seed split (Section~\ref{sec:refined-attribution}, Appendix~F). Test accuracy $0.59$ vs majority $0.81$: instantaneous state features are insufficient to predict candidate eligibility. This is the principal scientific outcome of the loop-closure exercise: the framework's ``retrieval-limited'' attribution decomposes further into ``memory-accumulation-limited''. A v2 retriever addressing the memory-accumulation bottleneck (richer consolidation rules, longer trajectory windows in the symbol grounder) is the natural next step.
-
-\textbf{Learned-communication baseline has been attempted.} A minimal CommNet-style policy was trained for 2000 episodes on the scarcity scenario (Section~\ref{sec:multi-agent-results}, Appendix~F); the framework's prediction that learned baselines do not expose stage-separable Q/R/M/C events is confirmed ($Q^\star$ saturated, $R/M$ collapsed). Scaling the baseline to a competitive success rate (current $0.19$ vs symbolic peer $K{=}8$ at $0.65$) requires longer training and curriculum and is left for future work.
-
-\textbf{Scale.} The multi-agent sweep is now bounded at $N\!=\!12$ (Appendix~D.2; 8{,}640 additional runs). The bottleneck-shift signature on conditional rates not only persists but sharpens at $N\!=\!12$: the within-cadence Pearson correlation between $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$ peaks at $-0.70$ at $K\!=\!8$ versus the $-0.61$ peak observed at $K\!=\!4$ when $N\!\le\!8$, and mean time-to-success still has an interior minimum at $K\!=\!8$ ($4.77$ ticks). A denser scaling study at $N\!\ge\!16$ and a continuous-state environment is left for future work.
+We proposed Q/R/M/C, a four-stage decomposition of memory-based
+navigation whose factors are estimable from standard trajectory logs,
+and used it to run a single continuous argument: stage diagnostics
+localize failures that success-only evaluation cannot (single agent);
+when memory is shared, the exchange cadence becomes a measurable
+structural axis with an interior optimum (multi-agent); and both
+measurements localize the binding constraint to the same mechanism ---
+the consolidation of trajectory evidence into persistent, shareable
+symbolic structure. Collective semantic memory --- a shared symbolic
+structure with explicit merge, trust, and staleness rules --- is
+therefore not a speculative extension but the research target that the
+data select, and the framework presented here is the instrument by
+which candidate designs for it can be evaluated.
 
 \begin{ack}
-This manuscript is prepared in anonymized form for review. The reported experiments were run from a unified benchmark pipeline that exports task-family summaries, assist on/off comparisons, method diagnostics, multi-agent sweep CSVs, and bootstrap analyses from the same source-of-truth benchmark artifacts.
+This manuscript is prepared in anonymized form for review. The
+reported experiments were run from a unified benchmark pipeline that
+exports task-family summaries, assist on/off comparisons, method
+diagnostics, multi-agent sweep CSVs, and bootstrap analyses from the
+same source-of-truth benchmark artifacts.
 \end{ack}
 
 {\small
@@ -715,7 +860,14 @@ L.~Xiao, S.~Boyd, and S.~Lall.
 
 \appendix
 
-\section{Formal proof of Theorem~1}
+% Appendix lettering is now consistent: A proofs, B estimators,
+% C schema, D portability and scale-up, E extended diagnostics,
+% F assist analysis, G learned baselines, H reproducibility, I assets.
+
+\section{Formal proofs}
+\label{app:proofs}
+
+\subsection{Proof of Proposition~1}
 
 For each episode $i \in \{1,\dots,n\}$ let $Q_i^\star, R_i^\star, M_i^\star, C_i^\star$ denote the nested episode-level indicators. By construction these are measurable functions of the runtime trajectory log and satisfy $C_i^\star \Rightarrow M_i^\star \Rightarrow R_i^\star \Rightarrow Q_i^\star$. The empirical estimators
 \[
@@ -726,13 +878,13 @@ For each episode $i \in \{1,\dots,n\}$ let $Q_i^\star, R_i^\star, M_i^\star, C_i
 \]
 are consistent by the chain rule plus the conditional stage-Markov property, and the empirical product converges to semantic-path completion. \hfill$\square$
 
-\subsection*{A.2 Extension to multi-agent: proof of Proposition~1$^\star$}
+\subsection{Proof of Proposition~2}
 
-Conditioning sets are enlarged by $\mathcal{M}_{-i}^{(K)}$ and $\mathcal{O}_{-i}$. Under the enlarged stage-Markov property, the proof of Theorem~1 transfers verbatim and each enlarged conditional is a Bernoulli probability on a measurable event. The qualifications stated in Section~4.3 (``When Proposition~1$^\star$ may fail'') describe two specific situations in which the enlarged stage-Markov property is violated. \hfill$\square$
+Conditioning sets are enlarged by $\mathcal{M}_{-i}^{(K)}$ and $\mathcal{O}_{-i}$. Under the enlarged stage-Markov property, the proof of Proposition~1 transfers verbatim and each enlarged conditional is a Bernoulli probability on a measurable event. The qualifications stated in \S\ref{sec:multi-theory} (``When Proposition~2 may fail'') describe two specific situations in which the enlarged stage-Markov property is violated. \hfill$\square$
 
-\subsection*{A.3 Justification of Proposition~2}
+\subsection{Justification of Proposition~3}
 
-No full proof of Proposition~2 is given here; the slope-level argument under (F) and (O) is recorded below.
+No full proof of Proposition~3 is given here; the slope-level argument under (F) and (O) is recorded below.
 
 \emph{Slope (a), under (F).} As $K$ decreases, $\nu(\mathcal{M}_{-i}^{(K)})$ is non-decreasing pointwise. Conditional on a successful retrieval, the probability of locking onto a reachable target is non-decreasing in $\nu$. Therefore $\partial P(M^\star|R^\star;K) / \partial K^{-1} > 0$.
 
@@ -747,9 +899,9 @@ No full proof of Proposition~2 is given here; the slope-level argument under (F)
 The main benchmark logs per-query and per-episode diagnostic quantities directly from runtime traces (query formed, retrieval satisfied, target materialized, completion after retrieval). These are operational rates, not direct multiplicative factors.
 
 \paragraph{Nested stage estimators for factorization.}
-For the factorization, episode-level nested events from the first failure stage recorded in the runtime taxonomy are used: $Q^\star, R^\star, M^\star, C^\star$, nested by construction. The consistency audit in Section~7.1 reports $\hat P(Q^\star)$, $\hat P(R^\star|Q^\star)$, $\hat P(M^\star|R^\star)$, $\hat P(C^\star|M^\star)$, their product, and its gap to semantic-path completion.
+For the factorization, episode-level nested events from the first failure stage recorded in the runtime taxonomy are used: $Q^\star, R^\star, M^\star, C^\star$, nested by construction. The consistency audit in \S\ref{sec:validation} reports $\hat P(Q^\star)$, $\hat P(R^\star|Q^\star)$, $\hat P(M^\star|R^\star)$, $\hat P(C^\star|M^\star)$, their product, and its gap to semantic-path completion.
 
-\subsection*{B.2 Multi-agent operational definitions}
+\subsection{Multi-agent operational definitions}
 \label{app:multi-agent-defs}
 
 For the multi-agent sweep, every metric is defined per agent and per tick, then aggregated. Let $\mathrm{Targets}_i(t)$ be the candidate set returned by the memory query of agent $i$ at tick $t$, $\mathrm{Locked}_i(t)$ be the agent's planner-internal locked target, and $\mathcal{W}$ the ground-truth target set.
@@ -763,17 +915,73 @@ For the multi-agent sweep, every metric is defined per agent and per tick, then 
 \section{Memory and task schema}
 \label{app:schemas}
 
-The memory stack stores symbolic place records (per-place tag confidences, counts, visitation, freshness, geometry), transition records (success, risk, cost statistics with fast/slow estimates), episodic traces (intent + state at each visit), and concept/relation records. The four task families are defined by semantic place patterns: water search (target $\{$water$\}$), safe rest ($\{$rest$\}$ with state-conditioning), goal-region rejoin ($\{$goal-region$\}$), hazard recovery ($\{$post-hazard-exit$\}$).
+\subsection{Full notation table}
+\label{app:notation}
 
-\section{BabyAI portability transfer}
+Symbols are fixed throughout the paper.
+
+\begin{description}[leftmargin=14pt,itemsep=1pt,topsep=2pt,labelwidth=4em,labelsep=0.5em,style=multiline]
+\item[\textit{Stages.}] $Q$, $R$, $M$, $C$ --- the four stages: \textbf{Q}uery formation, \textbf{R}etrieval, \textbf{M}aterialization, \textbf{C}ompletion after retrieval. They name both the stage and (in expressions like ``the M link'') the corresponding edge of the chain.
+\item[\textit{Events.}] $Q^\star, R^\star, M^\star, C^\star \in \{0, 1\}$ --- episode-level starred events recording whether each stage succeeded (Appendix~\ref{app:estimators}). Nested by construction: $Q^\star{=}1 \Leftarrow R^\star{=}1 \Leftarrow M^\star{=}1 \Leftarrow C^\star{=}1$.
+\item[\textit{Probabilities.}] $P(\cdot)$ --- population-level probability (averaged over the seed distribution and, in the multi-agent case, over agents). $\hat{P}(\cdot)$ --- empirical-frequency estimator computed from logs.
+\item[\textit{Single-agent.}] $q$ --- query; $\mathcal{M}$ --- memory state; $Y$ --- end-to-end task success (can exceed $C^\star$).
+\item[\textit{Multi-agent.}] $N$ --- number of agents in the population. $T$ --- number of targets in the environment (constraint $T \le N$; ``scarcity'' means $N > T$). $i$ --- agent index. $\mathcal{M}_i$ --- agent $i$'s private memory. $q_i$ --- agent $i$'s query.
+\item[\textit{Coupling.}] $\mathcal{C}_K$ --- the peer-broadcast communication protocol with cadence $K \in \mathbb{N}$ (every $K$ ticks each agent broadcasts a memory snapshot, \S\ref{sec:archs}). $\mathcal{M}_{-i}^{(K)}$ --- the latest peer memory snapshots accessible to agent $i$ under $\mathcal{C}_K$ (the \emph{memory coupling} channel). $\mathcal{O}_{-i}$ --- the set of targets already claimed by other agents by the time $i$ acts (the \emph{occupancy coupling} channel).
+\item[\textit{Slope variables.}] $\nu(\mathcal{M}_{-i}^{(K)})$ --- a freshness functional on peer memory; non-decreasing pointwise as $K$ decreases (assumption \textbf{(F)} of Proposition~3). The occupancy slope is assumption \textbf{(O)}.
+\item[\textit{Summary statistics.}] $\Phi(K) := P(M^\star|R^\star;K)\cdot P(C^\star|M^\star;K)$ --- the conditional product, the chain probability $P(M^\star \land C^\star \mid R^\star)$. POM (product-of-means) and MOP (mean-of-products) are two estimators of $\Phi$; they differ by $\mathrm{Cov}(P(M^\star|R^\star), P(C^\star|M^\star))$, which is the Jensen gap (\S\ref{sec:multi-agent-results}). $t_{\mathrm{succ}}$ --- mean time-to-success in environment ticks.
+\end{description}
+
+\subsection{Memory stack and task patterns}
+
+The memory stack stores symbolic place records (per-place tag confidences, counts, visitation, freshness, geometry), transition records (success, risk, cost statistics with fast/slow estimates), episodic traces (intent + state at each visit), and concept/relation records. At each step, the tokenizer emits $(z_t, \tau_t, e_t)$ from $o_t$. Per-place tag tables use a Dirichlet-multinomial update; transitions use exponentially smoothed statistics; episodic records attach the active intent and agent state. A planner query is answered by retrieving candidate places whose semantic profiles match the current task intent and state, via a weighted log-score
+$s(p \mid q_t, s_t) = \sum_{\tau \in q^{\mathrm{req}}} \log P(\tau|p)
++ \alpha \sum_{\tau \in q^{\mathrm{pref}}} \log P(\tau|p)
+- \beta \sum_{\tau \in q^{\mathrm{pen}}} \log P(\tau|p)
++ \gamma\, u_{\mathrm{epi}}(p, s_t)$
+over required, preferred, and penalty tags. The four task families are defined by semantic place patterns: water search (target $\{$water$\}$), safe rest ($\{$rest$\}$ with state-conditioning), goal-region rejoin ($\{$goal-region$\}$), hazard recovery ($\{$post-hazard-exit$\}$).
+
+\subsection{Oracle-stage intervention waterfall}
+\label{app:waterfall}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{songlines_symbolic_memory_figures/fig_oracle_waterfall.pdf}
+  \caption{Oracle stage interventions on the two hardest single-agent task families (10 seeds $\times$ 8 episodes). \textbf{(a)} FourRooms goal-rejoin: replacing any single stage with an oracle leaves end-to-end success at $0.07$; the bottleneck is downstream of the stages in the chain. \textbf{(b)} LavaGapS7 hazard recovery: oracle controller adds only $+0.04$, but oracle materialization adds $+0.16$ and oracle retrieval adds a further $+0.01$ to reach $0.60$. The framework localises the bottleneck stage-by-stage.}
+  \label{fig:oracle-waterfall}
+\end{figure}
+
+\subsection{Per-task operational rates with 95\% CIs}
+\label{app:single-results-table}
+
+\begin{table*}[h]
+  \caption{Best semantic result per task family from the final 10-seed benchmark, with 95\% bootstrap CIs. Hazard-recovery is bottlenecked by retrieval; goal-region remains downstream-bottlenecked.}
+  \label{tab:main-results}
+  \centering
+  \scriptsize
+  \setlength{\tabcolsep}{3.5pt}
+  \begin{tabular}{p{1.5cm}p{1.7cm}c c c c c c c}
+    \toprule
+    Task & Best method & Assist & Success (95\% CI) & Steps & Query (op.) & Retrieval (op.) & Mat.\ (op.) & Post (op.) \\
+    \midrule
+    Water & \method{water-cp} & on & 0.95 [0.88, 1.00] & 17.99 & 0.71 & 0.71 & 0.71 & 0.70 \\
+    Rest & \method{rest-s2} & on & 0.93 [0.85, 0.99] & 23.35 & 0.61 & 0.61 & 0.61 & 0.73 \\
+    Goal region & \method{goal-n1} & off & 0.54 [0.52, 0.56] & 49.34 & 0.00 & 0.00 & 0.00 & 0.00 \\
+    Hazard recovery & \method{hazard-s7} & on & 0.40 [0.35, 0.45] & 10.18 & 0.11 & 0.11 & 0.11 & 0.16 \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\section{Portability and scale-up}
 \label{app:babyai}
+
+\subsection{BabyAI portability transfer}
 
 A 5-seed portability check on \texttt{BabyAI-GoToObjMaze-v0} (8 episodes/seed) confirms that the same Q/R/M/C events are recoverable from BabyAI traces and that the stage-rate ordering matches the MiniGrid benchmark within bootstrap CIs.
 
-\subsection*{D.2 Multi-agent scale-up at $N=12$}
+\subsection{Multi-agent scale-up at $N=12$}
 \label{app:scale-N12}
 
-To check that the multi-agent results of Section~\ref{sec:multi-agent-results} are not an artefact of the $N\!\le\!8$ range, an additional 8{,}640-run sweep was run at $N\!=\!12$, $T \in \{6, 8, 10\}$, the same three layouts, three hazard densities, eight peer cadences, and 40 seeds. Wall-clock $\approx 12$ minutes on 8 cores. The conditional-rate signature of Section~\ref{sec:multi-agent-results} persists and intensifies (Table~\ref{tab:scale-n12}).
+To check that the multi-agent results of \S\ref{sec:multi-agent-results} are not an artefact of the $N\!\le\!8$ range, an additional 8{,}640-run sweep was run at $N\!=\!12$, $T \in \{6, 8, 10\}$, the same three layouts, three hazard densities, eight peer cadences, and 40 seeds. Wall-clock $\approx 12$ minutes on 8 cores. The conditional-rate signature of \S\ref{sec:multi-agent-results} persists and intensifies (Table~\ref{tab:scale-n12}).
 
 \begin{figure}[h]
 \centering
@@ -806,14 +1014,93 @@ $K$ & $P(M^\star|R^\star)$ & $P(C^\star|M^\star)$ & MOP & mean $t_{\mathrm{succ}
 \section{Extended diagnostics}
 \label{app:diagnostics}
 
-\subsection*{E.1 Stage-agnostic cadence hypotheses and what the framework changes}
+\subsection{Conditional-product detail and the Jensen gap}
+\label{app:phi-detail}
+
+\begin{table*}[h]
+\caption{Per-architecture conditional Q/R/M/C rates from the 35{,}640-run sweep (40 seeds). $P(R^\star|Q^\star)$ is saturated. POM = product-of-means; MOP = mean-of-products (the proper per-configuration expected product). The two summaries disagree systematically at small/intermediate $K$ because the within-cadence correlation between $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$ is strongly negative there (last column) --- the bottleneck-shift signature. \textbf{Bold}: MOP-best of the peer cadences. Mean $t_{\mathrm{succ}}$ (last column) is the practically relevant efficiency measure; its interior minimum at $K=8$ is the predicted-shape result that survives the data.}
+\label{tab:multi-agent-cond}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{l c c c c c c c}
+\toprule
+Architecture & $P(R^\star|Q^\star)$ & $P(M^\star|R^\star)$ & $P(C^\star|M^\star)$ & POM & MOP (95\% CI) & corr & mean $t_{\mathrm{succ}}$ \\
+\midrule
+independent          & 0.99 & 0.68 & 0.88 & 0.598 & 0.605 [0.597, 0.614] & $+0.00$ & 8.02 \\
+shared bus           & 1.00 & 1.00 & 0.60 & 0.600 & 0.595 [0.586, 0.604] & $-0.10$ & 8.33 \\
+central aggregator   & 1.00 & 0.97 & 0.61 & 0.592 & 0.572 [0.564, 0.580] & $-0.48$ & 7.64 \\
+peer ($K=1$)         & 1.00 & 0.97 & 0.60 & 0.585 & 0.573 [0.564, 0.581] & $-0.43$ & 7.80 \\
+peer ($K=2$)         & 1.00 & 0.97 & 0.62 & 0.594 & 0.576 [0.568, 0.584] & $-0.54$ & 7.59 \\
+peer ($K=4$)         & 1.00 & 0.92 & 0.66 & 0.599 & 0.569 [0.561, 0.577] & $-0.61$ & 8.00 \\
+peer ($K=8$)         & 0.99 & 0.69 & 0.87 & 0.597 & 0.586 [0.578, 0.595] & $-0.19$ & \textbf{7.47} \\
+peer ($K=16$)        & 0.99 & 0.67 & 0.89 & 0.592 & 0.590 [0.581, 0.598] & $-0.05$ & 7.87 \\
+peer ($K=32$)        & 0.99 & 0.67 & 0.89 & 0.595 & 0.598 [0.589, 0.606] & $-0.04$ & 8.28 \\
+peer ($K=48$)        & 0.99 & 0.68 & 0.88 & 0.598 & 0.602 [0.593, 0.611] & $-0.02$ & 8.79 \\
+peer ($K=64$)        & 0.99 & 0.68 & 0.88 & 0.599 & \textbf{0.603} [0.594, 0.611] & $-0.02$ & 9.19 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+The conditional product $\Phi = P(M^\star|R^\star)\!\cdot\!P(C^\star|M^\star)$ in the 35{,}640-run sweep is monotonically increasing in $K$ over $K\in\{4,8,16,32,48,64\}$ and converges to the independent-agent boundary $\Phi(K\!\to\!\infty)=0.605$. Paired bootstrap: $\Delta(K{=}32{-}K{=}16) = +0.008$ (CI $[+0.006, +0.010]$), $\Delta(K{=}48{-}K{=}16) = +0.011$, $\Delta(K{=}64{-}K{=}16) = +0.012$; independent is significantly above every peer $K$ except $K\!=\!64$ (borderline).
+
+The negative within-cadence covariance documented in \S\ref{sec:multi-agent-results} creates the Jensen-inequality gap between $\Phi$ and the marginal product-of-means: $E[X]\!\cdot\!E[Y] > E[X\!\cdot\!Y]$ when $\mathrm{Cov}(X,Y) < 0$. The mean-of-products is reported as the primary summary because it absorbs the covariance correctly. Figure~\ref{fig:bottleneck-shift} shows the K-sweep view of both conditional rates and mean $t_{\mathrm{succ}}$; Figure~\ref{fig:jensen-scatter} shows the per-configuration scatter that the negative covariance summarises.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\linewidth]{songlines_symbolic_memory_figures/fig_bottleneck_shift.pdf}
+  \caption{Bottleneck shift across eight peer cadences (40-seed sweep). Top: $P(M^\star|R^\star)$ falls and $P(C^\star|M^\star)$ rises monotonically in $K$ ($p<10^{-4}$, both Spearman). Bottom: mean time-to-success has an interior minimum at $K=8$ ($7.47$ ticks), below the independent-agent baseline ($8.02$, dashed). Error bars and shaded band are 95\% bootstrap CIs.}
+  \label{fig:bottleneck-shift}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\linewidth]{songlines_symbolic_memory_figures/fig_jensen_scatter.pdf}
+  \caption{Per-configuration scatter of $P(M^\star|R^\star)$ vs.\ $P(C^\star|M^\star)$ at three cadences. The strong negative correlation at $K=4$ (Pearson $-0.61$) is the bottleneck-shift signature: the same configurations that succeed at $M$ tend to fail at $C$ and vice versa. The correlation decays to noise by $K=64$.}
+  \label{fig:jensen-scatter}
+\end{figure}
+
+\subsection{Open problems for the collective-semantic-memory program}
+\label{app:open-problems}
+
+Four concrete questions follow directly from the measurements of \S\ref{sec:multi-agent-results} and the synthesis of \S\ref{sec:synthesis}.
+\textbf{(1) Adaptive cadence.} Proposition~3 assumes a fixed $K$; the bottleneck-shift signature suggests an online controller $K_t$ that broadcasts when the (estimated) M-side gain exceeds the C-side occupancy cost.
+\textbf{(2) Selective consolidation.} Snapshot exchange merges everything; merge rules that prioritize evidence about under-represented semantic tags attack the candidate-generation starvation of \S\ref{sec:refined-attribution} directly.
+\textbf{(3) Trust-weighted merging under occupancy.} The central aggregator already performs a trust-weighted merge but pays the C-collapse cost; decentralized trust rules that account for peer \emph{intent} (not only peer evidence) could decouple freshness from target racing.
+\textbf{(4) Substrate generality.} The decomposition transfers across MiniGrid, BabyAI, and the custom grid with identical operational definitions; a multi-agent MiniGrid wrapper and a continuous-state environment are the next portability steps.
+
+\subsection{Extended related work}
+\label{app:related-work-extended}
+
+Classical cognitive-map perspectives motivate explicit place abstractions \citep{tolman1948cognitive,okeefe1978hippocampus,kuipers2000spatial}; modern embodied AI combines mapping and planning \citep{gupta2017cognitive} or exposes topological memory (SPTM, \citealp{savinov2018semi}); goal-conditioned RL conditions on explicit goals or embeddings \citep{andrychowicz2017hindsight,ghosh2021learning}, with successor-representation work providing predictive structure \citep{dayan1993improving,stachenfeld2017hippocampus,momennejad2017successor}. Our setting differs in that the target is a semantic pattern retrieved from memory rather than a coordinate. In multi-agent RL, CTDE dominates \citep{lowe2017maddpg,foerster2018ctde} and learned communication adds a per-step exchange variable \citep{sukhbaatar2016commnet,foerster2016learning}; gossip and consensus protocols \citep{boyd2006gossip,xiao2007distributed} are the closest network-level analogue of our cadence axis, lifted here to the cognitive-architecture level. LLM-agent systems lean on explicit memory but evaluate end-to-end \citep{wang2023voyager,shinn2023reflexion,packer2023memgpt}. Our framework is orthogonal: rather than learning a communication policy end-to-end, it \emph{diagnoses} where in the Q/R/M/C chain a given architecture succeeds or fails, and yields a slope-level prediction about cadence that is testable on logs.
+
+\subsection{Multi-agent oracle-intervention numerics}
+\label{app:multi-oracle}
+
+\begin{table}[h]
+\caption{Multi-agent oracle interventions on the scarcity cases at three cadences. Mean time-to-success averaged across $(N,T)\in\{(3,2),(5,3),(8,5)\}$, two layouts (asymmetric, random), 15 seeds.}
+\label{tab:multi-agent-oracle}
+\centering
+\small
+\begin{tabular}{c c c c c}
+\toprule
+$K$ & Baseline & Oracle R & Oracle M & Gap to oracle \\
+\midrule
+1  & 10.33 & 7.22 & 7.08 & $-3.11$ \\
+4  & 10.97 & 7.22 & 7.08 & $-3.75$ \\
+16 &  7.98 & 7.22 & 7.08 & $-0.76$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Stage-agnostic cadence hypotheses and what the framework changes}
 \label{app:standalone-hypotheses}
 
-A first version of the multi-agent cadence sweep (12{,}960 runs at 20 seeds; subsumed by the 35{,}640-run sweep in this paper) was originally planned with four operational hypotheses formulated \emph{before} Proposition~2. They are retained here because they motivated the eventual framework. The framework was formulated after the sweep was complete; it is not claimed to have predicted the sweep numbers a priori.
+A first version of the multi-agent cadence sweep (12{,}960 runs at 20 seeds; subsumed by the 35{,}640-run sweep in this paper) was originally planned with four operational hypotheses formulated \emph{before} Proposition~3. They are retained here because they motivated the eventual framework. The framework was formulated after the sweep was complete; it is not claimed to have predicted the sweep numbers a priori (see ``Status and chronology'' in \S\ref{sec:shift}).
 
 \textbf{Original hypotheses (pre-framework).}
 \begin{description}[leftmargin=10pt,topsep=2pt,itemsep=1pt]
-\item[H1.] An interior $K^\star \in \{2,4,8\}$ minimising mean time-to-success exists for most $(N, M, \text{layout})$ cells.
+\item[H1.] An interior $K^\star \in \{2,4,8\}$ minimising mean time-to-success exists for most $(N, T, \text{layout})$ cells.
 \item[H2.] $K^\star$ grows monotonically with scarcity $\rho = N/T$.
 \item[H3.] When $\rho \le 1$, $K^\star = 1$.
 \item[H4.] Peer-broadcast architectures Pareto-dominate centralized aggregation on (mean time-to-success, success rate).
@@ -823,7 +1110,7 @@ A first version of the multi-agent cadence sweep (12{,}960 runs at 20 seeds; sub
 The practical claim was supported: peer at the empirically best $K$ was faster than centralized in the scarcity regime ($p = 0.044$, Mann--Whitney). Among the four structural hypotheses, only H4 was clearly supported in the random-layout subset. H1 held in 7 of 18 cells; H2 had a non-significant negative correlation; H3 was supported in 4 of 9 admissible cells. The 35{,}640-run extended sweep used elsewhere in the paper produces matching stand-alone numbers within bootstrap uncertainty.
 
 \textbf{What the framework changes.}
-The hypotheses H1--H4 are stage-agnostic: each ties $K^\star$ to scarcity $\rho$ without specifying mechanism. Proposition~2, formulated after the sweep, ties the slopes of $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$ to cadence; the slope conditions are testable. The data verify both signs ($p < 10^{-4}$), but the corollary about an interior maximum on the conditional product fails. The interior optimum holds on the efficiency metric mean time-to-success.
+The hypotheses H1--H4 are stage-agnostic: each ties $K^\star$ to scarcity $\rho$ without specifying mechanism. Proposition~3, formulated after the sweep, ties the slopes of $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$ to cadence; the slope conditions are testable. The data verify both signs ($p < 10^{-4}$), but the corollary about an interior maximum on the conditional product fails. The interior optimum holds on the efficiency metric mean time-to-success.
 
 \section{Assist on/off analysis}
 \label{app:assist}
@@ -833,7 +1120,7 @@ Across all four single-agent task families, top-line success is essentially unch
 \section{Retrained retriever and CommNet baseline}
 \label{app:learned-baselines}
 
-\subsection*{F.1 Retrained candidate-generation MLP (Section~\ref{sec:refined-attribution})}
+\subsection{Retrained candidate-generation MLP (\S\ref{sec:refined-attribution})}
 
 \textbf{Dataset extraction.} From the 10-seed hazard-recovery benchmark
 (MiniGrid-LavaGapS7-v0, method \texttt{milestone\_state\_conditioned\_hazard\_recovery\_v7}),
@@ -875,11 +1162,11 @@ Precision @ recall $=0.70$        & 0.171 & 0.278 & 0.275 \\
 The MLP underperforms majority-class on accuracy across all splits and
 achieves only moderate precision at fixed recall. Instantaneous state
 features are insufficient to predict candidate eligibility downstream. This is
-the negative-but-informative finding referenced in Section~\ref{sec:refined-attribution}:
+the negative-but-informative finding referenced in \S\ref{sec:refined-attribution}:
 the framework's ``retrieval-limited'' attribution refines to
 ``memory-accumulation-limited'' rather than ``ranking-limited''.
 
-\subsection*{F.2 CommNet-style learned communication baseline (Section~\ref{sec:multi-agent-results})}
+\subsection{CommNet-style learned communication baseline (\S\ref{sec:multi-agent-results})}
 
 \textbf{Policy architecture.} Per-agent observation is 4-dim direction one-hot
 $+$ $5\!\times\!5\!\times\!5$ local cell-type window (125) $+$ 2-dim normalised
@@ -924,11 +1211,32 @@ Mean steps                                  & 80 (budget exhausted) \\
 \end{tabular}
 \end{table}
 
-Compare to the symbolic peer architecture at $K\!=\!8$ on the same scenario
-(Table~\ref{tab:multi-agent-cond}): $P(M^\star|R^\star)\!=\!0.69$, $P(C^\star|M^\star)\!=\!0.87$, success rate $\sim\!0.65$. The learned baseline both underperforms in success and degenerates in $Q$ and $R/M$ separation, as predicted.
+Compare to the symbolic peer architecture at $K{=}8$: $P(M^\star|R^\star){=}0.69$, $P(C^\star|M^\star){=}0.87$, success $\sim 0.65$.
 
-\textbf{On the choice of minimal CommNet rather than scaled PPO.}
-The diagnostic claim under test is \emph{what learned policies expose at the per-stage level}, not which method reaches the highest success rate. A scaled-up CommNet with curriculum, larger networks, and PPO would close the success gap; it would not cause the actor head to emit a per-step ``query'' that is informatively zero in some states and saturated in others. The Q stage is degenerate by construction in any policy whose communication channel is a real-valued vector with a learned linear projection. The minimal training budget used here is sufficient to (i) reach a non-trivial behaviour and (ii) measure the Q/R/M/C events on a converged policy. The Q-saturation result would be identical with $\,10\times$ training, $\,100\times$ training, or a different RL algorithm; the success-rate gap would close but the diagnostic separation would not appear. A reviewer who would prefer a stronger baseline is correct that one exists; improving it would not change the Q/R/M/C reading.
+\paragraph{PPO variant: structural degeneracy verified at competitive success.}
+A PPO-trained variant of the same CommNet architecture (clip $\epsilon{=}0.2$, GAE $\lambda{=}0.95$, $\gamma{=}0.99$, 4 PPO epochs per rollout, 64 rollouts per update, 200 updates, $\approx 96$ minutes on a single CPU core; full setup in \texttt{experiments/commnet\_ppo\_baseline/train\_ppo\_commnet.py}) reaches $0.667$ success on 100 held-out seeds --- competitive with the symbolic peer architecture at $K{=}8$ ($0.65$).
+
+\begin{table}[h]
+\centering
+\small
+\caption{REINFORCE vs PPO CommNet vs symbolic peer ($K{=}8$) on the scarcity scenario ($N{=}3$, $T{=}2$, asymmetric, hazard $0.05$). PPO is competitive on success rate, yet still exhibits Q-saturation and R/M collapse --- the diagnostic claim verified, not asserted.}
+\label{tab:ppo-commnet}
+\begin{tabular}{l c c c}
+\toprule
+Metric & CommNet REINFORCE & \textbf{CommNet PPO} & Symbolic peer ($K{=}8$) \\
+\midrule
+Success rate                  & 0.19   & \textbf{0.667} & 0.65 \\
+$Q^\star$ rate                & 1.00   & \textbf{1.00}  & 0.99 \\
+$R^\star$ rate                & 0.50   & \textbf{0.997} & 0.69 \\
+$M^\star$ rate                & 0.50   & \textbf{0.997} & 0.69 \\
+$P(M^\star|R^\star)$          & 1.00   & \textbf{1.00}  & 0.69 \\
+$P(C^\star|M^\star)$          & 0.42   & \textbf{0.67}  & 0.87 \\
+R/M separated?                & no     & \textbf{no}    & \textbf{yes} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The PPO result converts the structural argument from an assertion (``training budget would not change this'') to a measurement: $Q^\star$ remains saturated at 1.00, $P(M^\star|R^\star)$ remains 1.00 (R/M collapse), even at competitive success. The Q stage is degenerate by construction in any policy whose communication channel is a real-valued vector with a learned linear projection --- the channel is never informatively empty, regardless of training budget --- and without an explicit symbolic target-lock interface the M event cannot separate from R. Only architectures with an explicit \emph{query/lock} interface (the symbolic stack of \S\ref{sec:archs}) expose stage-separable Q/R/M/C events.
 
 \section{Reproducibility commands}
 \label{app:repro}
@@ -938,16 +1246,16 @@ An anonymized public repository accompanies this submission. The main paper arti
 \subsection*{One-command reproduction (multi-agent block, $\approx 22$ minutes on 8 cores)}
 \path{bash scripts/reproduce_paper.sh}
 
-\subsection*{Single-agent (Sections~7.1--7.4)}
+\subsection*{Single-agent (\S\ref{sec:validation}--\S\ref{sec:oracle})}
 \begin{itemize}[leftmargin=16pt]
 \item article benchmark and learned-baseline suite: \path{scripts/benchmark_symbolic_memory_article.py}
 \item article analysis and figure generation: \path{scripts/analyze_symbolic_memory_article.py}
 \item synthetic factorization sanity check: \path{scripts/validate_qrmc_factorization.py}
 \item oracle-stage intervention benchmark: \path{scripts/benchmark_oracle_stage_interventions.py}
-\item BabyAI transfer benchmark: \path{scripts/compare_songline_babyai.py}
+\item BabyAI transfer benchmark: \path{scripts/compare_songline_babyai.py} % TODO(deanonymization): rename
 \end{itemize}
 
-\subsection*{Multi-agent (Section~\ref{sec:multi-agent-results})}
+\subsection*{Multi-agent (\S\ref{sec:multi-agent-results})}
 \begin{itemize}[leftmargin=16pt]
 \item Main 25{,}920-run cadence sweep (40 seeds, $K\le 16$, $\approx 18$ min):
 \path{python experiments/big_experiment/exp_cadence_phase.py --mode full --workers 8 --out_dir tmp/big_experiment_qrmc_40}
@@ -969,5 +1277,8 @@ The experiments use MiniGrid and BabyAI, both released under the MIT License. Th
 \clearpage
 \FloatBarrier
 \input{checklist.tex}
+% TODO(checklist): update checklist justifications that referenced
+% "Theorem 1" and old section numbers (7.1-7.4) to the new labels
+% (Proposition 1, \S\ref{sec:validation}-\S\ref{sec:oracle}).
 
 \end{document}
