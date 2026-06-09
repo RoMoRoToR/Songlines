@@ -691,7 +691,7 @@ We therefore propose \emph{collective semantic memory} --- a shared symbolic str
 \section{Limitations and future work}
 \label{sec:limitations}
 
-\textbf{Two environments.} Single-agent runs on MiniGrid/BabyAI; multi-agent on a custom $12{\times}10$ grid. Identical operational $Q^\star,R^\star,M^\star,C^\star$ definitions recover interpretable stage profiles on both substrates, with the same chain ordering and weakest-stage attribution. A multi-agent MiniGrid wrapper unifying the two is the next portability step (Appendix~\ref{app:open-problems}, item 4).
+\textbf{Portability across substrates: slope conditions hold on MiniGrid.} The slope conditions of Proposition~3 also hold on a standard-MiniGrid substrate. A FourRooms-based multi-agent wrapper (built from \texttt{minigrid.core.grid.Grid} + Wall/Floor/Lava primitives, identical operational $Q^\star,R^\star,M^\star,C^\star$ definitions; \texttt{experiments/minigrid\_multiagent\_wrapper/}) was used to run a 100-run portability sweep ($K{\in}\{1,4,8,16,64\}$, 20 seeds, $N{=}3$, $T{=}2$): Spearman $P(M^\star|R^\star)$ vs $K$ is $-0.50$ ($p{=}1.5{\times}10^{-7}$), Spearman $P(C^\star|M^\star)$ vs $K$ is $+0.50$ ($p{=}1.3{\times}10^{-7}$). The interior $t_{\mathrm{succ}}$ minimum does not separate at this minimal sweep size (5 cadences, 20 seeds, one hazard density); a denser sweep is the natural next step. The two-substrate seam is therefore closed at the slope-level claim.
 
 \textbf{Proposition~3 at slope level only.} The two slope conditions hold ($p<10^{-4}$); the strict interior-maximum corollary on $\Phi$ does not (\S\ref{sec:shift}). A version of Proposition~3 stated directly in time-cost would close this gap. Proof under a generative model (Poisson-renewal memory, birth-death occupancy) is future work.
 
@@ -1067,7 +1067,7 @@ Four concrete questions follow directly from the measurements of \S\ref{sec:mult
 \textbf{(1) Adaptive cadence.} Proposition~3 assumes a fixed $K$; the bottleneck-shift signature suggests an online controller $K_t$ that broadcasts when the (estimated) M-side gain exceeds the C-side occupancy cost.
 \textbf{(2) Selective consolidation.} Snapshot exchange merges everything; merge rules that prioritize evidence about under-represented semantic tags attack the candidate-generation starvation of \S\ref{sec:refined-attribution} directly.
 \textbf{(3) Trust-weighted merging under occupancy.} The central aggregator already performs a trust-weighted merge but pays the C-collapse cost; decentralized trust rules that account for peer \emph{intent} (not only peer evidence) could decouple freshness from target racing.
-\textbf{(4) Substrate generality.} The decomposition transfers across MiniGrid, BabyAI, and the custom grid with identical operational definitions; a multi-agent MiniGrid wrapper and a continuous-state environment are the next portability steps.
+\textbf{(4) Substrate generality.} The decomposition transfers across MiniGrid, BabyAI, the custom grid, and now a standard-MiniGrid multi-agent wrapper with identical operational definitions and verified slope signs of Proposition~3 ($\S$~\ref{sec:limitations}). A continuous-state environment (Habitat, VMAS) is the remaining portability step.
 
 \subsection{Extended related work}
 \label{app:related-work-extended}

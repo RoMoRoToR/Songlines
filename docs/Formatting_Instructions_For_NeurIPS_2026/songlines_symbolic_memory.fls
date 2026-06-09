@@ -1,0 +1,6 @@
+PWD /Users/taniyashuba/PycharmProjects/Songlines/docs/Formatting_Instructions_For_NeurIPS_2026
+INPUT /usr/local/texlive/2025/texmf.cnf
+INPUT /usr/local/texlive/2025/texmf-dist/web2c/texmf.cnf
+INPUT /usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt
+INPUT songlines_symbolic_memory.pdf
+OUTPUT songlines_symbolic_memory.log

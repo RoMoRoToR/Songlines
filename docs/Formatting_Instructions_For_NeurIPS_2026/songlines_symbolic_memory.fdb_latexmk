@@ -1,0 +1,12 @@
+# Fdb version 4
+["pdflatex"] 1780078316.17313 "songlines_symbolic_memory.pdf" "songlines_symbolic_memory.pdf" "songlines_symbolic_memory" 1780078316.35998 2
+  "/usr/local/texlive/2025/texmf-dist/web2c/texmf.cnf" 1739380943 42148 61becc7c670cd061bb319c643c27fdd4 ""
+  "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1768821195 3345739 f0bccb307d96c570b40452a8c4e9f4cb ""
+  "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
+  "songlines_symbolic_memory.aux" 1780066288.49355 33329 d68b6764e3e4b0a1682c13a5965772ca "pdflatex"
+  "songlines_symbolic_memory.pdf" 1780066288.55426 1001304 da8426272c0a9192f1c4942cbcea90b1 "pdflatex"
+  (generated)
+  "songlines_symbolic_memory.aux"
+  "songlines_symbolic_memory.log"
+  "songlines_symbolic_memory.pdf"
+  (rewritten before read)
