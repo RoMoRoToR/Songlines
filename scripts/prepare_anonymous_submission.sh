@@ -24,12 +24,16 @@ cp "${SRC_DIR}/checklist.tex" "${OUT_DIR}/checklist.tex"
 cp "${SRC_DIR}/neurips_2026.sty" "${OUT_DIR}/neurips_2026.sty"
 
 # Copy figures into renamed directory
-cp "${SRC_DIR}/songlines_symbolic_memory_figures/"*.{pdf,png} "${OUT_DIR}/figures/" 2>/dev/null || true
+cp "${SRC_DIR}/figures/"*.{pdf,png} "${OUT_DIR}/figures/" 2>/dev/null || true
 
-# Sanitize source: rename figure dir + codename mentions
+# Sanitize source: defensive guard — figures dir and scripts have already
+# been renamed in the working tree, so these substitutions are no-ops for
+# the current source; kept so the script also works on any older revision
+# of the .tex still containing the codename.
 sed -i.bak \
     -e 's|songlines_symbolic_memory_figures|figures|g' \
-    -e 's|compare_songline_babyai\.py|compare_semnav_babyai.py|g' \
+    -e 's|compare_songline_|compare_semnav_|g' \
+    -e 's|songline|semnav|g' \
     "${OUT_DIR}/paper.tex"
 rm "${OUT_DIR}/paper.tex.bak"
 

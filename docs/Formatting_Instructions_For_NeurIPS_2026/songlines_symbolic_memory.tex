@@ -37,11 +37,6 @@
 
 \newcommand{\method}[1]{\texttt{#1}}
 
-% TODO(deanonymization): the figure directory and one script name still
-% contain the internal codename "songline(s)". Before submission, rename
-% the directory and scripts/compare_songline_babyai.py if the codename
-% is searchable to a public repository or preprint.
-
 \title{Q/R/M/C: Stage Decomposition for Memory-Based Navigation in Single Agents and Cadence-Coupled Collectives}
 
 %\author{%
@@ -101,7 +96,7 @@ framework is built to measure.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{songlines_symbolic_memory_figures/fig_hero_qrmc.pdf}
+  \includegraphics[width=\linewidth]{figures/fig_hero_qrmc.pdf}
   \caption{Q/R/M/C decomposes one semantic-navigation episode into four
   observable stages. \textbf{Top:} the four stages and their event-level
   definitions. \textbf{(a)} A successful water-search episode anchors at
@@ -421,7 +416,7 @@ Proposition~1.
 \subsection{Success-only summary and what it hides}
 \label{sec:single-results}
 
-Water and rest are strong end-to-end tasks (0.95 and 0.93 success; Figure~\ref{fig:hero}b). Goal-region reaches 0.54 success at the task-family level, but the bottleneck sits downstream of candidate selection (\S\ref{sec:oracle}). Hazard recovery is the hardest retrieval-sensitive task at 0.40 success, with retrieval satisfaction as the weakest stage. Under success-only evaluation the two hard families look like the same kind of weakness; the stage view will show they are opposites. Per-task operational rates with 95\% CIs are in Appendix~\ref{app:single-results-table}.
+Water and rest are strong end-to-end tasks (0.95 and 0.93 success; Figure~\ref{fig:hero}b). Goal-region reaches 0.54 success at the task-family level, but the bottleneck sits downstream of candidate selection (\S\ref{sec:oracle}). Hazard recovery is the hardest retrieval-sensitive task at 0.40 success, with retrieval satisfaction as the weakest stage. Under success-only evaluation the two hard families look like the same kind of weakness; the stage view will show they are opposites. Per-task operational rates with 95\% CIs are in Table~\ref{tab:main-results} (Appendix~\ref{app:single-results-table}).
 
 \paragraph{Baseline comparison.}
 Table~\ref{tab:baselines} compares the semantic stack against random,
@@ -459,7 +454,7 @@ questions; this paper is about the second.
 \subsection{Oracle-stage interventions localize the bottleneck}
 \label{sec:oracle}
 
-On goal-region the semantic variants solve Empty-6x6 ($1.00$ success) but collapse on FourRooms ($0.075$). For hazard recovery (LavaGapS7), base success $0.39$ rises only to $0.43$ under oracle controller, but jumps to $0.59$ under oracle materialization and $0.60$ under oracle retrieval; goal-region rejoin is downstream-limited (oracle R lifts semantic-path completion to $0.08$ without moving end-to-end success). The per-task attribution as a stacked waterfall is in Figure~\ref{fig:oracle-waterfall} (Appendix~\ref{app:waterfall}). Two tasks identical under success-only evaluation fail at opposite ends of the Q/R/M/C chain.
+On goal-region the semantic variants solve Empty-6x6 ($1.00$ success) but collapse on FourRooms ($0.075$). For hazard recovery (LavaGapS7), base success $0.39$ rises only to $0.43$ under oracle controller, but jumps to $0.59$ under oracle materialization and $0.60$ under oracle retrieval; goal-region rejoin is downstream-limited (oracle R lifts semantic-path completion to $0.08$ without moving end-to-end success). The per-task attribution as a stacked waterfall is in Figure~\ref{fig:oracle-waterfall} (Appendix~\ref{app:single-results-table}). Two tasks identical under success-only evaluation fail at opposite ends of the Q/R/M/C chain.
 
 \subsection{The logs refine the diagnosis: a memory-accumulation limit}
 \label{sec:refined-attribution}
@@ -484,7 +479,7 @@ distributed across agents (Figure~\ref{fig:architectures}).
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{songlines_symbolic_memory_figures/fig_architectures.pdf}
+  \includegraphics[width=\linewidth]{figures/fig_architectures.pdf}
   \caption{Four multi-agent memory architectures. \textbf{(a)} Independent: per-agent private memory, no exchange. \textbf{(b)} Shared bus: one global memory, every agent reads/writes each tick. \textbf{(c)} Central aggregator: per-agent memories plus a hub that merges them into a consensus report. \textbf{(d)} Peer-to-peer broadcast: per-agent memories with pairwise snapshot exchange every $K$ ticks (the cadence axis of Proposition~3).}
   \label{fig:architectures}
 \end{figure}
@@ -643,7 +638,7 @@ Figure~\ref{fig:conditional-rates} shows per-architecture conditional Q/R/M/C ra
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{songlines_symbolic_memory_figures/fig_conditional_rates.pdf}
+  \includegraphics[width=\linewidth]{figures/fig_conditional_rates.pdf}
   \caption{Per-architecture conditional rates (top) and mean time-to-success (bottom) from the 35{,}640-run sweep. Shared bus, central aggregator, and fast peer broadcast ($K \le 4$) live in the M-saturation / C-collapse regime; independent and slow peer ($K \ge 16$) live in the M-deficit / C-saturation regime. Mean time-to-success has a clean interior minimum at $K{=}8$ ($7.47$ ticks), below the independent-agent baseline ($8.02$).}
   \label{fig:conditional-rates}
 \end{figure}
@@ -940,20 +935,10 @@ $s(p \mid q_t, s_t) = \sum_{\tau \in q^{\mathrm{req}}} \log P(\tau|p)
 + \gamma\, u_{\mathrm{epi}}(p, s_t)$
 over required, preferred, and penalty tags. The four task families are defined by semantic place patterns: water search (target $\{$water$\}$), safe rest ($\{$rest$\}$ with state-conditioning), goal-region rejoin ($\{$goal-region$\}$), hazard recovery ($\{$post-hazard-exit$\}$).
 
-\subsection{Oracle-stage intervention waterfall}
-\label{app:waterfall}
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=\linewidth]{songlines_symbolic_memory_figures/fig_oracle_waterfall.pdf}
-  \caption{Oracle stage interventions on the two hardest single-agent task families (10 seeds $\times$ 8 episodes). \textbf{(a)} FourRooms goal-rejoin: replacing any single stage with an oracle leaves end-to-end success at $0.07$; the bottleneck is downstream of the stages in the chain. \textbf{(b)} LavaGapS7 hazard recovery: oracle controller adds only $+0.04$, but oracle materialization adds $+0.16$ and oracle retrieval adds a further $+0.01$ to reach $0.60$. The framework localises the bottleneck stage-by-stage.}
-  \label{fig:oracle-waterfall}
-\end{figure}
-
-\subsection{Per-task operational rates with 95\% CIs}
+\subsection{Single-agent supporting tables and figures}
 \label{app:single-results-table}
 
-\begin{table*}[h]
+\begin{table*}[!ht]
   \caption{Best semantic result per task family from the final 10-seed benchmark, with 95\% bootstrap CIs. Hazard-recovery is bottlenecked by retrieval; goal-region remains downstream-bottlenecked.}
   \label{tab:main-results}
   \centering
@@ -971,6 +956,14 @@ over required, preferred, and penalty tags. The four task families are defined b
   \end{tabular}
 \end{table*}
 
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_oracle_waterfall.pdf}
+  \caption{Oracle stage interventions on the two hardest single-agent task families (10 seeds $\times$ 8 episodes). \textbf{(a)} FourRooms goal-rejoin: replacing any single stage with an oracle leaves end-to-end success at $0.07$; the bottleneck is downstream of the stages in the chain. \textbf{(b)} LavaGapS7 hazard recovery: oracle controller adds only $+0.04$, but oracle materialization adds $+0.16$ and oracle retrieval adds a further $+0.01$ to reach $0.60$. The framework localises the bottleneck stage-by-stage.}
+  \label{fig:oracle-waterfall}
+\end{figure}
+\FloatBarrier
+
 \section{Portability and scale-up}
 \label{app:babyai}
 
@@ -985,7 +978,7 @@ To check that the multi-agent results of \S\ref{sec:multi-agent-results} are not
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.92\linewidth]{songlines_symbolic_memory_figures/fig_scale_n12.pdf}
+\includegraphics[width=0.92\linewidth]{figures/fig_scale_n12.pdf}
 \caption{$N\!=\!12$ scale-up bottleneck signature ($n\!=\!8{,}640$ runs, 40 seeds). Top: both conditional rates change monotonically in $K$ as predicted; the within-cadence Pearson correlation (red dashed, right axis) peaks at $-0.70$ at $K\!=\!8$. Bottom: mean time-to-success retains an interior minimum at $K\!=\!8$ ($4.77$ ticks). The bottleneck-shift peak migrates outward from $K\!=\!4$ at $N\!\le\!8$ to $K\!=\!8$ at $N\!=\!12$, consistent with stronger occupancy coupling at higher agent count delaying the cost-regime transition.}
 \label{fig:scale-n12}
 \end{figure}
@@ -1048,14 +1041,14 @@ The negative within-cadence covariance documented in \S\ref{sec:multi-agent-resu
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.85\linewidth]{songlines_symbolic_memory_figures/fig_bottleneck_shift.pdf}
+  \includegraphics[width=0.85\linewidth]{figures/fig_bottleneck_shift.pdf}
   \caption{Bottleneck shift across eight peer cadences (40-seed sweep). Top: $P(M^\star|R^\star)$ falls and $P(C^\star|M^\star)$ rises monotonically in $K$ ($p<10^{-4}$, both Spearman). Bottom: mean time-to-success has an interior minimum at $K=8$ ($7.47$ ticks), below the independent-agent baseline ($8.02$, dashed). Error bars and shaded band are 95\% bootstrap CIs.}
   \label{fig:bottleneck-shift}
 \end{figure}
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.95\linewidth]{songlines_symbolic_memory_figures/fig_jensen_scatter.pdf}
+  \includegraphics[width=0.95\linewidth]{figures/fig_jensen_scatter.pdf}
   \caption{Per-configuration scatter of $P(M^\star|R^\star)$ vs.\ $P(C^\star|M^\star)$ at three cadences. The strong negative correlation at $K=4$ (Pearson $-0.61$) is the bottleneck-shift signature: the same configurations that succeed at $M$ tend to fail at $C$ and vice versa. The correlation decays to noise by $K=64$.}
   \label{fig:jensen-scatter}
 \end{figure}
@@ -1154,7 +1147,7 @@ Precision @ recall $=0.70$        & 0.171 & 0.278 & 0.275 \\
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.95\linewidth]{songlines_symbolic_memory_figures/fig_refined_attribution.pdf}
+\includegraphics[width=0.95\linewidth]{figures/fig_refined_attribution.pdf}
 \caption{Refined attribution diagnostic. \emph{Left:} 349 retrieval calls aggregated across 10 seeds; 317 (90.8\%) returned empty candidate sets, 31 (8.9\%) returned at least one satisfied candidate, only 1 (0.3\%) returned candidates that were ranked but unsatisfied. The bottleneck is candidate generation, not candidate ranking. \emph{Right:} the trained MLP underperforms a majority-class baseline on all three seed-disjoint splits, confirming that instantaneous state features alone are insufficient to predict candidate eligibility.}
 \label{fig:refined-attribution}
 \end{figure}
@@ -1184,7 +1177,7 @@ finds water by chance.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.95\linewidth]{songlines_symbolic_memory_figures/fig_commnet_baseline.pdf}
+\includegraphics[width=0.95\linewidth]{figures/fig_commnet_baseline.pdf}
 \caption{Learned-communication baseline diagnostics. \emph{Left:} CommNet training curve (smoothed success rate over a 100-episode window) over 2000 training episodes; success stays below 0.25 throughout. The dashed line is the symbolic peer architecture at $K\!=\!8$ on the same scenario for reference. \emph{Right:} Q/R/M/C profile of the trained CommNet on 50 held-out seeds vs symbolic peer at $K\!=\!8$. $Q^\star$ is saturated at $1.0$ on CommNet (degenerate by construction); $R/M$ collapse together; only on the symbolic architecture are the conditional rates separated.}
 \label{fig:commnet}
 \end{figure}
@@ -1252,7 +1245,7 @@ An anonymized public repository accompanies this submission. The main paper arti
 \item article analysis and figure generation: \path{scripts/analyze_symbolic_memory_article.py}
 \item synthetic factorization sanity check: \path{scripts/validate_qrmc_factorization.py}
 \item oracle-stage intervention benchmark: \path{scripts/benchmark_oracle_stage_interventions.py}
-\item BabyAI transfer benchmark: \path{scripts/compare_songline_babyai.py} % TODO(deanonymization): rename
+\item BabyAI transfer benchmark: \path{scripts/compare_semnav_babyai.py}
 \end{itemize}
 
 \subsection*{Multi-agent (\S\ref{sec:multi-agent-results})}
@@ -1267,6 +1260,12 @@ An anonymized public repository accompanies this submission. The main paper arti
 \path{python experiments/big_experiment/exp_oracle_interventions.py --workers 8 --out_dir tmp/big_experiment_oracle}
 \item Phase 1--4 smoke tests:
 \path{python scripts/run_all_smokes.py --out_dir tmp/all_smokes}
+\item PPO-trained CommNet baseline (Table~\ref{tab:ppo-commnet}, $\approx 96$ min on a single CPU core):
+\path{python -m experiments.commnet_ppo_baseline.train_ppo_commnet --total_updates 200 --rollouts_per_update 64}
+\item Q/R/M/C eval of the PPO policy on 100 held-out seeds:
+\path{python experiments/commnet_baseline/eval_with_qrmc.py --policy_path experiments/commnet_ppo_baseline/ppo_policy.pt --out_dir experiments/commnet_ppo_baseline --n_episodes 100}
+\item MiniGrid-substrate portability sweep (\S\ref{sec:limitations}, 100 runs, $\approx 2$ min):
+\path{python -m experiments.minigrid_multiagent_wrapper.run_portability_sweep --out_dir tmp/minigrid_portability}
 \end{itemize}
 
 \section{Asset and license note}

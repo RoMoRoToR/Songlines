@@ -95,7 +95,7 @@
 \item {\bf Experiment statistical significance}
     \item[] Question: Does the paper report error bars suitably and correctly defined or other appropriate information about the statistical significance of the experiments?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The paper reports 95\% bootstrap confidence intervals over seed-level aggregates ($B{=}5{,}000$ resamples; Section~3.1, ``Protocol'' paragraph) and uses paired Wilcoxon signed-rank tests with Holm-Bonferroni correction for assist comparisons. CIs are shown in Tables~2, 4, and~5 and in Figures~4--6.
+    \item[] Justification: The paper reports 95\% bootstrap confidence intervals over seed-level aggregates ($B{=}5{,}000$ resamples; Section~3.1, ``Protocol'' paragraph) and uses paired Wilcoxon signed-rank tests with Holm-Bonferroni correction for assist comparisons. CIs are shown in Tables~3 and~5 (Best semantic per-task rates; the 35{,}640-run MOP column) and in Figures~4--6 (bootstrap shaded bands).
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include experiments.
@@ -112,7 +112,7 @@
 \item {\bf Experiments compute resources}
     \item[] Question: For each experiment, does the paper provide sufficient information on the computer resources (type of compute workers, memory, time of execution) needed to reproduce the experiments?
     \item[] Answer: \answerYes{}
-    \item[] Justification: The paper discloses the hardware platform (10-core ARM CPU, 32\,GB RAM; CPU-only), the scale of each benchmark, and wall-clock costs --- single-agent oracle sweep $<1$ minute (Section~3.1); main multi-agent sweep (35{,}640 runs) $\approx 22$ minutes on 8 cores (Section~4.4); $N{=}12$ scale-up (8{,}640 runs) $\approx 12$ minutes (Appendix~D).
+    \item[] Justification: The paper discloses the hardware platform (10-core ARM CPU, 32\,GB RAM; CPU-only), the scale of each benchmark, and wall-clock costs --- single-agent oracle sweep $<1$ minute (Section~3.1); main multi-agent sweep (35{,}640 runs) $\approx 22$ minutes on 8 cores (Section~4.4); $N{=}12$ scale-up (8{,}640 runs) $\approx 12$ minutes (Appendix~D); PPO CommNet baseline (200 updates $\times$ 64 rollouts) $\approx 96$ minutes on a single CPU core (Appendix~G); MiniGrid portability sweep (100 runs) $\approx 2$ minutes on a single core (\S\ref{sec:limitations}).
     \item[] Guidelines:
     \begin{itemize}
         \item The answer \answerNA{} means that the paper does not include experiments.
