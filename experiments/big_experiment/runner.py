@@ -61,7 +61,7 @@ def run_one_config(cfg: RunConfig) -> Dict[str, Any]:
 
     memory = build_memory(
         cfg.architecture, agent_ids, env_id,
-        broadcast_every_k=cfg.broadcast_every_k if cfg.architecture == "peer" else 4,
+        broadcast_every_k=cfg.broadcast_every_k if cfg.architecture in ("peer", "csm") else 4,
     )
 
     planners = {aid: PlannerState(aid) for aid in agent_ids}

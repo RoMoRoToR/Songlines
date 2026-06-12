@@ -176,6 +176,28 @@ class _PeerAdapter:
 # ─────────────────────────────────────────────────────── factory
 
 
+class _CSMAdapter:
+    """Minimal Collective Semantic Memory: peer-broadcast (K=8) + trust + staleness."""
+    name = "csm"
+
+    def __init__(self, agent_ids: List[str], env_id: str, *,
+                 broadcast_every_k: int = 8):
+        from experiments.collective_semantic_memory.csm_memory import CSMMemory
+        self.mem = CSMMemory(
+            agent_ids=agent_ids, env_id=env_id,
+            broadcast_every_k=broadcast_every_k,
+        )
+
+    def observe(self, agent_id, cells, tick):
+        self.mem.observe(agent_id, cells, tick)
+
+    def tick(self, tick_idx):
+        self.mem.tick(tick_idx)
+
+    def query(self, agent_id) -> List[Tuple[float, float]]:
+        return self.mem.query(agent_id)
+
+
 def build_memory(
     architecture: str, agent_ids: List[str], env_id: str,
     *, broadcast_every_k: int = 4,
@@ -188,4 +210,6 @@ def build_memory(
         return _CentralizedAdapter(agent_ids, env_id)
     if architecture == "peer":
         return _PeerAdapter(agent_ids, env_id, broadcast_every_k=broadcast_every_k)
+    if architecture == "csm":
+        return _CSMAdapter(agent_ids, env_id, broadcast_every_k=broadcast_every_k)
     raise ValueError(f"Unknown architecture: {architecture}")
