@@ -1,4 +1,14 @@
+import os
+
 from songline_drive.types import IntentType, PlannerQuery, SemanticTargetPredicate
+
+
+def _theta(default: float) -> float:
+    """Required-tag threshold theta. Overridable via QRMC_REQUIRED_TAG_THETA for
+    the threshold-sensitivity ablation (AAAI reviewer point #9); defaults to the
+    deployed value otherwise."""
+    v = os.environ.get("QRMC_REQUIRED_TAG_THETA")
+    return float(v) if v else default
 
 
 def build_planner_query(intent_type: IntentType, goal_xy=None) -> PlannerQuery:
@@ -22,12 +32,12 @@ def build_planner_query(intent_type: IntentType, goal_xy=None) -> PlannerQuery:
             intent_type=intent_type,
             target_predicate=SemanticTargetPredicate(
                 tag_name="hazard_recovery_route",
-                min_confidence=0.5,
+                min_confidence=_theta(0.5),
                 score_weights={"hazard_recovery_route": 0.6, "goal_region": 0.2},
                 penalty_weights={"hazard_edge": 0.1},
             ),
             fallback_goal_xy=None if goal_xy is None else tuple(goal_xy),
-            required_tags={"hazard_recovery_route": 0.5},
+            required_tags={"hazard_recovery_route": _theta(0.5)},
             preferred_tags={
                 "hazard_recovery_route": 0.6,
                 "goal_region": 0.2,
@@ -43,11 +53,11 @@ def build_planner_query(intent_type: IntentType, goal_xy=None) -> PlannerQuery:
             intent_type=intent_type,
             target_predicate=SemanticTargetPredicate(
                 tag_name="goal_region",
-                min_confidence=0.5,
+                min_confidence=_theta(0.5),
                 score_weights={"goal_region": 0.5},
             ),
             fallback_goal_xy=None if goal_xy is None else tuple(goal_xy),
-            required_tags={"goal_region": 0.5},
+            required_tags={"goal_region": _theta(0.5)},
             preferred_tags={"goal_region": 0.5, "post_hazard_goal_rejoin": 0.15},
             temporal_constraints={"min_freshness": 0.0},
             fallback_mode="goal_xy" if goal_xy is not None else "semantic_only",

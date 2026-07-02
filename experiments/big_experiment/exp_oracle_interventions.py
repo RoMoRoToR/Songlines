@@ -12,6 +12,13 @@ Three variants:
   ``oracle_M``      — planner always materialises toward the nearest
                        real water target regardless of memory contents
                        and regardless of peer occupancy
+  ``oracle_C``      — real Q/R/M pipeline sets the lock; an oracle
+                       controller then reaches that locked target,
+                       ignoring transient peer occupancy (isolates the
+                       C-stage controller/occupancy failure downstream of
+                       a real materialisation). Scarcity (N>T) is still
+                       enforced by the environment, so oracle_C cannot
+                       make all agents succeed.
 
 Hypothesis:
   - At LARGE K (slow broadcast), ``oracle_R`` should give large speedup
@@ -65,27 +72,15 @@ def _make_oracle_query(base_query, water_positions, oracle_mode: str):
     raise ValueError(f"Unknown oracle_mode for query: {oracle_mode}")
 
 
-def _override_plan_action_for_oracle_M(
-    state, env, memory_targets, tick, variant, water_positions,
-):
-    """Oracle M: always navigate toward nearest real water, ignore occupancy."""
-    from multiagent_env import FORWARD, NOOP, TURN_LEFT, TURN_RIGHT, WALL
+def _step_toward_ignoring_occupancy(env, ag, tx, ty):
+    """Occupancy-ignoring controller toward (tx, ty): walls still block, but
+    transient peer occupancy along the path does not. Shared by oracle_M and
+    oracle_C."""
+    from multiagent_env import FORWARD, NOOP, TURN_RIGHT, TURN_LEFT, WALL
     from multiagent_env.grid_world import DIR_DELTAS
-
-    ag = env.agents[state.agent_id]
-    if ag.success:
-        return NOOP
-
-    def dist(xy):
-        return abs(xy[0] - ag.x) + abs(xy[1] - ag.y)
-
-    targets = sorted(water_positions, key=dist)
-    tx, ty = targets[0]
-    state.locked_target = (tx, ty)
 
     if (tx, ty) == (ag.x, ag.y):
         return NOOP
-
     dx = tx - ag.x
     dy = ty - ag.y
     if abs(dx) >= abs(dy):
@@ -98,14 +93,32 @@ def _override_plan_action_for_oracle_M(
         nx, ny = ag.x + ddx, ag.y + ddy
         if env.cell(nx, ny) != WALL and 0 <= nx < env.width and 0 <= ny < env.height:
             return FORWARD
-        # blocked — turn right
-        return TURN_RIGHT
+        return TURN_RIGHT  # wall — turn
     diff = (target_dir - ag.direction) % 4
     if diff == 1:
         return TURN_RIGHT
     if diff == 3:
         return TURN_LEFT
     return TURN_LEFT
+
+
+def _override_plan_action_for_oracle_M(
+    state, env, memory_targets, tick, variant, water_positions,
+):
+    """Oracle M: always lock and navigate toward the nearest real water,
+    ignoring both memory contents and peer occupancy."""
+    from multiagent_env import NOOP
+
+    ag = env.agents[state.agent_id]
+    if ag.success:
+        return NOOP
+
+    def dist(xy):
+        return abs(xy[0] - ag.x) + abs(xy[1] - ag.y)
+
+    tx, ty = sorted(water_positions, key=dist)[0]
+    state.locked_target = (tx, ty)
+    return _step_toward_ignoring_occupancy(env, ag, tx, ty)
 
 
 # ──────────────────────────────────────────────────── runner
@@ -136,6 +149,7 @@ def run_oracle_config(cfg: OracleRunConfig) -> Dict[str, Any]:
     env = built.env
     agent_ids = built.agent_ids
     water_positions = built.water_positions
+    _water_set = {(int(round(w[0])), int(round(w[1]))) for w in water_positions}
 
     env_id = f"oracle_{cfg.oracle_mode}_K{cfg.broadcast_every_k}_s{cfg.seed}"
     memory = build_memory("peer", agent_ids, env_id,
@@ -159,12 +173,40 @@ def run_oracle_config(cfg: OracleRunConfig) -> Dict[str, Any]:
                 first_success_tick[aid] = tick
 
         actions: Dict[str, int] = {}
+        _claimed_this_tick: set = set()
         for aid in agent_ids:
             if cfg.oracle_mode == "oracle_M":
                 # Replace plan_action with oracle version
                 actions[aid] = _override_plan_action_for_oracle_M(
                     planners[aid], env, [], tick, "peer", water_positions,
                 )
+            elif cfg.oracle_mode == "oracle_C":
+                # Real Q/R/M pipeline sets the lock; the oracle then guarantees
+                # completion of that lock by placing the agent on its locked
+                # target cell (env grants success iff the cell is real water).
+                # This isolates the C stage (controller + travel), symmetric to
+                # oracle_R/oracle_M replacing their stage output with truth.
+                # Scarcity is preserved: teleport only onto a target not already
+                # claimed or occupied this tick.
+                from multiagent_env import NOOP
+                targets = memory.query(aid)
+                base_act = plan_action(planners[aid], env, targets, tick, "peer")  # explores + sets lock
+                lock = planners[aid].locked_target
+                agent = env.agents[aid]
+                did_teleport = False
+                if lock is not None and not agent.success:
+                    tx, ty = int(round(lock[0])), int(round(lock[1]))
+                    is_water = (tx, ty) in _water_set
+                    blocked = (tx, ty) in _claimed_this_tick or any(
+                        oid != aid and (o.x, o.y) == (tx, ty)
+                        for oid, o in env.agents.items()
+                    )
+                    if is_water and not blocked:
+                        agent.x, agent.y = tx, ty       # guarantee completion of a real lock
+                        _claimed_this_tick.add((tx, ty))
+                        did_teleport = True
+                # keep exploring until a real target is locked; only freeze on teleport
+                actions[aid] = NOOP if did_teleport else base_act
             else:
                 targets = memory.query(aid)
                 actions[aid] = plan_action(
@@ -204,7 +246,7 @@ def run_oracle_config(cfg: OracleRunConfig) -> Dict[str, Any]:
 SCARCITY_CASES = [(3, 2), (5, 3), (8, 5)]
 LAYOUTS = ["asymmetric", "random"]
 KS = [1, 2, 4, 8, 16]
-ORACLE_MODES = ["baseline", "oracle_R", "oracle_M"]
+ORACLE_MODES = ["baseline", "oracle_R", "oracle_M", "oracle_C"]
 HAZARD = 0.05
 SEEDS = list(range(15))
 

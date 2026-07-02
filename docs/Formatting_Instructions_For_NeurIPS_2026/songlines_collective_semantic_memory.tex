@@ -1,0 +1,562 @@
+\documentclass{article}
+
+\usepackage{neurips_2026}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{placeins}
+
+\newcommand{\method}[1]{\texttt{#1}}
+
+\title{Collective Semantic Memory: Merge, Trust, and Staleness for Peer Memory in Multi-Agent Navigation}
+
+%\author{%
+%  Anonymous Authors \\
+%  Anonymous Institution \\
+%  Anonymous Address \\
+%  \texttt{anonymous@anonymous.edu} \\
+%}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\textbf{Problem.} Collective memory is often treated as monotone: more shared information should help. In cooperative navigation with scarce semantic targets, this intuition fails. Fast global sharing improves target materialization but causes agents to race for the same targets; slow sharing avoids contention but leaves agents with stale or incomplete memories.
+\textbf{Approach.} We instantiate four memory topologies over the same symbolic-semantic substrate: independent private memories, a shared event bus, a central consensus aggregator, and peer-to-peer broadcast with cadence $K$. We then introduce a minimal \emph{collective semantic memory} (CSM): peer broadcast plus explicit \emph{merge}, \emph{trust}, and \emph{staleness} rules. Q/R/M/C stage rates are used only as measurement instrumentation, not as the contribution of this paper.
+\textbf{Findings.} On a 35{,}640-run multi-agent sweep, the fixed-cadence peer family exhibits a bottleneck shift: fast broadcast saturates materialization but collapses completion, while slow broadcast has the opposite profile. Mean time-to-success has an interior optimum at $K{=}8$. On a 3{,}240-run scarcity benchmark, the minimal CSM strictly dominates five fixed-cadence peer baselines on success rate: CSM reaches $0.617$ with 95\% CI $[0.610,0.624]$, above every peer-K upper CI.
+\textbf{Scope.} Experiments are grid-world substrates. The claim is not that this is a complete theory of collective memory; it is a reproducible architecture split showing that merge/trust/staleness are the right explicit control surfaces after cadence alone is exhausted.
+\end{abstract}
+
+\section{Introduction}
+
+Many multi-agent systems share information either by writing to a
+single global memory, by sending learned messages, or by periodically
+exchanging local state. These mechanisms are usually evaluated
+end-to-end. If success improves, communication is judged useful; if it
+does not, the reason is opaque. This paper studies a narrower
+architectural question: when multiple agents maintain semantic memory
+about places, what should be shared, at what rate, and with what
+weight?
+
+The answer is not ``share everything as soon as possible.'' In a
+scarcity setting, where $N$ agents compete for $T<N$ semantic targets,
+fresh global memory can make all agents select the same target. The
+memory is then accurate but unhelpful. Conversely, no communication
+prevents herding but starves agents of useful discoveries made by
+peers. The design problem is therefore a trade-off between semantic
+freshness and occupancy contention.
+
+We make three contributions.
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item \textbf{Architecture split.} We implement and compare four memory topologies over the same symbolic substrate: independent, shared-bus, central-aggregator, and peer-to-peer broadcast.
+\item \textbf{Cadence result.} We show that peer broadcast exposes a real coordination parameter $K$: fast broadcast improves $P(M^\star|R^\star)$ but hurts $P(C^\star|M^\star)$; the efficiency metric has an interior optimum.
+\item \textbf{Minimal CSM.} We instantiate collective semantic memory with three explicit rules: merge, trust, and staleness. The minimal CSM reaches a new point on the M$\times$C plane and strictly dominates fixed-cadence peer baselines on success rate in the scarcity benchmark.
+\end{enumerate}
+
+\paragraph{Relation to the companion Q/R/M/C paper.}
+The companion paper treats Q/R/M/C as a diagnostic framework. Here
+those stage rates are used as measuring instruments. The main object
+is different: the design of distributed symbolic memory itself.
+
+\section{Memory substrate and task}
+\label{sec:substrate}
+
+Each agent observes a grid environment and emits semantic place
+evidence such as \texttt{water\_source}, \texttt{hazard\_edge}, and
+\texttt{open}. A local memory stores place records, tag confidences,
+visit counts, freshness, and transition statistics. Planner queries
+retrieve candidate places by matching required, preferred, and penalty
+tags. A selected candidate is materialized into a concrete cell and
+executed by a local controller.
+
+The multi-agent task uses a $12{\times}10$ grid. Each agent must reach
+a cell tagged \texttt{water\_source}. Targets are scarce:
+$N{\in}\{3,5,8\}$ agents, $T{\le}N$ targets, three layouts, three
+hazard densities, and 40 seeds for the main cadence sweep. Every run
+logs Q/R/M/C events per agent:
+\[
+Q^\star \rightarrow R^\star \rightarrow M^\star \rightarrow C^\star,
+\]
+where $M^\star$ means a semantic candidate was locked as an actionable
+target and $C^\star$ means the target was reached. These logs are not
+the architectural contribution; they let us see where each topology
+fails.
+
+\section{Four collective-memory topologies}
+\label{sec:archs}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_architectures.pdf}
+  \caption{Four memory topologies. \textbf{(a)} Independent: per-agent private memory, no exchange. \textbf{(b)} Shared bus: one global memory, every agent reads and writes each tick. \textbf{(c)} Central aggregator: private memories plus a hub that merges snapshots into a consensus report. \textbf{(d)} Peer-to-peer broadcast: private memories with snapshot exchange every $K$ ticks and per-agent merged views.}
+  \label{fig:architectures}
+\end{figure}
+
+The four topologies share the same local memory and planner. They
+differ only in where merge happens.
+
+\begin{description}[leftmargin=10pt,topsep=2pt,itemsep=2pt]
+\item[Independent.] Each agent owns a private event store and concept graph. There is no communication path.
+\item[Shared bus.] All observations are appended to a single global event bus. One shared concept graph is rebuilt from the union of all events.
+\item[Central aggregator.] Each agent owns a private concept graph; a central consensus layer pulls snapshots and computes one trust-weighted report for everyone.
+\item[Peer broadcast.] Each agent owns a private concept graph and a private merged view. Every $K$ ticks, agents broadcast snapshots; each agent merges its own memory with the latest snapshot from each peer.
+\end{description}
+
+The key distinction is not the clustering primitive. It is the level at
+which that primitive is instantiated:
+\[
+\begin{array}{rcl}
+\text{independent} &:& N \text{ graphs, }0\text{ mergers}\\
+\text{shared bus} &:& 1 \text{ graph, }1\text{ implicit global merger}\\
+\text{central} &:& N \text{ graphs }+1\text{ central merger}\\
+\text{peer} &:& N \text{ graphs }+N\text{ private mergers.}
+\end{array}
+\]
+
+\section{Cadence exposes the failure mode}
+\label{sec:cadence}
+
+The peer topology has one explicit parameter: broadcast cadence $K$.
+The main sweep crosses four architectures and eight peer cadences
+$K{\in}\{1,2,4,8,16,32,48,64\}$ for 35{,}640 runs. Figure~\ref{fig:conditional-rates}
+summarizes the result.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_conditional_rates.pdf}
+  \caption{Conditional rates and mean time-to-success from the 35{,}640-run sweep. Fast sharing improves target materialization but harms completion through contention; slow sharing has the opposite profile. Mean time-to-success has an interior optimum at $K{=}8$.}
+  \label{fig:conditional-rates}
+\end{figure}
+
+Fast peer broadcast and centralized sharing live in the
+M-saturation/C-collapse regime: agents can lock targets reliably, but
+many locks point to targets that peers also pursue. Independent and
+slow peer broadcast live in the M-deficit/C-saturation regime: fewer
+agents lock onto good targets, but those that do are less likely to
+collide with peer occupancy.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/fig_bottleneck_shift.pdf}
+  \caption{Bottleneck shift across peer cadences. $P(M^\star|R^\star)$ falls and $P(C^\star|M^\star)$ rises as $K$ grows. The practical efficiency metric, mean time-to-success, is minimized at $K{=}8$.}
+  \label{fig:bottleneck-shift}
+\end{figure}
+
+Across all peer runs, Spearman of $P(M^\star|R^\star)$ vs $K$ is
+$-0.608$ and of $P(C^\star|M^\star)$ vs $K$ is $+0.420$ (both
+$p<10^{-4}$). The stronger signature is visible at fixed cadence:
+the within-cadence Pearson correlation between the M and C links peaks
+at $-0.61$ for $K{=}4$ and decays toward noise as $K$ grows. Cadence
+therefore does not simply tune ``amount of communication.'' It moves
+the bottleneck between semantic commitment and shared-resource
+completion.
+
+\section{Minimal collective semantic memory}
+\label{sec:csm}
+
+The cadence sweep shows that fixed-rate snapshot exchange exposes only
+one control surface. A collective semantic memory should expose at
+least three:
+\begin{description}[leftmargin=14pt,itemsep=1pt,topsep=2pt]
+\item[Merge.] How peer evidence about the same semantic place is combined.
+\item[Trust.] How evidence from different peers is weighted when it conflicts or becomes unreliable.
+\item[Staleness.] How old evidence decays before it influences retrieval.
+\end{description}
+
+The minimal CSM uses peer broadcast at $K{=}8$ and overlays three
+rules:
+\begin{description}[leftmargin=14pt,itemsep=1pt,topsep=2pt]
+\item[\textit{Merge.}] Per-place score equals own evidence at weight 1 plus peer evidence at weight $\mathrm{trust}_i \cdot e^{-\alpha \cdot \mathrm{age}}$, with $\alpha=0.05$. Inclusion threshold $\tau=0.30$.
+\item[\textit{Trust.}] Per-peer EMA on retrieval-success consistency. Peers whose latest snapshot supports the locally locked target gain trust; others decay toward $0.4$. Update rate $\beta=0.10$.
+\item[\textit{Staleness.}] Each broadcast snapshot is timestamped; merge weight decays as $e^{-\alpha\cdot\mathrm{age}}$. Snapshots older than $10K$ ticks are pruned.
+\end{description}
+
+The implementation is a drop-in replacement for fixed-cadence peer
+memory: \method{experiments/collective\_semantic\_memory/csm\_memory.py}.
+
+\subsection{Results}
+
+We compare CSM against fixed-cadence peer broadcast at
+$K \in \{1,4,8,16,64\}$ on scarcity cells
+$(N,T){\in}\{(3,2),(5,3),(8,5)\}$, three layouts, three hazard
+densities, and 20 seeds: 3{,}240 runs total.
+
+\begin{table}[ht]
+\caption{Minimal CSM vs fixed-cadence peer broadcast on the scarcity benchmark. CSM's lower 95\% bootstrap CI bound exceeds every peer-K upper CI.}
+\label{tab:csm-results}
+\centering
+\small
+\begin{tabular}{l c c c}
+\toprule
+Architecture & $P(M^\star|R^\star)$ & $P(C^\star|M^\star)$ & Success rate (95\% CI) \\
+\midrule
+peer ($K{=}1$)  & 0.991 & 0.586 & 0.577 [0.572, 0.586] \\
+peer ($K{=}4$)  & 0.955 & 0.623 & 0.581 [0.572, 0.590] \\
+peer ($K{=}8$)  & 0.730 & 0.871 & 0.599 [0.591, 0.607] \\
+peer ($K{=}16$) & 0.697 & 0.892 & 0.597 [0.589, 0.606] \\
+peer ($K{=}64$) & 0.684 & 0.900 & 0.601 [0.594, 0.609] \\
+\textbf{CSM (minimal)} & \textbf{0.782} & \textbf{0.825} & \textbf{0.617 [0.610, 0.624]} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+CSM occupies a third regime. Fast broadcasts have excellent
+materialization but poor completion; slow broadcasts have the reverse.
+CSM keeps both conditional links above 0.78. The absolute success gain
+is modest, $+1.7$ to $+4.0$ percentage points, but the stage
+decomposition shows why it is meaningful: the architecture changes the
+joint M$\times$C operating point rather than merely moving along the
+fixed-cadence curve.
+
+\section{Categorical BDI reading of collective semantic memory}
+\label{sec:categorical}
+
+This section gives a compact theoretical reading of the water-search
+example in terms of belief, desire, and intention. The goal is not to
+introduce a new planner, but to make explicit the mathematical
+structure already used by the collective semantic memory architecture.
+
+We assume a finite set of agents $A=\{1,\ldots,N\}$, a shared spatial
+basis $X$, and a shared semantic alphabet $\Sigma$. In the present
+grid-world implementation, $X$ is the common coordinate frame and
+$\Sigma$ contains tags such as \texttt{water\_source},
+\texttt{water\_candidate}, \texttt{hazard\_edge}, and \texttt{open}.
+This is an explicit modelling assumption. The agents may have different
+observations, different memories, and different confidence values, but
+they interpret places in a common coordinate framework and express
+semantic evidence in a common tag alphabet. Without these two
+assumptions, peer merge would require a separate place-alignment and
+symbol-alignment problem, which is outside the scope of the current
+experiment.
+
+At time $t$, agent $i$ maintains a local semantic context
+$\mathcal{K}_t^i=(G_t^i,\Sigma,I_t^i)$, where $G_t^i$ is the set of
+place records stored in the agent's private memory, and
+\[
+I_t^i \subseteq G_t^i \times \Sigma
+\]
+is the thresholded incidence relation saying that place $g\in G_t^i$
+carries tag $\sigma\in\Sigma$ with sufficient confidence. The graded
+implementation uses tag confidences and weighted scores; the crisp
+relation $I_t^i$ is the thresholded skeleton needed for the theoretical
+description.
+
+This formal context induces a Galois connection between sets of tags
+and sets of places:
+\[
+\operatorname{ext}_t^i(B)=\{g\in G_t^i:\forall\sigma\in B,\ (g,\sigma)\in I_t^i\},
+\qquad
+\operatorname{int}_t^i(S)=\{\sigma\in\Sigma:\forall g\in S,\ (g,\sigma)\in I_t^i\}.
+\]
+For a water-search task, the desired semantic predicate is
+$B_{\mathrm{water}}=\{\texttt{water\_source}\}$, or, in the implemented
+weighted form, a predicate combining positive evidence for
+\texttt{water\_source}, \texttt{water\_candidate}, and
+\texttt{water\_nearby} with penalties for \texttt{hazard\_edge} or
+nearby risk. Retrieval succeeds for agent $i$ at time $t$ exactly when
+\[
+\operatorname{ext}_t^i(B_{\mathrm{water}})\neq\varnothing .
+\]
+Thus the retrieval stage is not a coordinate lookup. It is the test
+that the queried semantic meaning already has a non-empty extent in the
+agent's realized memory.
+
+We can now define the BDI components.
+
+\paragraph{Belief.} The belief state of agent $i$ is the structured
+semantic memory induced by $\mathcal{K}_t^i$. Equivalently, it is the
+concept lattice $L_t^i=\operatorname{Concepts}(\mathcal{K}_t^i)$, whose
+nodes pair extents of places with intensions of tags. A water belief is
+not the proposition ``there is water at coordinate $x$.'' It is the
+region of $L_t^i$ whose intension contains the water predicate. If this
+region is empty, the agent does not merely choose badly; the relevant
+semantic object is absent from its current memory.
+
+\paragraph{Desire.} Desire is a state-conditioned semantic predicate
+over the belief lattice. In the water example, the agent's internal
+state contains a thirst variable. The active desire can be written as
+\[
+D_t^i =
+\begin{cases}
+B_{\mathrm{water}}, & \text{if } \mathrm{thirst}_t^i\geq\theta_{\mathrm{on}},\\
+B_{\mathrm{goal}}, & \text{otherwise.}
+\end{cases}
+\]
+Thus desire is not an additional metaphysical object. It is the rule
+that selects which semantic predicate should be queried from the
+current belief structure.
+
+\paragraph{Intention.} Intention is the commitment to one materialized
+candidate. Once desire has selected a predicate and retrieval has
+produced a non-empty extent, the planner applies a satisficing choice
+function
+\[
+\chi_t^i:\mathcal{P}(G_t^i)\rightarrow G_t^i\cup\{\bot\},
+\qquad
+g_t^{i,\star}=\chi_t^i\!\big(\operatorname{ext}_t^i(D_t^i)\big),
+\]
+where $\bot$ denotes failure to materialize a target. In Q/R/M/C terms,
+desire determines the query $Q^\star$, belief supports retrieval
+$R^\star$, and intention corresponds to materialization $M^\star$.
+Completion $C^\star$ is downstream of this semantic structure: it
+depends on whether the physical controller reaches the locked target
+and whether the target remains available under multi-agent occupancy.
+
+This gives a compact categorical reading. Let $\mathbf{Ctx}_\Sigma$ be
+the category whose objects are semantic contexts $(G,\Sigma,I)$ over the
+fixed alphabet $\Sigma$, and whose morphisms preserve semantic
+incidence. A local memory trajectory for agent $i$ is a time-indexed
+diagram
+\[
+\mathcal{K}_0^i\rightarrow\mathcal{K}_1^i\rightarrow\cdots
+\rightarrow\mathcal{K}_t^i\rightarrow\mathcal{K}_{t+1}^i\rightarrow\cdots
+\]
+in $\mathbf{Ctx}_\Sigma$. Each arrow is induced by observation and
+memory update. When new evidence is consolidated, the formal context
+changes; therefore its concept lattice changes. This is the
+order-theoretic content of memory growth.
+
+The H-MDP view is obtained by treating the high-level state of agent
+$i$ as
+\[
+h_t^i=(L_t^i,\,D_t^i,\,g_t^{i,\star},\,s_t^i),
+\]
+where $L_t^i$ is the belief lattice, $D_t^i$ is the active desire
+predicate, $g_t^{i,\star}$ is the current intention, and $s_t^i$ is the
+low-level physical state, including position, risk budget, thirst, and
+energy. The transition $h_t^i\rightarrow h_{t+1}^i$ combines two coupled
+processes: a semantic-memory update
+$\mathcal{K}_t^i\rightarrow\mathcal{K}_{t+1}^i$ and a physical control
+transition $s_t^i\rightarrow s_{t+1}^i$. The useful point is that the
+semantic part and the physical part fail in different ways. An empty
+extent $\operatorname{ext}_t^i(D_t^i)=\varnothing$ is a
+belief/retrieval failure. A non-empty extent with no stable lock is a
+materialization failure. A successful lock that cannot be reached is a
+completion failure.
+
+We now lift the construction to the collective case. At broadcast
+times, agent $i$ receives snapshots from peers. For the receiver $i$,
+these snapshots form a diagram of local memory objects
+\[
+\mathcal{D}_t^i=\big(\mathcal{K}_t^i,\ \mathcal{K}_t^{j_1},\ldots,\mathcal{K}_t^{j_m}\big),
+\]
+together with alignment maps induced by the shared coordinate basis and
+semantic tag compatibility. The merged view used by agent $i$ is a
+colimit-like consensus object
+\[
+\widetilde{\mathcal{K}}_t^i=\operatorname{Merge}_{\mathrm{trust},\mathrm{stale}}\!\big(\mathcal{D}_t^i\big).
+\]
+This notation is intentionally modest. The implementation does not
+claim to solve general semantic alignment. It computes a practical
+merge over aligned place records, with peer evidence weighted by trust
+and staleness. A typical weight has the form
+\[
+w_{j\rightarrow i}(t)=\operatorname{trust}_{j\rightarrow i}(t)\,\exp\!\big(-\alpha\,\operatorname{age}_j(t)\big),
+\]
+so the merged incidence strength for a tag $\sigma$ at a place $g$ can
+be written schematically as
+\[
+\widetilde{I}_t^i(g,\sigma)=I_t^i(g,\sigma)+\sum_{j\neq i} w_{j\rightarrow i}(t)\,I_t^j(g,\sigma),
+\]
+followed by thresholding or weighted scoring during retrieval. This
+separates three control surfaces: \emph{merge} (what evidence refers to
+the same place), \emph{trust} (whose evidence should count more), and
+\emph{staleness} (how quickly old evidence loses force).
+
+The same BDI definitions then apply to the merged context
+$\widetilde{\mathcal{K}}_t^i$. The agent's collective belief is the
+lattice
+$\widetilde{L}_t^i=\operatorname{Concepts}(\widetilde{\mathcal{K}}_t^i)$,
+its desire is still a semantic predicate $D_t^i$, and its intention is
+now selected from
+$\operatorname{ext}_{\widetilde{\mathcal{K}}_t^i}(D_t^i)$ rather than
+from its private extent alone.
+
+This explains why communication cadence produces a bottleneck shift.
+Faster broadcast increases the freshness of peer evidence. This tends
+to enlarge or improve the water extent
+$\operatorname{ext}_{\widetilde{\mathcal{K}}_t^i}(B_{\mathrm{water}})$,
+so agents can materialize targets more reliably; in Q/R/M/C terms, this
+raises $P(M^\star\mid R^\star)$. But the same fresh shared belief also
+synchronizes intentions. Several agents may lock onto the same scarce
+water source. The memory is semantically accurate, but the physical
+target is now contested. This lowers $P(C^\star\mid M^\star)$. The
+bottleneck is therefore physically grounded. It is not a formal
+artifact of the decomposition: it arises because semantic belief is
+shared through memory, while completion is constrained by occupancy and
+scarce resources. Collective semantic memory must therefore regulate
+not only how much information is shared, but also how it is merged,
+whose evidence is trusted, and when stale evidence should stop
+influencing intention formation.
+
+In this sense, the ``collective'' is not a central mind and not a
+global map. It is the stabilized family of peer-indexed belief updates
+and intention-forming rules that remains invariant under communication.
+A population has acquired a collective water-search convention when the
+same ostensive evidence, such as a peer marking a water-like place,
+induces compatible updates across agents' local merged contexts and
+leads to coordinated, non-colliding intentions. The category-theoretic
+role of the model is to make this invariant explicit: individual agents
+are local indexed instances of the same semantic-memory process;
+communication exposes partial peer contexts through snapshots;
+collective memory is the merge object that makes those contexts jointly
+usable without collapsing them into a single undifferentiated global
+memory.
+
+\subsection{Colimit merge and its invariants}
+\label{sec:colimit}
+
+The merge object above can be described more precisely. Working in a
+timestamp- and provenance-enriched version of $\mathbf{Ctx}_\Sigma$, a
+snapshot merge from agents $1,\dots,N$ is a diagram of local memory
+objects plus alignment maps induced by the place-identity relation. The
+consensus object $\widetilde{\mathcal{K}}_t^i$ is the colimit of this
+diagram, implemented concretely by the union-find merge over aligned
+concepts. This reading gives three useful constraints.
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item \textbf{Order independence.} The merged object is unique up to isomorphism, so the result is not an artefact of processing agent snapshots in a particular order.
+\item \textbf{Chaining is expected.} If concept A aligns with B and B aligns with C, union-find performs the transitive closure. Over-merging is therefore not a bug in the data structure; it is the cost of the chosen equivalence relation.
+\item \textbf{Decay is not a morphism.} Staleness is kept as a weight field outside the alignment morphisms. Otherwise age-then-merge and merge-then-age need not commute, breaking the clean interpretation of broadcast snapshots as one diagram.
+\end{enumerate}
+
+The model does \emph{not} answer which perceptual features should
+identify two places. In the current grid substrate, identity still
+depends partly on coordinate keys and semantic tag similarity. Removing
+that coordinate anchor requires a separate place-identity experiment:
+agents must infer shared objects from local signatures rather than
+from global $(x,y)$ keys.
+
+\section{Limitations and next experiments}
+\label{sec:limitations}
+
+\textbf{Grid substrate.} The current result is intentionally controlled:
+all experiments are in grid worlds. A continuous-state substrate such
+as VMAS, Habitat, ProcTHOR, or MiniWorld is the next portability step.
+
+\textbf{Coordinate anchor.} The present implementation can use shared
+coordinates for atomic place keys. A stronger version of the paper
+should remove that anchor and add local signatures for place identity.
+The categorical merge story remains valid only after the alignment
+relation has been defined; it does not define the relation for us.
+
+\textbf{Minimal CSM.} The CSM rules are deliberately simple. Adaptive
+cadence $K_t$, intent-conditioned trust, and selective consolidation of
+under-represented tags are the next architecture variants.
+
+\textbf{Learned baselines.} CommNet-style learned communication is a
+useful comparison, but the more relevant future baseline is an explicit
+memory LLM or vector-memory multi-agent system measured on the same
+task.
+
+\section{Conclusion}
+
+Collective memory is not monotone. In scarce multi-agent navigation,
+instant information sharing can reduce completion by causing agents to
+converge on the same targets. Peer cadence exposes the trade-off, but
+cadence alone is a one-dimensional control surface. A collective
+semantic memory should make merge, trust, and staleness explicit. The
+minimal CSM does exactly that and moves the system to a new operating
+point: neither fast-broadcast M-saturation nor slow-broadcast
+C-saturation, but a more balanced M$\times$C profile with higher
+success than every fixed peer cadence in the scarcity benchmark.
+
+\begin{ack}
+This manuscript is prepared in anonymized form for review. The
+reported experiments were run from the same benchmark pipeline as the
+companion Q/R/M/C measurement paper, but the architectural claim here
+is restricted to collective semantic memory.
+\end{ack}
+
+{\small
+\begin{thebibliography}{9}
+
+\bibitem[Bettini et~al.(2022)]{bettini2022vmas}
+M.~Bettini, R.~Kortvelesy, J.~Blumenkamp, and A.~Prorok.
+\newblock VMAS: A vectorized multi-agent simulator for collective robot learning.
+\newblock In \emph{16th International Symposium on Distributed Autonomous Robotic Systems (DARS)}, 2022.
+\newblock arXiv:2207.03530.
+
+\bibitem[Boyd et~al.(2006)]{boyd2006gossip}
+S.~Boyd, A.~Ghosh, B.~Prabhakar, and D.~Shah.
+\newblock Randomized gossip algorithms.
+\newblock \emph{IEEE Trans.\ Information Theory}, 52(6):2508--2530, 2006.
+
+\bibitem[Chevalier-Boisvert et~al.(2023)]{MinigridMiniworld23}
+M.~Chevalier-Boisvert, B.~Lahlou, S.~Willems, and P.~S. Castro.
+\newblock MiniGrid and MiniWorld: Modular reinforcement learning environments.
+\newblock \emph{arXiv:2306.13831}, 2023.
+
+\bibitem[Deitke et~al.(2022)]{deitke2022procthor}
+M.~Deitke, E.~V. Wijmans, D.~Schwenk, O.~Salvador, K.~M. Ehsani, et al.
+\newblock ProcTHOR: Large-scale embodied AI using procedural generation.
+\newblock In \emph{NeurIPS Datasets and Benchmarks}, 2022.
+
+\bibitem[Foerster et~al.(2018)]{foerster2018ctde}
+J.~N. Foerster, G.~Farquhar, T.~Afouras, N.~Nardelli, and S.~Whiteson.
+\newblock Counterfactual multi-agent policy gradients.
+\newblock In \emph{AAAI}, 2018.
+
+\bibitem[Mac~Lane(1998)]{maclane1998categories}
+S.~Mac~Lane.
+\newblock \emph{Categories for the Working Mathematician}.
+\newblock Springer, 2nd edition, 1998.
+
+\bibitem[Savva et~al.(2019)]{savva2019habitat}
+M.~Savva, A.~Kadian, O.~Maksymets, Y.~Zhao, E.~Wijmans, B.~Jain, J.~Straub, J.~Liu, V.~Koltun, J.~Malik, et al.
+\newblock Habitat: A platform for embodied AI research.
+\newblock In \emph{ICCV}, 2019.
+
+\bibitem[Sukhbaatar et~al.(2016)]{sukhbaatar2016commnet}
+S.~Sukhbaatar, A.~Szlam, and R.~Fergus.
+\newblock Learning multiagent communication with backpropagation.
+\newblock In \emph{NeurIPS}, 2016.
+
+\bibitem[Xiao et~al.(2007)]{xiao2007distributed}
+L.~Xiao, S.~Boyd, and S.~Lall.
+\newblock A scheme for robust distributed sensor fusion based on average consensus.
+\newblock \emph{IPSN}, 2007.
+
+\end{thebibliography}
+}
+
+\appendix
+
+\section{Reproducibility commands}
+\label{app:repro}
+
+\begin{itemize}[leftmargin=16pt]
+\item Main cadence sweep:
+\path{python experiments/big_experiment/exp_cadence_phase.py --mode full --workers 8 --out_dir tmp/big_experiment_qrmc_40}
+\item Extended cadences:
+\path{python experiments/big_experiment/exp_extra_K.py --workers 8 --out_dir tmp/big_experiment_extraK}
+\item Q/R/M/C analysis:
+\path{python experiments/big_experiment/analyze_qrmc.py --runs_csv tmp/big_experiment_qrmc_40/runs.csv --out_dir tmp/big_experiment_qrmc_40}
+\item Minimal CSM benchmark:
+\path{python -m experiments.collective_semantic_memory.run_csm_benchmark --out_dir tmp/csm_benchmark}
+\item MiniGrid portability sweep:
+\path{python -m experiments.minigrid_multiagent_wrapper.run_portability_sweep --out_dir tmp/minigrid_portability}
+\end{itemize}
+
+\section{Asset and license note}
+\label{app:assets}
+
+The experiments use MiniGrid and MiniWorld~\citep{MinigridMiniworld23}. Locally implemented benchmark and memory code will be released under the MIT License as part of the artifact package.
+
+\clearpage
+\FloatBarrier
+\input{checklist.tex}
+
+\end{document}

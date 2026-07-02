@@ -275,6 +275,28 @@ Empirical Claim~1 will predict the slope shift.
 
 \paragraph{Relation to prior work.} Closest are (i) cognitive-map and semantic-map frameworks \citep{tolman1948cognitive,okeefe1978hippocampus,kuipers2000spatial,gupta2017cognitive,savinov2018semi}, (ii) goal-conditioned and successor-representation RL \citep{andrychowicz2017hindsight,ghosh2021learning,dayan1993improving,stachenfeld2017hippocampus,momennejad2017successor}, (iii) multi-agent communication \citep{lowe2017maddpg,foerster2018ctde,sukhbaatar2016commnet,foerster2016learning} and gossip/consensus \citep{boyd2006gossip,xiao2007distributed}, and (iv) LLM-agent memory layers evaluated end-to-end \citep{wang2023voyager,shinn2023reflexion,packer2023memgpt}. Our framework is orthogonal to all four: it \emph{diagnoses} where in the Q/R/M/C chain a given architecture succeeds or fails and lifts the cadence axis from network protocols to a cognitive-architecture parameter (full discussion in Appendix~\ref{app:related-work-extended}).
 
+\subsection{Event semantics, bounded rationality, and an order-theoretic reading}
+\label{sec:event-semantics}
+
+The four starred events anchor at concrete logged triggers. We state the triggers once, because every empirical claim in the paper is a claim about them (per-regime formal definitions in Appendix~\ref{app:estimators}), and we give each stage its reading in terms of the resource it bounds.
+
+\begin{description}[leftmargin=10pt,topsep=2pt,itemsep=2pt]
+\item[$Q^\star$ (intent issued).] The planner emits a semantic intent $q=(q^{\mathrm{req}},q^{\mathrm{pref}},q^{\mathrm{pen}})$: small sets of required, preferred, and penalty tags. The episode-level event fires on emission, so it is saturated whenever the task is semantic ($\hat P(Q^\star){=}1.00$ in Table~\ref{tab:consistency}); the multi-agent per-tick logger additionally requires a non-empty candidate set (Appendix~\ref{app:multi-agent-defs}), a bookkeeping difference we record rather than hide. Resource bound: attention --- the intent is a few tags, not the full state.
+\item[$R^\star$ (memory answers).] Retrieval evaluates $q$ against the memory and returns a candidate set; the event fires when the set contains a candidate satisfying the task predicate (within $\epsilon$ of a true target in the multi-agent logger). The 91\% empty-candidate-set failures of \S\ref{sec:refined-attribution} are $R$-side events: no stored place clears the required-tag threshold. Resource bound: memory --- retrieval can only surface what consolidation has stored.
+\item[$M^\star$ (target lock).] The planner materializes one candidate into a concrete actionable cell. Candidacy itself is threshold-gated (a place enters the candidate set only if its score clears the planner's gate, Appendix~\ref{app:schemas}), and the lock commits to a single candidate once per query rather than re-optimizing against the full memory at every tick. The event fires on lock acquisition (within $\epsilon$ of a true target in the multi-agent logger). Resource bound: deliberation.
+\item[$C^\star$ (closed-loop completion).] The local controller executes until the locked cell is reached or the episode times out; the event fires on arrival. $C$ is the only stage whose failure modes are extra-semantic: controller competence and, in the multi-agent regime, occupancy $\mathcal{O}_{-i}$. Resource bound: control, and in a collective, shared targets.
+\end{description}
+
+\paragraph{Why a deterministic strategy: bounded and ecological rationality.}
+A natural objection is that the semantic stack is a fixed, deterministic strategy rather than a learned policy. We treat the determinism as principled and name it: the pipeline is a satisficing agent in Simon's sense \citep{simon1955behavioral,simon1956rational}. Candidacy is threshold-gated instead of exhaustively scored, the target commitment is made once instead of re-optimized at every tick, and the intent is a few tags instead of the full state. Bounded rationality is also what makes the four failure loci observable: each stage is a distinct resource bound (attention, memory, deliberation, control), and Q/R/M/C is the audit trail of where the bound binds. The learned baselines make the converse point empirically: policies without an explicit query/lock interface collapse the stages even at competitive success (BC in \S\ref{sec:single-results}; CommNet PPO in \S\ref{sec:multi-agent-results}), so observability is traded away exactly where end-to-end optimization is traded in. That the \emph{same} heuristic is strong on water and rest, retrieval-starved on hazard recovery, and downstream-limited on goal-region (Figure~\ref{fig:hero}b) is the ecological-rationality point that heuristic success is a property of the heuristic--environment pair \citep{simon1956rational,gigerenzer1996reasoning}; the framework is the instrument that locates the mismatch. The same lens reads the $\Phi$-versus-$t_{\mathrm{succ}}$ split of \S\ref{sec:multi-agent-results}: the chain probability $\Phi$ ignores the cost of traversing the chain, so under a resource-rational reading \citep{lieder2020resource} an optimum should be sought on a cost-bearing metric; that is where it appears ($K{=}8$ on mean time-to-success) and not on $\Phi$.
+
+\paragraph{An order-theoretic reading of the Q--R polarity.}
+The query--retrieval interface carries standard order-theoretic structure that explains, rather than decorates, the single-agent diagnosis. Let $G$ be the set of place records, $\Sigma$ the tag alphabet, and $I_\theta \subseteq G\times\Sigma$ the incidence ``place $p$ carries tag $\tau$ with confidence at least $\theta$'' induced by the memory's per-place tag tables (Appendix~\ref{app:schemas}). For $B\subseteq\Sigma$ and $A\subseteq G$ put $\mathrm{ext}(B)=\{p : \forall\tau\in B,\ (p,\tau)\in I_\theta\}$ and $\mathrm{int}(A)=\{\tau : \forall p\in A,\ (p,\tau)\in I_\theta\}$. Then
+\[
+A \subseteq \mathrm{ext}(B) \iff B \subseteq \mathrm{int}(A),
+\]
+an antitone Galois connection; equivalently, $\mathrm{int}$ and $\mathrm{ext}$ form an adjoint pair between the two power-set posets (one taken with reversed order) viewed as thin categories \citep{ganter1999fca,maclane1998categories}, and the closed pairs form the concept lattice realized by the memory. In this vocabulary the single-agent diagnosis is exact: a query issues an intent $B = q^{\mathrm{req}}$; retrieval fails empty precisely when $\mathrm{ext}(B)=\emptyset$, that is, when the queried meaning lies outside the realized lattice; and consolidation acts on $I_\theta$, so growing the context grows every extent. The 91\%/96.9\% pattern of \S\ref{sec:refined-attribution} says the binding regime is absence of evidence rather than contradiction, which is the regime where the monotone-growth reading applies (Appendix~\ref{app:galois} states the caveat). The multi-agent axes then separate cleanly: memory coupling $\mathcal{M}^{(K)}_{-i}$ merges peer contexts at a rate set by $K$, which can only grow extents, while occupancy $\mathcal{O}_{-i}$ is not part of the context at all; the M$\leftrightarrow$C trade-off of Empirical Claim~1 is a competition between lattice growth (semantic) and resource contention (extra-semantic). The precise statement, its four-line argument, and its deliberate scope limits (graded scores, non-monotone updates, no structure claimed for M or C) are in Appendix~\ref{app:galois}.
+
 \section{Single agent: stage diagnostics localize failure}
 \label{sec:single}
 
@@ -390,7 +412,7 @@ distributed across agents (Figure~\ref{fig:architectures}).
 The first three correspond to the three regimes in the multi-agent
 communication literature: no exchange, CTDE-style aggregation, and
 decentralized peer communication. The fourth is the architecture for
-which Propositions~2 and~3 are directly
+which Definition~2 and Empirical Claim~1 are directly
 applicable, since the cadence $K$ is a tunable parameter rather than a
 fixed protocol. Mechanically, $K$ is the rate at which private
 memories consolidate into a collective view, which is why it is the
@@ -582,7 +604,7 @@ This is a \emph{minimal} prototype: three simple rules on top of the same K=8 pe
 
 \textbf{Empirical Claim~1 is slope-level on conditional rates only.} The two slope conditions hold ($p<10^{-4}$); we make no formal claim on the shape of the conditional product $\Phi$ (\S\ref{sec:shift}). A future statement directly in terms of the time-cost surface, or a derivation under a generative model (Poisson-renewal memory, birth-death occupancy), would convert the empirical claim into a theorem.
 
-\textbf{Estimability under hidden state.} With unlogged in-episode query rewrites or peer side-channels, Propositions~1 and~2 are projections onto logged traces, not full identification.
+\textbf{Estimability under hidden state.} With unlogged in-episode query rewrites or peer side-channels, Definitions~1 and~2 are projections onto logged traces, not full identification.
 
 \textbf{Learned baselines.} The CommNet PPO baseline reaches $0.667$ success on the scarcity scenario --- competitive with symbolic peer at $K{=}8$ ($0.65$) --- and confirms Q-saturation ($Q^\star{=}1.00$) and R/M collapse ($P(M^\star|R^\star){=}1.00$) at competitive success. The structural prediction now holds verified, not asserted; ablating on architectures with explicit symbolic target-lock channels is left for future work.
 
@@ -623,6 +645,11 @@ same source-of-truth benchmark artifacts.
 M.~Andrychowicz, F.~Wolski, A.~Ray, J.~Schneider, R.~Fong, P.~Welinder, B.~McGrew, J.~Tobin, P.~Abbeel, and W.~Zaremba.
 \newblock Hindsight experience replay.
 \newblock In \emph{NeurIPS}, 2017.
+
+\bibitem[B\v{e}lohl\'avek(1999)]{belohlavek1999fuzzy}
+R.~B\v{e}lohl\'avek.
+\newblock Fuzzy Galois connections.
+\newblock \emph{Mathematical Logic Quarterly}, 45(4):497--504, 1999.
 
 \bibitem[Bettini et~al.(2022)]{bettini2022vmas}
 M.~Bettini, R.~Kortvelesy, J.~Blumenkamp, and A.~Prorok.
@@ -670,10 +697,20 @@ J.~N. Foerster, G.~Farquhar, T.~Afouras, N.~Nardelli, and S.~Whiteson.
 \newblock Counterfactual multi-agent policy gradients.
 \newblock In \emph{AAAI}, 2018.
 
+\bibitem[Ganter and Wille(1999)]{ganter1999fca}
+B.~Ganter and R.~Wille.
+\newblock \emph{Formal Concept Analysis: Mathematical Foundations}.
+\newblock Springer, 1999.
+
 \bibitem[Ghosh et~al.(2021)]{ghosh2021learning}
 D.~Ghosh, A.~Gupta, A.~Reddy, J.~Fu, S.~Levine, and C.~Finn.
 \newblock Learning to reach goals via iterated supervised learning.
 \newblock In \emph{ICLR}, 2021.
+
+\bibitem[Gigerenzer and Goldstein(1996)]{gigerenzer1996reasoning}
+G.~Gigerenzer and D.~G. Goldstein.
+\newblock Reasoning the fast and frugal way: Models of bounded rationality.
+\newblock \emph{Psychological Review}, 103(4):650--669, 1996.
 
 \bibitem[Gupta et~al.(2017)]{gupta2017cognitive}
 S.~Gupta, J.~Davidson, S.~Levine, R.~Sukthankar, and J.~Malik.
@@ -695,10 +732,20 @@ B.~Kuipers.
 \newblock The spatial semantic hierarchy.
 \newblock \emph{Artificial Intelligence}, 119(1--2):191--233, 2000.
 
+\bibitem[Lieder and Griffiths(2020)]{lieder2020resource}
+F.~Lieder and T.~L. Griffiths.
+\newblock Resource-rational analysis: Understanding human cognition as the optimal use of limited computational resources.
+\newblock \emph{Behavioral and Brain Sciences}, 43:e1, 2020.
+
 \bibitem[Lowe et~al.(2017)]{lowe2017maddpg}
 R.~Lowe, Y.~Wu, A.~Tamar, J.~Harb, P.~Abbeel, and I.~Mordatch.
 \newblock Multi-agent actor-critic for mixed cooperative-competitive environments.
 \newblock In \emph{NeurIPS}, 2017.
+
+\bibitem[Mac~Lane(1998)]{maclane1998categories}
+S.~Mac~Lane.
+\newblock \emph{Categories for the Working Mathematician}.
+\newblock Springer, 2nd edition, 1998.
 
 \bibitem[Momennejad et~al.(2017)]{momennejad2017successor}
 I.~Momennejad, E.~M. Russek, J.~H. Cheong, M.~M. Botvinick, N.~Daw, and S.~J. Gershman.
@@ -740,6 +787,16 @@ J.~Schulman, F.~Wolski, P.~Dhariwal, A.~Radford, and O.~Klimov.
 N.~Shinn, F.~Cassano, A.~Berman, and A.~G. Labash.
 \newblock Reflexion: Language agents with verbal reinforcement learning.
 \newblock In \emph{NeurIPS}, 2023.
+
+\bibitem[Simon(1955)]{simon1955behavioral}
+H.~A. Simon.
+\newblock A behavioral model of rational choice.
+\newblock \emph{Quarterly Journal of Economics}, 69(1):99--118, 1955.
+
+\bibitem[Simon(1956)]{simon1956rational}
+H.~A. Simon.
+\newblock Rational choice and the structure of the environment.
+\newblock \emph{Psychological Review}, 63(2):129--138, 1956.
 
 \bibitem[Stachenfeld et~al.(2017)]{stachenfeld2017hippocampus}
 K.~L. Stachenfeld, M.~M. Botvinick, and S.~J. Gershman.
@@ -813,6 +870,22 @@ Empirical Claim~1 is an empirical claim, not a theorem. The argument below is th
 \emph{Slope (b), under (O).} As $K$ decreases, peers receive updated memory simultaneously and converge on the same closest target; the marginal occupancy $\Pr[\text{target}\in\mathcal{O}_{-i}]$ rises. Therefore $\partial P(C^\star|M^\star;K) / \partial K^{-1} < 0$.
 
 \emph{Note on the conditional product $\Phi$.} Empirical Claim~1 makes no statement about the shape of $\Phi(K) = P(M^\star|R^\star;K)\!\cdot\!P(C^\star|M^\star;K)$. Under (F) and (O) the slope of $\Phi$ in $K^{-1}$ is the sum of two opposing terms, and whether it changes sign depends on quantitative magnitudes that are not pinned down by (F) and (O) alone. In our data $\Phi$ is monotone in $K$ over $\{4,8,16,32,48,64\}$ and converges to the independent-agent boundary $\Phi_\infty = 0.605$. The practically relevant efficiency surface --- mean time-to-success --- does have an interior minimum at $K=8$; see \S\ref{sec:multi-agent-results}. \hfill$\square$
+
+\subsection{The query--retrieval Galois connection: statement, argument, scope}
+\label{app:galois}
+
+\paragraph{Fact (standard).}
+Let $G$ and $\Sigma$ be sets and $I \subseteq G \times \Sigma$ a relation. For $B \subseteq \Sigma$ define $\mathrm{ext}(B) = \{p \in G : \forall \tau \in B,\ (p,\tau) \in I\}$, and for $A \subseteq G$ define $\mathrm{int}(A) = \{\tau \in \Sigma : \forall p \in A,\ (p,\tau) \in I\}$. Then for all $A \subseteq G$, $B \subseteq \Sigma$:
+\[
+A \subseteq \mathrm{ext}(B) \iff B \subseteq \mathrm{int}(A);
+\]
+both maps are antitone, both composites $\mathrm{ext}\circ\mathrm{int}$ and $\mathrm{int}\circ\mathrm{ext}$ are closure operators, and the closed pairs $(A, B)$ with $A = \mathrm{ext}(B)$ and $B = \mathrm{int}(A)$, ordered by extent inclusion, form a complete lattice --- the concept lattice of the context $(G, \Sigma, I)$ \citep{ganter1999fca}.
+
+\paragraph{Argument.}
+$A \subseteq \mathrm{ext}(B)$ unfolds to $\forall p \in A\ \forall \tau \in B:\ (p,\tau) \in I$, a condition symmetric in $A$ and $B$, which is exactly $B \subseteq \mathrm{int}(A)$. Antitonicity and the closure properties follow by the standard one-line arguments \citep[Ch.~1]{ganter1999fca}. Viewing the power sets as thin categories (one with reversed order), the displayed equivalence says precisely that $\mathrm{int}$ and $\mathrm{ext}$ form an adjoint pair; a Galois connection is an adjunction between posets \citep[Ch.~IV]{maclane1998categories}. \hfill$\square$
+
+\paragraph{Instantiation and scope.}
+In our memory, take $G$ to be the place records, $\Sigma$ the tag alphabet, and $I_\theta = \{(p,\tau) : \text{the per-place tag table assigns } \tau \text{ to } p \text{ with confidence} \ge \theta\}$ (Appendix~\ref{app:schemas}); the intent of a query is $B = q^{\mathrm{req}}$ and R-availability is $\mathrm{ext}(B) \ne \emptyset$. Three deliberate scope restrictions. (i) \emph{Graded scores.} The deployed retrieval score is graded (the weighted log-score over required, preferred, and penalty tags of Appendix~\ref{app:schemas}), so the crisp connection above formalizes the thresholded required-tag skeleton of candidacy; the graded analogue is the theory of fuzzy Galois connections \citep{belohlavek1999fuzzy} and we do not use it here. (ii) \emph{Non-monotone updates.} Dirichlet--multinomial updates are not literally monotone in $I_\theta$: contrary evidence can remove an incidence. On the reported benchmarks the binding failure is absence of evidence rather than contradiction (91\% empty extents, 96.9\% precision when non-empty, \S\ref{sec:refined-attribution}), so the monotone-growth reading is the empirically relevant regime, and we flag the exception rather than assume it away. (iii) \emph{No structure for M or C.} Materialization is a satisficing choice function on non-empty extents and Completion is a control problem under occupancy; neither carries the order structure, and we attach no categorical claims to them. The reading earns its place by naming the failure mode exactly (a queried intent whose extent is empty lies outside the realized concept lattice), by giving consolidation a precise object (growth of the context, hence of every extent), and by locating the cadence axis structurally: memory coupling $\mathcal{M}^{(K)}_{-i}$ merges peer contexts at rate $K^{-1}$, while occupancy $\mathcal{O}_{-i}$ is extra-contextual --- which is the structural content behind the two slope signs of Empirical Claim~1.
 
 \section{Operational vs.\ nested stage estimators}
 \label{app:estimators}
@@ -1044,7 +1117,7 @@ $K$ & Baseline & Oracle R & Oracle M & Gap to oracle \\
 \subsection{Stage-agnostic cadence hypotheses and what the framework changes}
 \label{app:standalone-hypotheses}
 
-A first version of the multi-agent cadence sweep (12{,}960 runs at 20 seeds; subsumed by the 35{,}640-run sweep in this paper) was originally planned with four operational hypotheses formulated \emph{before} Empirical Claim~1. They are retained here because they motivated the eventual framework. The framework was formulated after the sweep was complete; it is not claimed to have predicted the sweep numbers a priori (see ``Status and chronology'' in \S\ref{sec:shift}).
+A first version of the multi-agent cadence sweep (12{,}960 runs at 20 seeds; subsumed by the 35{,}640-run sweep in this paper) was originally planned with four operational hypotheses formulated \emph{before} Empirical Claim~1. They are retained here because they motivated the eventual framework. The framework was formulated after the sweep was complete; it is not claimed to have predicted the sweep numbers a priori (see ``Chronology'' in \S\ref{sec:shift}).
 
 \textbf{Original hypotheses (pre-framework).}
 \begin{description}[leftmargin=10pt,topsep=2pt,itemsep=1pt]
@@ -1221,6 +1294,8 @@ An anonymized public repository accompanies this submission. The main paper arti
 \path{python experiments/commnet_baseline/eval_with_qrmc.py --policy_path experiments/commnet_ppo_baseline/ppo_policy.pt --out_dir experiments/commnet_ppo_baseline --n_episodes 100}
 \item MiniGrid-substrate portability sweep (\S\ref{sec:limitations}, 100 runs, $\approx 2$ min):
 \path{python -m experiments.minigrid_multiagent_wrapper.run_portability_sweep --out_dir tmp/minigrid_portability}
+\item Minimal CSM benchmark (Table~\ref{tab:csm-results}, 3{,}240 runs, $\approx 5$ min):
+\path{python -m experiments.collective_semantic_memory.run_csm_benchmark --out_dir tmp/csm_benchmark}
 \end{itemize}
 
 \section{Asset and license note}
