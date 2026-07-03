@@ -221,6 +221,88 @@ decomposition shows why it is meaningful: the architecture changes the
 joint M$\times$C operating point rather than merely moving along the
 fixed-cadence curve.
 
+\paragraph{Why CSM wins: the gate, not the sharing.} Provenance
+annotation of the same runs gives the mechanism. CSM does not share
+\emph{better} than fixed-cadence peers --- it \emph{refuses to act on
+stale or untrusted foreign evidence}. The inclusion rule of
+Section~\ref{sec:csm} implies a closed-form horizon beyond which a
+peer's evidence can no longer form an intention,
+$\mathrm{age}_{\max}(\mathrm{trust}_i) = \alpha^{-1}
+\ln(\mathrm{trust}_i \cdot c/\tau)$, and this horizon is empirically
+exact: measured intention-formation cutoffs match the formula
+tick-for-tick across trust levels (23/23.05, 18/18.59, 12/12.84 at
+$\mathrm{trust}=1.0/0.8/0.6$), including a registered-prediction
+hold-out on six never-run cells ($6/6$ exact integer breakpoints) and
+a discrete trust-flip: $\mathrm{trust}\le\tau/c$ zeroes
+foreign-evidence commitments entirely. Fixed-cadence peers have no
+such gate --- their foreign evidence never expires --- which is
+precisely why their completion collapses when sharing is fast. The
+full provenance-conditioned analysis appears in a companion
+manuscript; here it serves as the mechanistic reading of
+Table~\ref{tab:csm-results}.
+
+\section{Place identity from meaning: removing the shared frame}
+\label{sec:semantic-identity}
+
+Everything above --- and the categorical reading below --- assumes a
+shared spatial basis $X$: `the same place' means `the same $(x,y)$ in
+a frame the environment hands to every agent'. This section removes
+that assumption and reports what it was hiding. Each agent now holds a
+\emph{private} frame (the true grid under a secret translation, and,
+in the final experiment, a secret $90^\circ$-multiple rotation);
+broadcast snapshots carry the sender's private coordinates, which are
+meaningless to the receiver until it decides what the sender's places
+\emph{mean}.
+
+\paragraph{Mechanism.} A \emph{place fingerprint} is the local
+semantic constellation around a visited cell: which content tags
+(hazards, walls, water) sit at which relative offsets ---
+translation-invariant and coordinate-free. Two agents match places by
+\emph{mutually unique} fingerprint correspondence (each side is the
+other's sole candidate; one-directional uniqueness aliases distant
+look-alikes into the receiver's neighbourhood, and border-only
+patterns are excluded as descriptions of the world's shape rather
+than of a place). The inter-agent frame is the modal translation of
+$\ge 3$ agreeing matched pairs; under rotations, one hypothesis per
+$90^\circ$ reuses the same aligner and the winner must dominate the
+runner-up's consensus by $2\times$. Foreign evidence --- including
+places the receiver has never seen --- is then transported through
+the recovered frame.
+
+\paragraph{Results.} Registered before execution; full protocol in
+the companion manuscript.
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item \textbf{Exact recovery.} Witness--traveler: the secret offset is
+  recovered exactly in $100\%$ of landmark-world runs, and under full
+  $SE(2)$ frames in $80/80$ rotation$\times$offset$\times$seed
+  combinations, with $100\%$ completion on foreign-committed locks.
+\item \textbf{Failure asymmetry.} Where identification is impossible
+  --- a featureless region, or a $180^\circ$-symmetric layout in which
+  the frame is unrecoverable \emph{in principle} --- semantic identity
+  makes \emph{zero} commitments (fails closed), while coordinate
+  identity keeps confidently locking wrong cells ($100\%$ wrong locks;
+  fails open).
+\item \textbf{The full stack.} With $N{=}4$ agents in distinct secret
+  frames, alignment develops online (onset in $100\%$ of episodes,
+  mean tick ${\approx}15$) and recovers $88\%$ of the shared-frame
+  performance gap (success $0.444$ vs.\ $0.456$ oracle vs.\ $0.350$
+  coordinate); under random $SE(2)$ frames every semantic commitment
+  points at real water ($8/8$) while the coordinate stack produces
+  $992$ phantom locks ($0$ real).
+\item \textbf{The gate is orthogonal.} Re-running the
+  $\mathrm{age}_{\max}$ analysis above with the CSM inclusion rule ON
+  TOP of semantic identity, under a frame offset and under a
+  $90^\circ$ rotation, reproduces the SAME integer breakpoints
+  ($20/14/9$; $\mathrm{bp}=20$ rotated) --- the trust$\times$staleness
+  gate and frame recovery are independent layers.
+\end{enumerate}
+
+The stronger claim promised in earlier drafts' limitations is
+therefore discharged constructively: place identity can be carried by
+meaning alone, it composes with merge/trust/staleness unchanged, and
+--- unlike the coordinate convention it replaces --- it knows when it
+does not know.
+
 \section{Categorical BDI reading of collective semantic memory}
 \label{sec:categorical}
 
@@ -237,10 +319,12 @@ $\Sigma$ contains tags such as \texttt{water\_source},
 This is an explicit modelling assumption. The agents may have different
 observations, different memories, and different confidence values, but
 they interpret places in a common coordinate framework and express
-semantic evidence in a common tag alphabet. Without these two
-assumptions, peer merge would require a separate place-alignment and
-symbol-alignment problem, which is outside the scope of the current
-experiment.
+semantic evidence in a common tag alphabet. Without the first
+assumption, peer merge requires a place-alignment problem to be solved
+first --- Section~\ref{sec:semantic-identity} solves it constructively
+(fingerprint consensus recovers the inter-agent frame), and
+Section~\ref{sec:colimit} states what that construction is,
+categorically. Symbol alignment (a shared $\Sigma$) remains assumed.
 
 At time $t$, agent $i$ maintains a local semantic context
 $\mathcal{K}_t^i=(G_t^i,\Sigma,I_t^i)$, where $G_t^i$ is the set of
@@ -612,12 +696,29 @@ concepts. This reading gives three useful constraints.
 \item \textbf{Decay is not a morphism.} Staleness is kept as a weight field outside the alignment morphisms. Otherwise age-then-merge and merge-then-age need not commute, breaking the clean interpretation of broadcast snapshots as one diagram.
 \end{enumerate}
 
-The model does \emph{not} answer which perceptual features should
-identify two places. In the current grid substrate, identity still
-depends partly on coordinate keys and semantic tag similarity. Removing
-that coordinate anchor requires a separate place-identity experiment:
-agents must infer shared objects from local signatures rather than
-from global $(x,y)$ keys.
+In earlier drafts this section ended by conceding that the model does
+not answer which perceptual features should identify two places ---
+the alignment maps were assumed, not constructed. That gap is now
+closed by Section~\ref{sec:semantic-identity}, and the closure gives
+the colimit reading its missing scientific function:
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item \textbf{The alignment morphisms are constructed, not assumed.}
+  Fingerprint consensus IS an algorithm that produces the alignment
+  maps of the diagram --- mutually-unique landmark matches determine
+  the frame transform through which every local memory object embeds.
+\item \textbf{Existence becomes an empirical predicate.} The colimit
+  exists iff the consensus does. In a $180^\circ$-symmetric world the
+  alignment morphism does not exist \emph{in principle} (two
+  incomparable diagrams support equal consensus), and the
+  implementation detects exactly this and refuses to merge --- the
+  fail-closed behaviour of Section~\ref{sec:semantic-identity} is the
+  categorical non-existence made operational.
+\item \textbf{Decay stays outside the morphisms} (invariant 3), and
+  empirically the trust$\times$staleness gate is unchanged by frame
+  recovery --- the same integer breakpoints with and without a shared
+  frame --- confirming that the two layers commute as the diagram
+  reading requires.
+\end{enumerate}
 
 \section{Limitations and next experiments}
 \label{sec:limitations}
@@ -626,11 +727,15 @@ from global $(x,y)$ keys.
 all experiments are in grid worlds. A continuous-state substrate such
 as VMAS, Habitat, ProcTHOR, or MiniWorld is the next portability step.
 
-\textbf{Coordinate anchor.} The present implementation can use shared
-coordinates for atomic place keys. A stronger version of the paper
-should remove that anchor and add local signatures for place identity.
-The categorical merge story remains valid only after the alignment
-relation has been defined; it does not define the relation for us.
+\textbf{Coordinate anchor.} Removed in
+Section~\ref{sec:semantic-identity}: local fingerprint signatures
+recover the inter-agent frame (translation and $90^\circ$ rotations)
+exactly, and the merge/trust/staleness results are unchanged on top of
+the recovered frames. What remains open is the harder end of the same
+axis: continuous $SE(2)$, appearance noise (the current matcher uses
+exact constellation equality because the substrate is noise-free), and
+symbol alignment --- agents with \emph{different tag alphabets} still
+cannot merge.
 
 \textbf{Minimal CSM.} The CSM rules are deliberately simple. Adaptive
 cadence $K_t$, intent-conditioned trust, and selective consolidation of

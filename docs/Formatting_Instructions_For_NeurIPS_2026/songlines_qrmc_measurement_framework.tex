@@ -542,6 +542,32 @@ migrates outward to $K\!=\!8$, consistent with stronger occupancy
 coupling at higher $N$ delaying the cost-regime transition
 (Appendix~\ref{app:babyai}, Figure~\ref{fig:scale-n12}).
 
+\paragraph{Provenance stratification: the mechanism behind the shift.}
+Annotating each $M^\star$ lock with the \emph{provenance} of the
+evidence behind it makes the bottleneck shift mechanistic rather than
+correlational. Let $\varphi$ be the foreign share of the evidence mass
+supporting the locked candidate, computed from the same trust/support
+weights the merge itself used and frozen at lock time, and call a lock
+a \emph{warp} ($W^\star$) when $\varphi \ge 0.8$: the agent is
+committing to a target it knows essentially only from peers. On a
+dedicated peer sweep over the scarcity cells (random layouts, 20
+seeds, $K\in\{1,2,4,8,16\}$) the warp share $P(W^\star|M^\star)$
+falls from $0.55$ at $K{=}1$ to $0.11$ at $K{=}8$ while the
+own-evidence stratum completes at a flat $0.26$--$0.34$ and the warp
+stratum completes below $0.05$ throughout: \emph{the C-collapse of
+fast sharing is concentrated in the warp stratum}. What cadence
+controls, mechanically, is how much of the collective's
+materialisation runs on foreign evidence --- and that is precisely
+the stratum that loses the occupancy race. The same stratification
+reproduces on the continuous VMAS bridge ($0.72\to0.00$ over
+$K{=}1/4/16$) and on an LLM text substrate ($0.42\to0.08$ over
+$K{=}2/8$), with the curves nearly coinciding across substrates. A
+full provenance-conditioned analysis (counterfactual attribution by
+masked replay, a closed-form staleness horizon with a registered
+$6/6$-exact hold-out, and a decentralized repair protocol) appears in
+a companion manuscript; here the stratification serves as the
+mechanistic reading of Empirical Claim~1.
+
 \paragraph{What we do not claim about $\Phi$.} The conditional product $\Phi = P(M^\star|R^\star)\!\cdot\!P(C^\star|M^\star)$ does \emph{not} have an interior peak in the tested range (mean-of-products estimator increases monotonically from $0.569$ at $K{=}4$ to $0.603$ at $K{=}64$, converging to the independent-agent boundary $0.605$). The slope-level statement of Empirical Claim~1 is on the conditional rates themselves, not on $\Phi$; we make no formal claim about the shape of $\Phi(K)$. Jensen-gap detail and POM--MOP comparison in Appendix~\ref{app:phi-detail}.
 
 \paragraph{Learned-communication baseline: stage events are structurally degenerate even at competitive success.}
@@ -590,6 +616,19 @@ collective it is a tunable, measurable design axis.
 \textbf{Empirical Claim~1 is slope-level on conditional rates only.} The two slope conditions hold as moderate, cluster-robust effect sizes (Appendix~\ref{app:effect-sizes}); we make no formal claim on the shape of the conditional product $\Phi$ (\S\ref{sec:shift}). A future statement directly in terms of the time-cost surface, or a derivation under a generative model (Poisson-renewal memory, birth-death occupancy), would convert the empirical claim into a theorem.
 
 \textbf{Estimability under hidden state.} With unlogged in-episode query rewrites or peer side-channels, Definitions~1 and~2 are projections onto logged traces, not full identification.
+
+\textbf{Shared coordinate frame.} All multi-agent results assume agents
+interpret places in a common coordinate frame: cross-agent place
+identity is coordinate proximity, with semantic profiles as a
+tie-breaker inside a spatial radius. The place-correspondence problem
+--- whether two agents' records denote the same place at all --- is
+therefore bracketed here, not solved. A companion manuscript removes
+the assumption constructively (fingerprint-based place identity with
+consensus frame recovery up to translation and $90^\circ$ rotation)
+and shows the Q/R/M/C measurements, including the cadence slopes and
+the staleness horizon, unchanged on top of the recovered frames; the
+harder variants (continuous $SE(2)$, appearance noise, symbol
+alignment) remain open.
 
 \textbf{Learned baselines.} The CommNet PPO baseline reaches $0.667$ success on the scarcity scenario --- competitive with symbolic peer at $K{=}8$ ($0.65$) --- and confirms Q-saturation ($Q^\star{=}1.00$) and R/M collapse ($P(M^\star|R^\star){=}1.00$) at competitive success. The structural prediction now holds verified, not asserted; ablating on architectures with explicit symbolic target-lock channels is left for future work.
 
@@ -1340,7 +1379,7 @@ Appendix~\ref{app:effect-sizes}.
 Four concrete questions follow directly from the measurements of \S\ref{sec:refined-attribution} and \S\ref{sec:multi-agent-results}.
 \textbf{(1) Adaptive cadence.} Empirical Claim~1 assumes a fixed $K$; the bottleneck-shift signature suggests an online controller $K_t$ that broadcasts when the (estimated) M-side gain exceeds the C-side occupancy cost.
 \textbf{(2) Selective consolidation.} Snapshot exchange merges everything; merge rules that prioritize evidence about under-represented semantic tags attack the candidate-generation starvation of \S\ref{sec:refined-attribution} directly.
-\textbf{(3) Trust-weighted merging under occupancy.} The central aggregator already performs a trust-weighted merge but pays the C-collapse cost; decentralized trust rules that account for peer \emph{intent} (not only peer evidence) could decouple freshness from target racing.
+\textbf{(3) Trust-weighted merging under occupancy.} The central aggregator already performs a trust-weighted merge but pays the C-collapse cost; decentralized trust rules that account for peer \emph{intent} (not only peer evidence) could decouple freshness from target racing. \emph{Since submission of the first draft, this problem has been addressed constructively}: a decentralized protocol in which an agent's target lock piggybacks a lightweight \emph{reservation} on its next scheduled broadcast (no coordinator, no extra channel) and locks dominated by an earlier reservation are retracted by an anti-$M^\star$ rollback with exponential backoff. On the scarcity cells this recovers the fast-cadence completion loss on \emph{unconditional} metrics --- success rate rises at every $K\in\{1,2,4\}$ with disjoint bootstrap CIs, and fast sharing with the protocol exceeds the $K{=}8$ optimum baseline ($0.614$--$0.620$ vs.\ $0.583$) --- with rollback latency bounded by ${\approx}K$ ticks. Details in a companion manuscript; the open problem stands revised toward its harder variants (adaptive reservation scope, heterogeneous trust).
 \textbf{(4) Substrate generality.} The decomposition transfers across MiniGrid, BabyAI, the custom grid, and a standard-MiniGrid multi-agent wrapper with identical operational definitions and verified slope signs of Empirical Claim~1 ($\S$~\ref{sec:limitations}), and a preliminary check reproduces both slopes on the continuous-state VMAS substrate (Appendix~\ref{app:vmas}). A full continuous-state validation with cluster-robust CIs, and richer 3D substrates (Habitat~\citep{savva2019habitat}), remain the next portability steps.
 
 \subsection{Extended related work}
