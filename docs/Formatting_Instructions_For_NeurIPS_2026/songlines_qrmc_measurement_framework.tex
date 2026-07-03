@@ -35,9 +35,9 @@
 \maketitle
 
 \begin{abstract}
-\textbf{Setting.} Success-only metrics collapse qualitatively different memory-based navigation failures into a single scalar, hiding \emph{which stage} of the retrieval pipeline is responsible. This paper develops a measurement framework, not a new theoretical result: the Q/R/M/C stage decomposition (\textbf{Q}uery formation, \textbf{R}etrieval satisfaction, target \textbf{M}aterialization, \textbf{C}ompletion after retrieval) is operationalised so that the four conditional rates are computable directly from standard trajectory logs (Definition~1; the consistency argument is the chain rule and we say so explicitly).
+\textbf{Setting.} Success-only metrics collapse qualitatively different memory-based navigation failures into a single scalar, hiding \emph{which stage} of the retrieval pipeline is responsible. This paper contributes an \emph{evaluation protocol}: the Q/R/M/C stage decomposition (\textbf{Q}uery formation, \textbf{R}etrieval satisfaction, target \textbf{M}aterialization, \textbf{C}ompletion after retrieval), operationalised so that the four conditional rates are computable directly from standard trajectory logs (Definition~1). The arithmetic is the chain rule, deliberately so --- just as decomposing accuracy into precision and recall added no mathematics but changed what the field could \emph{see}, the value here is identifiability from logs and what the decomposition reveals, not a theorem.
 \textbf{Single-agent measurement.} On a 10-seed MiniGrid benchmark (FourRooms, LavaGapS7) and a BabyAI portability check, the framework localises bottlenecks: hazard recovery is retrieval-limited (oracle retrieval lifts success $0.39\to0.60$), goal-region rejoin is downstream-limited. Log inspection refines the attribution: candidate ranking is near-optimal ($96.9\%$) while candidate generation fails at 91\% of decision points --- a memory-accumulation, not a ranking, limit.
-\textbf{Multi-agent measurement.} On a 35{,}640-run multi-agent sweep over four communication architectures (independent, shared-bus, central-aggregator, peer-broadcast at eight cadences $K{\in}\{1,2,4,8,16,32,48,64\}$, 40 seeds), the bottleneck-shift between the M and C links appears directly as a negative within-cadence correlation peaking at $K{=}4$ (Pearson $-0.61$); mean time-to-success has an interior minimum at $K{=}8$ (robust in location but shallow in margin --- not resolved from the adjacent fast cadences). Both slope signs (Empirical Claim~1) hold as moderate, cluster-robust effect sizes (Spearman $-0.53$ and $+0.43$ vs.\ $K$, 95\% CIs $[-0.59,-0.47]$ and $[+0.37,+0.50]$ over 81 configuration cells, not raw $p$-values; Appendix~\ref{app:effect-sizes}); we do \emph{not} claim an interior maximum on the conditional product $\Phi$, where the data show a monotone trend toward the independent-agent boundary.
+\textbf{Multi-agent measurement.} On a 35{,}640-run multi-agent sweep over four communication architectures (independent, shared-bus, central-aggregator, peer-broadcast at eight cadences $K{\in}\{1,2,4,8,16,32,48,64\}$, 40 seeds), the bottleneck-shift between the M and C links appears directly as a negative within-cadence correlation peaking at $K{=}4$ (Pearson $-0.61$); mean time-to-success has an interior minimum at $K{=}8$ (robust in location but shallow in margin --- not resolved from the adjacent fast cadences). Both slope signs (Empirical Claim~1) hold as moderate, cluster-robust effect sizes (Spearman $-0.53$ and $+0.43$ vs.\ $K$, 95\% CIs $[-0.59,-0.47]$ and $[+0.37,+0.50]$ over 81 configuration cells; Appendix~\ref{app:effect-sizes}). Non-claims (notably on the conditional product $\Phi$) are consolidated in one place (\S1, Scope and non-claims).
 \textbf{Diagnostic use.} The same four rates also expose why learned policies with implicit communication can be competitive on success while collapsing Q/R/M/C observability: their communication vectors are never informatively empty and they lack an explicit target-lock interface. On two local LLM agents (qwen3:4b, llama3.1 on TextNav), the same logger localizes a completion-limited failure: under a tight step budget both agents form the query, retrieve, and lock the target ($Q^\star{=}R^\star{=}M^\star{=}1$) yet none complete ($C^\star{=}0$), so an otherwise opaque success collapse is resolved into a specific failing stage rather than a leaderboard number. Thus the contribution is a measurement protocol for making memory failures comparable across symbolic, learned, LLM, single-agent, and multi-agent systems.
 \textbf{Scope.} The primary experiments are in grid-world substrates (MiniGrid, BabyAI, a custom $12{\times}10$ grid). The contribution is the diagnostic framework and its validation; a preliminary continuous-state check on VMAS reproduces both slope signs directionally (Appendix~\ref{app:vmas}), and a full continuous/3D validation with cluster-robust CIs (Habitat, ProcTHOR) is future work.
 \end{abstract}
@@ -120,7 +120,26 @@ $P(R^\star|Q^\star)$, $P(M^\star|R^\star)$, and
 $P(C^\star|M^\star)$, even when their end-to-end success rates look
 similar.
 
-\textbf{Scope of the claims.} The slope-level statement of Empirical Claim~1 is on the two conditional rates $P(M^\star|R^\star;K)$ and $P(C^\star|M^\star;K)$, both verified on enlarged data. We make \emph{no} formal claim about the conditional product $\Phi = P(M^\star|R^\star)\!\cdot\!P(C^\star|M^\star)$; on the 35{,}640-run sweep $\Phi$ is monotone in $K$. The interior optimum that the M$\leftrightarrow$C trade-off produces is on the efficiency metric mean time-to-success, not on $\Phi$. We are explicit about this distinction because a stage-level operationalisation is testable on specific summaries and can be \emph{wrong} on others, which is what separates a measurement framework from a stage-agnostic guess.
+\begin{center}
+\fbox{\parbox{0.94\linewidth}{
+\textbf{Scope and non-claims (consolidated).} All caveats of this
+paper in one place; the running text no longer repeats them.
+(i)~The decomposition's consistency argument is the chain rule plus
+frequency estimation --- no mathematical novelty is claimed; the
+contribution is the logging discipline and identifiability
+(Definition~1--2). (ii)~Empirical Claim~1 is a verified slope-level
+observation on the conditional rates, not a theorem.
+(iii)~We make no claim about the shape of the conditional product
+$\Phi$; in our data it is monotone in $K$, and the interior optimum
+lives on mean time-to-success (\S\ref{sec:multi-agent-results}).
+(iv)~Primary substrates are grid worlds; VMAS is a directional
+continuous-state check, and the LLM study is a small controlled one
+(two local models, TextNav). (v)~Multi-agent place identity assumes a
+shared coordinate frame (\S\ref{sec:limitations}). A stage-level
+operationalisation is testable on specific summaries and can be
+\emph{wrong} on others --- (iii) is an instance we report --- which is
+what separates a measurement protocol from a stage-agnostic guess.}}
+\end{center}
 
 \textbf{Why this framing is timely.} Embodied and goal-conditioned
 agents increasingly retrieve places, objects, or tools by meaning
@@ -134,11 +153,11 @@ unified diagnostic vocabulary. Our framework supplies one.
 
 \textbf{Contributions.} This is a methodology paper. We are explicit about what is bookkeeping vs.\ empirical claim vs.\ instantiated artefact.
 \begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
-\item \textbf{Measurement protocol (single-agent).} The Q/R/M/C decomposition is operationalised so that the conditional rates are estimable from trajectory logs (Definition~1). The consistency argument is the chain rule together with consistency of frequency estimators; we do not claim mathematical novelty for this --- the contribution is the \emph{logging discipline} that makes the decomposition usable on standard navigation traces.
+\item \textbf{Measurement protocol (single-agent).} The Q/R/M/C decomposition is operationalised so that the conditional rates are estimable from trajectory logs (Definition~1); the contribution is the \emph{logging discipline} that makes the decomposition usable on standard navigation traces (non-claims: see box above).
 
 \item \textbf{Measurement protocol (multi-agent).} An extension to $N$ communicating agents with two coupling channels (memory $\mathcal{M}_{-i}^{(K)}$, occupancy $\mathcal{O}_{-i}$) under a peer-broadcast protocol with cadence $K$ (Definition~2).
 
-\item \textbf{Empirical Claim~1 (bottleneck shift).} On a 35{,}640-run multi-agent sweep, the two stylised slope conditions \textbf{(F)} and \textbf{(O)} are both confirmed as moderate, cluster-robust effect sizes (Spearman $-0.53$ and $+0.43$ vs.\ $K$, 95\% CIs excluding zero over 81 configuration cells; Appendix~\ref{app:effect-sizes}; full benchmark in \S\ref{sec:multi-agent-results}). We state this as a verified empirical observation, not a theorem. We do \emph{not} claim an interior maximum on the conditional product $\Phi$ --- that prediction fails in our data and we report it (\S\ref{sec:multi-agent-results}).
+\item \textbf{Empirical Claim~1 (bottleneck shift).} On a 35{,}640-run multi-agent sweep, the two stylised slope conditions \textbf{(F)} and \textbf{(O)} are both confirmed as moderate, cluster-robust effect sizes (Spearman $-0.53$ and $+0.43$ vs.\ $K$, 95\% CIs excluding zero over 81 configuration cells; Appendix~\ref{app:effect-sizes}; full benchmark in \S\ref{sec:multi-agent-results}), with a provenance-level mechanism (\S\ref{sec:multi-agent-results}).
 
 \item \textbf{System and benchmarks.} A symbolic-semantic memory stack with four communication architectures (independent, shared-bus, central-aggregator, peer-to-peer broadcast); single-agent oracle benchmark (10-seed MiniGrid, BabyAI portability); 35{,}640-run multi-agent sweep at $N\!\in\!\{3,5,8\}$ + 8{,}640-run scale-up at $N\!=\!12$; 100-run portability sweep on a standard-MiniGrid wrapper.
 
@@ -499,7 +518,7 @@ Both slope conditions are direct empirical predictions that are
 testable on logs through $\hat{P}$.
 
 \paragraph{What this claim is and is not.}
-Empirical Claim~1 is a \emph{slope-level statement on conditional rates}: each of the two slopes is testable and is confirmed on the 35{,}640-run sweep (\S\ref{sec:multi-agent-results}) and independently on a 100-run standard-MiniGrid portability sweep (\S\ref{sec:limitations}). We report the slopes as \emph{effect sizes with cluster-robust confidence intervals} (moderate-to-strong Spearman correlations, resampled over the 81 independent configuration cells rather than the correlated run count), not as raw $p$-values, in Appendix~\ref{app:effect-sizes}; the $p<10^{-4}$ figure is uninformative at this sample size and is not the basis of the claim. It is \emph{not} a claim that the conditional product $\Phi(K) := P(M^\star|R^\star;K)\!\cdot\! P(C^\star|M^\star;K)$ has an interior maximum; on our data $\Phi$ is monotone in $K$ over $\{4,8,16,32,48,64\}$ and converges to the independent-agent boundary $\Phi(K\!\to\!\infty){=}0.605$. The interior optimum that the M$\leftrightarrow$C trade-off produces is on the practically relevant efficiency metric, mean time-to-success ($K{=}8$ on the main sweep), not on $\Phi$. We make no formal claim about $\Phi$.
+Empirical Claim~1 is a \emph{slope-level statement on conditional rates}: each of the two slopes is testable and is confirmed on the 35{,}640-run sweep (\S\ref{sec:multi-agent-results}) and independently on a 100-run standard-MiniGrid portability sweep (\S\ref{sec:limitations}). We report the slopes as \emph{effect sizes with cluster-robust confidence intervals} (resampled over the 81 independent configuration cells rather than the correlated run count) in Appendix~\ref{app:effect-sizes}. The claim's boundary with respect to the conditional product $\Phi$ is stated once, in the Scope-and-non-claims box (\S1) and in \S\ref{sec:multi-agent-results}.
 
 \paragraph{Chronology.}
 Empirical Claim~1 is post-hoc. It was formulated \emph{after} an initial 12{,}960-run sweep conducted under four stage-agnostic hypotheses (Appendix~\ref{app:diagnostics}); the two slope conditions were then confirmed on the full 35{,}640-run sweep, on the $N\!=\!12$ scale-up (Appendix~\ref{app:babyai}), and on the MiniGrid portability wrapper (\S\ref{sec:limitations}). We state this explicitly: the verified slope signs are predictions on enlarged data, not a pre-registered

@@ -413,61 +413,25 @@ memory update. When new evidence is consolidated, the formal context
 changes; therefore its concept lattice changes. This is the
 order-theoretic content of memory growth.
 
-The H-MDP view is obtained by treating the high-level state of agent
-$i$ as
-\[
-h_t^i=(L_t^i,\,D_t^i,\,g_t^{i,\star},\,s_t^i),
-\]
-where $L_t^i$ is the belief lattice, $D_t^i$ is the active desire
-predicate, $g_t^{i,\star}$ is the current intention, and $s_t^i$ is the
-low-level physical state, including position, risk budget, thirst, and
-energy. The transition $h_t^i\rightarrow h_{t+1}^i$ combines two coupled
-processes: a semantic-memory update
-$\mathcal{K}_t^i\rightarrow\mathcal{K}_{t+1}^i$ and a physical control
-transition $s_t^i\rightarrow s_{t+1}^i$. The useful point is that the
-semantic part and the physical part fail in different ways. An empty
-extent $\operatorname{ext}_t^i(D_t^i)=\varnothing$ is a
-belief/retrieval failure. A non-empty extent with no stable lock is a
-materialization failure. A successful lock that cannot be reached is a
-completion failure.
+In Q/R/M/C terms, an empty extent
+$\operatorname{ext}_t^i(D_t^i)=\varnothing$ is a belief/retrieval
+failure, a non-empty extent with no stable lock is a materialization
+failure, and a successful lock that cannot be reached is a completion
+failure --- the semantic and the physical parts of the agent's state
+fail in different, separately measurable ways.
 
-We now lift the construction to the collective case. At broadcast
-times, agent $i$ receives snapshots from peers. For the receiver $i$,
-these snapshots form a diagram of local memory objects
-\[
-\mathcal{D}_t^i=\big(\mathcal{K}_t^i,\ \mathcal{K}_t^{j_1},\ldots,\mathcal{K}_t^{j_m}\big),
-\]
-together with alignment maps induced by the shared coordinate basis and
-semantic tag compatibility. The merged view used by agent $i$ is a
-colimit-like consensus object
-\[
-\widetilde{\mathcal{K}}_t^i=\operatorname{Merge}_{\mathrm{trust},\mathrm{stale}}\!\big(\mathcal{D}_t^i\big).
-\]
-This notation is intentionally modest. The implementation does not
-claim to solve general semantic alignment. It computes a practical
-merge over aligned place records, with peer evidence weighted by trust
-and staleness. A typical weight has the form
-\[
-w_{j\rightarrow i}(t)=\operatorname{trust}_{j\rightarrow i}(t)\,\exp\!\big(-\alpha\,\operatorname{age}_j(t)\big),
-\]
-so the merged incidence strength for a tag $\sigma$ at a place $g$ can
-be written schematically as
-\[
-\widetilde{I}_t^i(g,\sigma)=I_t^i(g,\sigma)+\sum_{j\neq i} w_{j\rightarrow i}(t)\,I_t^j(g,\sigma),
-\]
-followed by thresholding or weighted scoring during retrieval. This
-separates three control surfaces: \emph{merge} (what evidence refers to
-the same place), \emph{trust} (whose evidence should count more), and
-\emph{staleness} (how quickly old evidence loses force).
-
-The same BDI definitions then apply to the merged context
-$\widetilde{\mathcal{K}}_t^i$. The agent's collective belief is the
-lattice
-$\widetilde{L}_t^i=\operatorname{Concepts}(\widetilde{\mathcal{K}}_t^i)$,
-its desire is still a semantic predicate $D_t^i$, and its intention is
-now selected from
-$\operatorname{ext}_{\widetilde{\mathcal{K}}_t^i}(D_t^i)$ rather than
-from its private extent alone.
+The collective case lifts this by one construction. At broadcast times
+the receiver $i$ holds a diagram of local memory objects
+$\mathcal{D}_t^i=(\mathcal{K}_t^i,\mathcal{K}_t^{j_1},\ldots,
+\mathcal{K}_t^{j_m})$ together with alignment maps, and queries the
+merged consensus object
+$\widetilde{\mathcal{K}}_t^i=\operatorname{Merge}_{\mathrm{trust},
+\mathrm{stale}}(\mathcal{D}_t^i)$, with peer evidence weighted exactly
+by the rules of Section~\ref{sec:csm}
+($\mathrm{trust}_{j\to i}\cdot e^{-\alpha\,\mathrm{age}_j}$). The same
+BDI definitions apply to the merged context: intention is now selected
+from $\operatorname{ext}_{\widetilde{\mathcal{K}}_t^i}(D_t^i)$ rather
+than from the private extent alone.
 
 This explains why communication cadence produces a bottleneck shift.
 Faster broadcast increases the freshness of peer evidence. This tends
@@ -490,7 +454,183 @@ In this sense the ``collective'' is not a central mind and not a global
 map but a stabilised family of peer-indexed processes; the next
 subsection makes that statement precise.
 
-\subsection{The coalgebraic layer: individuals as codata, the collective as a final coalgebra}
+The dual, process-level reading --- agents as coalgebras (codata), the
+collective as a final coalgebra, communication as depth-one
+corecursion, and the bottleneck shift as a competition between belief-
+and intention-bisimilarity --- is developed in
+Appendix~\ref{sec:coalgebra}. It is a lens, not a mechanism: nothing
+downstream depends on it, which is why it lives in the appendix.
+
+\subsection{Colimit merge and its invariants}
+\label{sec:colimit}
+
+The merge object above can be described more precisely. Working in a
+timestamp- and provenance-enriched version of $\mathbf{Ctx}_\Sigma$, a
+snapshot merge from agents $1,\dots,N$ is a diagram of local memory
+objects plus alignment maps induced by the place-identity relation. The
+consensus object $\widetilde{\mathcal{K}}_t^i$ is the colimit of this
+diagram, implemented concretely by the union-find merge over aligned
+concepts. This reading gives three useful constraints.
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item \textbf{Order independence.} The merged object is unique up to isomorphism, so the result is not an artefact of processing agent snapshots in a particular order.
+\item \textbf{Chaining is expected.} If concept A aligns with B and B aligns with C, union-find performs the transitive closure. Over-merging is therefore not a bug in the data structure; it is the cost of the chosen equivalence relation.
+\item \textbf{Decay is not a morphism.} Staleness is kept as a weight field outside the alignment morphisms. Otherwise age-then-merge and merge-then-age need not commute, breaking the clean interpretation of broadcast snapshots as one diagram.
+\end{enumerate}
+
+In earlier drafts this section ended by conceding that the model does
+not answer which perceptual features should identify two places ---
+the alignment maps were assumed, not constructed. That gap is now
+closed by Section~\ref{sec:semantic-identity}, and the closure gives
+the colimit reading its missing scientific function:
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item \textbf{The alignment morphisms are constructed, not assumed.}
+  Fingerprint consensus IS an algorithm that produces the alignment
+  maps of the diagram --- mutually-unique landmark matches determine
+  the frame transform through which every local memory object embeds.
+\item \textbf{Existence becomes an empirical predicate.} The colimit
+  exists iff the consensus does. In a $180^\circ$-symmetric world the
+  alignment morphism does not exist \emph{in principle} (two
+  incomparable diagrams support equal consensus), and the
+  implementation detects exactly this and refuses to merge --- the
+  fail-closed behaviour of Section~\ref{sec:semantic-identity} is the
+  categorical non-existence made operational.
+\item \textbf{Decay stays outside the morphisms} (invariant 3), and
+  empirically the trust$\times$staleness gate is unchanged by frame
+  recovery --- the same integer breakpoints with and without a shared
+  frame --- confirming that the two layers commute as the diagram
+  reading requires.
+\end{enumerate}
+
+\section{Limitations and next experiments}
+\label{sec:limitations}
+
+\textbf{Grid substrate.} The current result is intentionally controlled:
+all experiments are in grid worlds. A continuous-state substrate such
+as VMAS, Habitat, ProcTHOR, or MiniWorld is the next portability step.
+
+\textbf{Coordinate anchor.} Removed in
+Section~\ref{sec:semantic-identity}: local fingerprint signatures
+recover the inter-agent frame (translation and $90^\circ$ rotations)
+exactly, and the merge/trust/staleness results are unchanged on top of
+the recovered frames. What remains open is the harder end of the same
+axis: continuous $SE(2)$, appearance noise (the current matcher uses
+exact constellation equality because the substrate is noise-free), and
+symbol alignment --- agents with \emph{different tag alphabets} still
+cannot merge.
+
+\textbf{Minimal CSM.} The CSM rules are deliberately simple. Adaptive
+cadence $K_t$, intent-conditioned trust, and selective consolidation of
+under-represented tags are the next architecture variants.
+
+\textbf{Learned baselines.} CommNet-style learned communication is a
+useful comparison, but the more relevant future baseline is an explicit
+memory LLM or vector-memory multi-agent system measured on the same
+task.
+
+\section{Conclusion}
+
+Collective memory is not monotone. In scarce multi-agent navigation,
+instant information sharing can reduce completion by causing agents to
+converge on the same targets. Peer cadence exposes the trade-off, but
+cadence alone is a one-dimensional control surface. A collective
+semantic memory should make merge, trust, and staleness explicit. The
+minimal CSM does exactly that and moves the system to a new operating
+point: neither fast-broadcast M-saturation nor slow-broadcast
+C-saturation, but a more balanced M$\times$C profile with higher
+success than every fixed peer cadence in the scarcity benchmark.
+
+\begin{ack}
+This manuscript is prepared in anonymized form for review. The
+reported experiments were run from the same benchmark pipeline as the
+companion Q/R/M/C measurement paper, but the architectural claim here
+is restricted to collective semantic memory.
+\end{ack}
+
+{\small
+\begin{thebibliography}{9}
+
+\bibitem[Aczel(1988)]{aczel1988nonwellfounded}
+P.~Aczel.
+\newblock \emph{Non-Well-Founded Sets}.
+\newblock CSLI Lecture Notes 14, 1988.
+
+\bibitem[Bettini et~al.(2022)]{bettini2022vmas}
+M.~Bettini, R.~Kortvelesy, J.~Blumenkamp, and A.~Prorok.
+\newblock VMAS: A vectorized multi-agent simulator for collective robot learning.
+\newblock In \emph{16th International Symposium on Distributed Autonomous Robotic Systems (DARS)}, 2022.
+\newblock arXiv:2207.03530.
+
+\bibitem[Boyd et~al.(2006)]{boyd2006gossip}
+S.~Boyd, A.~Ghosh, B.~Prabhakar, and D.~Shah.
+\newblock Randomized gossip algorithms.
+\newblock \emph{IEEE Trans.\ Information Theory}, 52(6):2508--2530, 2006.
+
+\bibitem[Chevalier-Boisvert et~al.(2023)]{MinigridMiniworld23}
+M.~Chevalier-Boisvert, B.~Lahlou, S.~Willems, and P.~S. Castro.
+\newblock MiniGrid and MiniWorld: Modular reinforcement learning environments.
+\newblock \emph{arXiv:2306.13831}, 2023.
+
+\bibitem[Deitke et~al.(2022)]{deitke2022procthor}
+M.~Deitke, E.~V. Wijmans, D.~Schwenk, O.~Salvador, K.~M. Ehsani, et al.
+\newblock ProcTHOR: Large-scale embodied AI using procedural generation.
+\newblock In \emph{NeurIPS Datasets and Benchmarks}, 2022.
+
+\bibitem[Foerster et~al.(2018)]{foerster2018ctde}
+J.~N. Foerster, G.~Farquhar, T.~Afouras, N.~Nardelli, and S.~Whiteson.
+\newblock Counterfactual multi-agent policy gradients.
+\newblock In \emph{AAAI}, 2018.
+
+\bibitem[Jacobs(2016)]{jacobs2016coalgebra}
+B.~Jacobs.
+\newblock \emph{Introduction to Coalgebra: Towards Mathematics of States and Observation}.
+\newblock Cambridge University Press, 2016.
+
+\bibitem[Mac~Lane(1998)]{maclane1998categories}
+S.~Mac~Lane.
+\newblock \emph{Categories for the Working Mathematician}.
+\newblock Springer, 2nd edition, 1998.
+
+\bibitem[Rao and Georgeff(1995)]{rao1995bdi}
+A.~S. Rao and M.~P. Georgeff.
+\newblock BDI agents: From theory to practice.
+\newblock In \emph{ICMAS}, 1995.
+
+\bibitem[Rutten(2000)]{rutten2000universal}
+J.~J.~M.~M. Rutten.
+\newblock Universal coalgebra: a theory of systems.
+\newblock \emph{Theoretical Computer Science}, 249(1):3--80, 2000.
+
+\bibitem[Sangiorgi(2011)]{sangiorgi2011bisimulation}
+D.~Sangiorgi.
+\newblock \emph{Introduction to Bisimulation and Coinduction}.
+\newblock Cambridge University Press, 2011.
+
+\bibitem[Savva et~al.(2019)]{savva2019habitat}
+M.~Savva, A.~Kadian, O.~Maksymets, Y.~Zhao, E.~Wijmans, B.~Jain, J.~Straub, J.~Liu, V.~Koltun, J.~Malik, et al.
+\newblock Habitat: A platform for embodied AI research.
+\newblock In \emph{ICCV}, 2019.
+
+\bibitem[Sperber and Wilson(1995)]{sperber1995relevance}
+D.~Sperber and D.~Wilson.
+\newblock \emph{Relevance: Communication and Cognition}.
+\newblock Blackwell, 2nd edition, 1995.
+
+\bibitem[Sukhbaatar et~al.(2016)]{sukhbaatar2016commnet}
+S.~Sukhbaatar, A.~Szlam, and R.~Fergus.
+\newblock Learning multiagent communication with backpropagation.
+\newblock In \emph{NeurIPS}, 2016.
+
+\bibitem[Xiao et~al.(2007)]{xiao2007distributed}
+L.~Xiao, S.~Boyd, and S.~Lall.
+\newblock A scheme for robust distributed sensor fusion based on average consensus.
+\newblock \emph{IPSN}, 2007.
+
+\end{thebibliography}
+}
+
+\appendix
+
+\section{The coalgebraic layer: individuals as codata, the collective as a final coalgebra}
 \label{sec:coalgebra}
 
 The reading of \S\ref{sec:categorical} fixes belief \emph{content}: at a
@@ -680,174 +820,6 @@ Final coinductive core / society & $\nu\mathbf{B}$; greatest bisimulation $\appr
 \end{tabular}
 \end{table}
 
-\subsection{Colimit merge and its invariants}
-\label{sec:colimit}
-
-The merge object above can be described more precisely. Working in a
-timestamp- and provenance-enriched version of $\mathbf{Ctx}_\Sigma$, a
-snapshot merge from agents $1,\dots,N$ is a diagram of local memory
-objects plus alignment maps induced by the place-identity relation. The
-consensus object $\widetilde{\mathcal{K}}_t^i$ is the colimit of this
-diagram, implemented concretely by the union-find merge over aligned
-concepts. This reading gives three useful constraints.
-\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
-\item \textbf{Order independence.} The merged object is unique up to isomorphism, so the result is not an artefact of processing agent snapshots in a particular order.
-\item \textbf{Chaining is expected.} If concept A aligns with B and B aligns with C, union-find performs the transitive closure. Over-merging is therefore not a bug in the data structure; it is the cost of the chosen equivalence relation.
-\item \textbf{Decay is not a morphism.} Staleness is kept as a weight field outside the alignment morphisms. Otherwise age-then-merge and merge-then-age need not commute, breaking the clean interpretation of broadcast snapshots as one diagram.
-\end{enumerate}
-
-In earlier drafts this section ended by conceding that the model does
-not answer which perceptual features should identify two places ---
-the alignment maps were assumed, not constructed. That gap is now
-closed by Section~\ref{sec:semantic-identity}, and the closure gives
-the colimit reading its missing scientific function:
-\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
-\item \textbf{The alignment morphisms are constructed, not assumed.}
-  Fingerprint consensus IS an algorithm that produces the alignment
-  maps of the diagram --- mutually-unique landmark matches determine
-  the frame transform through which every local memory object embeds.
-\item \textbf{Existence becomes an empirical predicate.} The colimit
-  exists iff the consensus does. In a $180^\circ$-symmetric world the
-  alignment morphism does not exist \emph{in principle} (two
-  incomparable diagrams support equal consensus), and the
-  implementation detects exactly this and refuses to merge --- the
-  fail-closed behaviour of Section~\ref{sec:semantic-identity} is the
-  categorical non-existence made operational.
-\item \textbf{Decay stays outside the morphisms} (invariant 3), and
-  empirically the trust$\times$staleness gate is unchanged by frame
-  recovery --- the same integer breakpoints with and without a shared
-  frame --- confirming that the two layers commute as the diagram
-  reading requires.
-\end{enumerate}
-
-\section{Limitations and next experiments}
-\label{sec:limitations}
-
-\textbf{Grid substrate.} The current result is intentionally controlled:
-all experiments are in grid worlds. A continuous-state substrate such
-as VMAS, Habitat, ProcTHOR, or MiniWorld is the next portability step.
-
-\textbf{Coordinate anchor.} Removed in
-Section~\ref{sec:semantic-identity}: local fingerprint signatures
-recover the inter-agent frame (translation and $90^\circ$ rotations)
-exactly, and the merge/trust/staleness results are unchanged on top of
-the recovered frames. What remains open is the harder end of the same
-axis: continuous $SE(2)$, appearance noise (the current matcher uses
-exact constellation equality because the substrate is noise-free), and
-symbol alignment --- agents with \emph{different tag alphabets} still
-cannot merge.
-
-\textbf{Minimal CSM.} The CSM rules are deliberately simple. Adaptive
-cadence $K_t$, intent-conditioned trust, and selective consolidation of
-under-represented tags are the next architecture variants.
-
-\textbf{Learned baselines.} CommNet-style learned communication is a
-useful comparison, but the more relevant future baseline is an explicit
-memory LLM or vector-memory multi-agent system measured on the same
-task.
-
-\section{Conclusion}
-
-Collective memory is not monotone. In scarce multi-agent navigation,
-instant information sharing can reduce completion by causing agents to
-converge on the same targets. Peer cadence exposes the trade-off, but
-cadence alone is a one-dimensional control surface. A collective
-semantic memory should make merge, trust, and staleness explicit. The
-minimal CSM does exactly that and moves the system to a new operating
-point: neither fast-broadcast M-saturation nor slow-broadcast
-C-saturation, but a more balanced M$\times$C profile with higher
-success than every fixed peer cadence in the scarcity benchmark.
-
-\begin{ack}
-This manuscript is prepared in anonymized form for review. The
-reported experiments were run from the same benchmark pipeline as the
-companion Q/R/M/C measurement paper, but the architectural claim here
-is restricted to collective semantic memory.
-\end{ack}
-
-{\small
-\begin{thebibliography}{9}
-
-\bibitem[Aczel(1988)]{aczel1988nonwellfounded}
-P.~Aczel.
-\newblock \emph{Non-Well-Founded Sets}.
-\newblock CSLI Lecture Notes 14, 1988.
-
-\bibitem[Bettini et~al.(2022)]{bettini2022vmas}
-M.~Bettini, R.~Kortvelesy, J.~Blumenkamp, and A.~Prorok.
-\newblock VMAS: A vectorized multi-agent simulator for collective robot learning.
-\newblock In \emph{16th International Symposium on Distributed Autonomous Robotic Systems (DARS)}, 2022.
-\newblock arXiv:2207.03530.
-
-\bibitem[Boyd et~al.(2006)]{boyd2006gossip}
-S.~Boyd, A.~Ghosh, B.~Prabhakar, and D.~Shah.
-\newblock Randomized gossip algorithms.
-\newblock \emph{IEEE Trans.\ Information Theory}, 52(6):2508--2530, 2006.
-
-\bibitem[Chevalier-Boisvert et~al.(2023)]{MinigridMiniworld23}
-M.~Chevalier-Boisvert, B.~Lahlou, S.~Willems, and P.~S. Castro.
-\newblock MiniGrid and MiniWorld: Modular reinforcement learning environments.
-\newblock \emph{arXiv:2306.13831}, 2023.
-
-\bibitem[Deitke et~al.(2022)]{deitke2022procthor}
-M.~Deitke, E.~V. Wijmans, D.~Schwenk, O.~Salvador, K.~M. Ehsani, et al.
-\newblock ProcTHOR: Large-scale embodied AI using procedural generation.
-\newblock In \emph{NeurIPS Datasets and Benchmarks}, 2022.
-
-\bibitem[Foerster et~al.(2018)]{foerster2018ctde}
-J.~N. Foerster, G.~Farquhar, T.~Afouras, N.~Nardelli, and S.~Whiteson.
-\newblock Counterfactual multi-agent policy gradients.
-\newblock In \emph{AAAI}, 2018.
-
-\bibitem[Jacobs(2016)]{jacobs2016coalgebra}
-B.~Jacobs.
-\newblock \emph{Introduction to Coalgebra: Towards Mathematics of States and Observation}.
-\newblock Cambridge University Press, 2016.
-
-\bibitem[Mac~Lane(1998)]{maclane1998categories}
-S.~Mac~Lane.
-\newblock \emph{Categories for the Working Mathematician}.
-\newblock Springer, 2nd edition, 1998.
-
-\bibitem[Rao and Georgeff(1995)]{rao1995bdi}
-A.~S. Rao and M.~P. Georgeff.
-\newblock BDI agents: From theory to practice.
-\newblock In \emph{ICMAS}, 1995.
-
-\bibitem[Rutten(2000)]{rutten2000universal}
-J.~J.~M.~M. Rutten.
-\newblock Universal coalgebra: a theory of systems.
-\newblock \emph{Theoretical Computer Science}, 249(1):3--80, 2000.
-
-\bibitem[Sangiorgi(2011)]{sangiorgi2011bisimulation}
-D.~Sangiorgi.
-\newblock \emph{Introduction to Bisimulation and Coinduction}.
-\newblock Cambridge University Press, 2011.
-
-\bibitem[Savva et~al.(2019)]{savva2019habitat}
-M.~Savva, A.~Kadian, O.~Maksymets, Y.~Zhao, E.~Wijmans, B.~Jain, J.~Straub, J.~Liu, V.~Koltun, J.~Malik, et al.
-\newblock Habitat: A platform for embodied AI research.
-\newblock In \emph{ICCV}, 2019.
-
-\bibitem[Sperber and Wilson(1995)]{sperber1995relevance}
-D.~Sperber and D.~Wilson.
-\newblock \emph{Relevance: Communication and Cognition}.
-\newblock Blackwell, 2nd edition, 1995.
-
-\bibitem[Sukhbaatar et~al.(2016)]{sukhbaatar2016commnet}
-S.~Sukhbaatar, A.~Szlam, and R.~Fergus.
-\newblock Learning multiagent communication with backpropagation.
-\newblock In \emph{NeurIPS}, 2016.
-
-\bibitem[Xiao et~al.(2007)]{xiao2007distributed}
-L.~Xiao, S.~Boyd, and S.~Lall.
-\newblock A scheme for robust distributed sensor fusion based on average consensus.
-\newblock \emph{IPSN}, 2007.
-
-\end{thebibliography}
-}
-
-\appendix
 
 \section{Reproducibility commands}
 \label{app:repro}

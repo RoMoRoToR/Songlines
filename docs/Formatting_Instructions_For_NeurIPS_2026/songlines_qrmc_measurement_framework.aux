@@ -81,9 +81,9 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Results: stage decomposition and bottleneck shift}{10}{subsection.4.5}\protected@file@percent }
 \newlabel{sec:multi-agent-results}{{4.5}{10}{Results: stage decomposition and bottleneck shift}{subsection.4.5}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.5.1}Conditional decomposition reveals where each architecture fails.}{10}{subsubsection.4.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.5.2}Bottleneck shift and interior efficiency optimum.}{10}{subsubsection.4.5.2}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Per-architecture conditional rates (top) and mean time-to-success (bottom) from the 35{,}640-run sweep. Shared bus, central aggregator, and fast peer broadcast ($K \le 4$) live in the M-saturation / C-collapse regime; independent and slow peer ($K \ge 16$) live in the M-deficit / C-saturation regime. Mean time-to-success has an interior minimum at $K{=}8$ ($7.47$ ticks), below the independent-agent baseline ($8.02$); the location is robust but shallow --- the margin over the adjacent fast cadences is not resolved (Appendix~\ref {app:effect-sizes}).}}{11}{figure.4}\protected@file@percent }
 \newlabel{fig:conditional-rates}{{4}{11}{Per-architecture conditional rates (top) and mean time-to-success (bottom) from the 35{,}640-run sweep. Shared bus, central aggregator, and fast peer broadcast ($K \le 4$) live in the M-saturation / C-collapse regime; independent and slow peer ($K \ge 16$) live in the M-deficit / C-saturation regime. Mean time-to-success has an interior minimum at $K{=}8$ ($7.47$ ticks), below the independent-agent baseline ($8.02$); the location is robust but shallow --- the margin over the adjacent fast cadences is not resolved (Appendix~\ref {app:effect-sizes})}{figure.4}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.5.2}Bottleneck shift and interior efficiency optimum.}{11}{subsubsection.4.5.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Provenance stratification: the mechanism behind the shift.}{11}{section*.19}\protected@file@percent }
 \citation{sukhbaatar2016commnet}
 \citation{schulman2017proximal}
@@ -92,10 +92,11 @@
 \@writefile{toc}{\contentsline {paragraph}{LLM model sweep: the logger localizes a real failure in language agents.}{12}{section*.22}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces LLM TextNav step-budget sweep: Q/R/M/C localizes a completion-limited failure in two local Ollama agents. Eight episodes per (model, step limit), temperature 0.0; the task needs $\sim $10 low-level steps. At a budget below that requirement (step limit 6) success drops to $0.00$ for both models, yet $Q^\star {=}R^\star {=}M^\star {=}1.00$ (the agents form the query, retrieve, and lock the correct target every episode) while $C^\star {=}0.00$: the framework localizes the failure to the C stage, not to Q/R/M. Both models behave identically, so the failure is structural (budget), not model-specific. Artifacts: \texttt  {tmp/llm\_steplimit\_\{6,12,25\}}.}}{12}{table.3}\protected@file@percent }
 \newlabel{tab:llm-smoke}{{3}{12}{LLM TextNav step-budget sweep: Q/R/M/C localizes a completion-limited failure in two local Ollama agents. Eight episodes per (model, step limit), temperature 0.0; the task needs $\sim $10 low-level steps. At a budget below that requirement (step limit 6) success drops to $0.00$ for both models, yet $Q^\star {=}R^\star {=}M^\star {=}1.00$ (the agents form the query, retrieve, and lock the correct target every episode) while $C^\star {=}0.00$: the framework localizes the failure to the C stage, not to Q/R/M. Both models behave identically, so the failure is structural (budget), not model-specific. Artifacts: \texttt {tmp/llm\_steplimit\_\{6,12,25\}}}{table.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Multi-agent oracle interventions close the diagnose$\to $intervene$\to $verify loop.}{12}{section*.23}\protected@file@percent }
 \citation{bettini2022vmas}
-\@writefile{toc}{\contentsline {paragraph}{Multi-agent oracle interventions close the diagnose$\to $intervene$\to $verify loop.}{13}{section*.23}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {5}Limitations and future work}{13}{section.5}\protected@file@percent }
 \newlabel{sec:limitations}{{5}{13}{Limitations and future work}{section.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Broader impacts}{13}{section.6}\protected@file@percent }
 \bibcite{andrychowicz2017hindsight}{{1}{2017}{{Andrychowicz et~al.}}{{}}}
 \bibcite{belohlavek1999fuzzy}{{2}{1999}{{B\v {e}lohl\'avek}}{{}}}
 \bibcite{bettini2022vmas}{{3}{2022}{{Bettini et~al.}}{{}}}
@@ -113,11 +114,10 @@
 \bibcite{gigerenzer1996reasoning}{{15}{1996}{{Gigerenzer and Goldstein}}{{}}}
 \bibcite{gupta2017cognitive}{{16}{2017}{{Gupta et~al.}}{{}}}
 \bibcite{holm1979simple}{{17}{1979}{{Holm}}{{}}}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Broader impacts}{14}{section.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {7}Conclusion}{14}{section.7}\protected@file@percent }
 \bibcite{kolve2017ai2thor}{{18}{2017}{{Kolve et~al.}}{{}}}
 \bibcite{kuipers2000spatial}{{19}{2000}{{Kuipers}}{{}}}
 \bibcite{lieder2020resource}{{20}{2020}{{Lieder and Griffiths}}{{}}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Conclusion}{14}{section.7}\protected@file@percent }
 \bibcite{lowe2017maddpg}{{21}{2017}{{Lowe et~al.}}{{}}}
 \bibcite{maclane1998categories}{{22}{1998}{{Mac~Lane}}{{}}}
 \bibcite{momennejad2017successor}{{23}{2017}{{Momennejad et~al.}}{{}}}
@@ -144,6 +144,9 @@
 \bibcite{xiao2007distributed}{{44}{2007}{{Xiao et~al.}}{{}}}
 \bibcite{yu2022mappo}{{45}{2022}{{Yu et~al.}}{{}}}
 \citation{ganter1999fca}
+\citation{ganter1999fca}
+\citation{maclane1998categories}
+\citation{belohlavek1999fuzzy}
 \@writefile{toc}{\contentsline {section}{\numberline {A}Formal proofs}{16}{appendix.A}\protected@file@percent }
 \newlabel{app:proofs}{{A}{16}{Formal proofs}{appendix.A}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Argument for Definition~1 (single-agent estimability)}{16}{subsection.A.1}\protected@file@percent }
@@ -152,19 +155,16 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {A.4}The query--retrieval Galois connection: statement, argument, scope}{16}{subsection.A.4}\protected@file@percent }
 \newlabel{app:galois}{{A.4}{16}{The query--retrieval Galois connection: statement, argument, scope}{subsection.A.4}{}}
 \@writefile{toc}{\contentsline {paragraph}{Fact (standard).}{16}{section*.25}\protected@file@percent }
-\citation{ganter1999fca}
-\citation{maclane1998categories}
-\citation{belohlavek1999fuzzy}
+\@writefile{toc}{\contentsline {paragraph}{Argument.}{16}{section*.26}\protected@file@percent }
 \citation{sutton1999between}
-\@writefile{toc}{\contentsline {paragraph}{Argument.}{17}{section*.26}\protected@file@percent }
+\citation{sutton1999between}
+\citation{lieder2020resource}
 \@writefile{toc}{\contentsline {paragraph}{Instantiation and scope.}{17}{section*.27}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {B}An options / hierarchical-MDP reading of the stages}{17}{appendix.B}\protected@file@percent }
 \newlabel{app:hmdp}{{B}{17}{An options / hierarchical-MDP reading of the stages}{appendix.B}{}}
 \@writefile{toc}{\contentsline {paragraph}{Q/R/M/C as an audit of an option.}{17}{section*.28}\protected@file@percent }
-\citation{sutton1999between}
-\citation{lieder2020resource}
+\@writefile{toc}{\contentsline {paragraph}{Why the optimum lives on $t_{\mathrm  {succ}}$ and not on $\Phi $: a semi-MDP reading.}{17}{section*.29}\protected@file@percent }
 \citation{simon1955behavioral}
-\@writefile{toc}{\contentsline {paragraph}{Why the optimum lives on $t_{\mathrm  {succ}}$ and not on $\Phi $: a semi-MDP reading.}{18}{section*.29}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{The bottleneck shift as multi-agent option collision.}{18}{section*.30}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Belief--desire--intention gloss and scope.}{18}{section*.31}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {C}Operational vs.\ nested stage estimators}{18}{appendix.C}\protected@file@percent }
@@ -180,9 +180,9 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {D.2}Memory stack and task patterns}{19}{subsection.D.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {D.3}Single-agent supporting tables and figures}{19}{subsection.D.3}\protected@file@percent }
 \newlabel{app:single-results-table}{{D.3}{19}{Single-agent supporting tables and figures}{subsection.D.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Best semantic result per task family from the final 10-seed benchmark, with 95\% bootstrap CIs. Hazard-recovery is bottlenecked by retrieval; goal-region remains downstream-bottlenecked.}}{19}{table.4}\protected@file@percent }
+\newlabel{tab:main-results}{{4}{19}{Best semantic result per task family from the final 10-seed benchmark, with 95\% bootstrap CIs. Hazard-recovery is bottlenecked by retrieval; goal-region remains downstream-bottlenecked}{table.4}{}}
 \citation{chevalier2018babyai}
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Best semantic result per task family from the final 10-seed benchmark, with 95\% bootstrap CIs. Hazard-recovery is bottlenecked by retrieval; goal-region remains downstream-bottlenecked.}}{20}{table.4}\protected@file@percent }
-\newlabel{tab:main-results}{{4}{20}{Best semantic result per task family from the final 10-seed benchmark, with 95\% bootstrap CIs. Hazard-recovery is bottlenecked by retrieval; goal-region remains downstream-bottlenecked}{table.4}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Oracle stage interventions on the two hardest single-agent task families (10 seeds $\times $ 8 episodes). \textbf  {(a)} FourRooms goal-rejoin: replacing any single stage with an oracle leaves end-to-end success at $0.07$; the bottleneck is downstream of the stages in the chain. \textbf  {(b)} LavaGapS7 hazard recovery: oracle controller adds only $+0.04$, but oracle materialization adds $+0.16$ and oracle retrieval adds a further $+0.01$ to reach $0.60$. The framework localises the bottleneck stage-by-stage.}}{20}{figure.5}\protected@file@percent }
 \newlabel{fig:oracle-waterfall}{{5}{20}{Oracle stage interventions on the two hardest single-agent task families (10 seeds $\times $ 8 episodes). \textbf {(a)} FourRooms goal-rejoin: replacing any single stage with an oracle leaves end-to-end success at $0.07$; the bottleneck is downstream of the stages in the chain. \textbf {(b)} LavaGapS7 hazard recovery: oracle controller adds only $+0.04$, but oracle materialization adds $+0.16$ and oracle retrieval adds a further $+0.01$ to reach $0.60$. The framework localises the bottleneck stage-by-stage}{figure.5}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {E}Portability and scale-up}{20}{appendix.E}\protected@file@percent }
@@ -205,25 +205,27 @@
 \newlabel{tab:multi-agent-cond}{{7}{22}{Per-architecture conditional Q/R/M/C rates from the 35{,}640-run sweep (40 seeds). $P(R^\star |Q^\star )$ is saturated. POM = product-of-means; MOP = mean-of-products (the proper per-configuration expected product). The two summaries disagree systematically at small/intermediate $K$ because the within-cadence correlation between $P(M^\star |R^\star )$ and $P(C^\star |M^\star )$ is strongly negative there (last column) --- the bottleneck-shift signature. \textbf {Bold}: MOP-best of the peer cadences. Mean $t_{\mathrm {succ}}$ (last column) is the practically relevant efficiency measure; its interior minimum at $K=8$ is the predicted-shape result, robust in location but shallow in margin (adjacent fast cadences not resolved; Appendix~\ref {app:effect-sizes})}{table.7}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {F.2}Design decomposition and run-count reconciliation}{22}{subsection.F.2}\protected@file@percent }
 \newlabel{app:design}{{F.2}{22}{Design decomposition and run-count reconciliation}{subsection.F.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.3}Effect sizes and cluster-robust inference}{22}{subsection.F.3}\protected@file@percent }
+\newlabel{app:effect-sizes}{{F.3}{22}{Effect sizes and cluster-robust inference}{subsection.F.3}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Bottleneck shift across eight peer cadences (40-seed sweep). Top: $P(M^\star |R^\star )$ falls and $P(C^\star |M^\star )$ rises in $K$ (moderate, cluster-robust Spearman effect sizes $-0.53$ and $+0.43$; CIs in Appendix~\ref {app:effect-sizes}). Bottom: mean time-to-success has an interior minimum at $K=8$ ($7.47$ ticks) below the independent-agent baseline ($8.02$, dashed); the location is robust but its margin over the adjacent fast cadences ($K{=}1,4$) is not resolved (Appendix~\ref {app:effect-sizes}). Error bars and shaded band are 95\% bootstrap CIs.}}{23}{figure.7}\protected@file@percent }
 \newlabel{fig:bottleneck-shift}{{7}{23}{Bottleneck shift across eight peer cadences (40-seed sweep). Top: $P(M^\star |R^\star )$ falls and $P(C^\star |M^\star )$ rises in $K$ (moderate, cluster-robust Spearman effect sizes $-0.53$ and $+0.43$; CIs in Appendix~\ref {app:effect-sizes}). Bottom: mean time-to-success has an interior minimum at $K=8$ ($7.47$ ticks) below the independent-agent baseline ($8.02$, dashed); the location is robust but its margin over the adjacent fast cadences ($K{=}1,4$) is not resolved (Appendix~\ref {app:effect-sizes}). Error bars and shaded band are 95\% bootstrap CIs}{figure.7}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Run-count reconciliation for the main multi-agent sweep ($35{,}640$ runs). Counts are recomputed directly from the released run log.}}{23}{table.8}\protected@file@percent }
 \newlabel{tab:design}{{8}{23}{Run-count reconciliation for the main multi-agent sweep ($35{,}640$ runs). Counts are recomputed directly from the released run log}{table.8}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {F.3}Effect sizes and cluster-robust inference}{23}{subsection.F.3}\protected@file@percent }
-\newlabel{app:effect-sizes}{{F.3}{23}{Effect sizes and cluster-robust inference}{subsection.F.3}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Per-configuration scatter of $P(M^\star |R^\star )$ vs.\ $P(C^\star |M^\star )$ at three cadences. The strong negative correlation at $K=4$ (Pearson $-0.61$) is the bottleneck-shift signature: the same configurations that succeed at $M$ tend to fail at $C$ and vice versa. The correlation decays to noise by $K=64$.}}{24}{figure.8}\protected@file@percent }
 \newlabel{fig:jensen-scatter}{{8}{24}{Per-configuration scatter of $P(M^\star |R^\star )$ vs.\ $P(C^\star |M^\star )$ at three cadences. The strong negative correlation at $K=4$ (Pearson $-0.61$) is the bottleneck-shift signature: the same configurations that succeed at $M$ tend to fail at $C$ and vice versa. The correlation decays to noise by $K=64$}{figure.8}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {F.4}Construct validity: task success $Y$ vs.\ semantic-path completion $C^\star $}{24}{subsection.F.4}\protected@file@percent }
 \newlabel{app:y-vs-c}{{F.4}{24}{Construct validity: task success $Y$ vs.\ semantic-path completion $C^\star $}{subsection.F.4}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {F.5}Threshold ($\theta $) robustness of the empty-candidate-set diagnosis}{24}{subsection.F.5}\protected@file@percent }
 \newlabel{app:theta-robustness}{{F.5}{24}{Threshold ($\theta $) robustness of the empty-candidate-set diagnosis}{subsection.F.5}{}}
+\citation{bettini2022vmas}
 \@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Empty-candidate-set rate vs.\ required-tag threshold $\theta $ (semantic method, assist off, hazard-recovery / goal-region). The rate is \emph  {invariant} across the entire realistic range $\theta \in [0.05,0.95]$; only the degenerate endpoints move it, and only to the no-candidate floor. The empties are therefore absence of stored evidence, not sub-threshold filtering.}}{25}{table.9}\protected@file@percent }
 \newlabel{tab:theta-robustness}{{9}{25}{Empty-candidate-set rate vs.\ required-tag threshold $\theta $ (semantic method, assist off, hazard-recovery / goal-region). The rate is \emph {invariant} across the entire realistic range $\theta \in [0.05,0.95]$; only the degenerate endpoints move it, and only to the no-candidate floor. The empties are therefore absence of stored evidence, not sub-threshold filtering}{table.9}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {F.6}Robustness to Assumption~1 violations}{25}{subsection.F.6}\protected@file@percent }
 \newlabel{app:assumption1-stress}{{F.6}{25}{Robustness to Assumption~1 violations}{subsection.F.6}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Bias of the naive conditional estimators under an unlogged latent of strength $\delta $ that couples the M and C stages (violating Assumption~1). $P(M^\star |R^\star )$ stays unbiased; $P(C^\star |M^\star )$ is biased upward, materially only under strong coupling.}}{25}{table.10}\protected@file@percent }
 \newlabel{tab:assumption1-stress}{{10}{25}{Bias of the naive conditional estimators under an unlogged latent of strength $\delta $ that couples the M and C stages (violating Assumption~1). $P(M^\star |R^\star )$ stays unbiased; $P(C^\star |M^\star )$ is biased upward, materially only under strong coupling}{table.10}{}}
-\citation{bettini2022vmas}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.7}Preliminary continuous-substrate check (VMAS)}{25}{subsection.F.7}\protected@file@percent }
+\newlabel{app:vmas}{{F.7}{25}{Preliminary continuous-substrate check (VMAS)}{subsection.F.7}{}}
 \citation{savva2019habitat}
 \citation{tolman1948cognitive,okeefe1978hippocampus,kuipers2000spatial}
 \citation{gupta2017cognitive}
@@ -234,12 +236,12 @@
 \citation{sukhbaatar2016commnet,foerster2016learning}
 \citation{boyd2006gossip,xiao2007distributed}
 \citation{yao2022react,shinn2023reflexion,wang2023voyager,park2023generative,wu2023autogen,packer2023memgpt,chhikara2025mem0}
-\@writefile{toc}{\contentsline {subsection}{\numberline {F.7}Preliminary continuous-substrate check (VMAS)}{26}{subsection.F.7}\protected@file@percent }
-\newlabel{app:vmas}{{F.7}{26}{Preliminary continuous-substrate check (VMAS)}{subsection.F.7}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces Preliminary VMAS portability: both slope signs of Empirical Claim~1 reproduce on a continuous substrate in the coupling regime ($N{=}8$, $T{=}3$, 40 seeds, horizon $25$). $\mathrm  {Spearman}(P(M^\star |R^\star ),K){=}-1.00$ and $\mathrm  {Spearman}(P(C^\star |M^\star ),K){=}+1.00$. Beyond $K\!\approx \!32$ the system enters the independent regime (rare broadcast, no contention) and $P(M^\star |R^\star )$ rebounds, the same regime boundary seen on the grid.}}{26}{table.11}\protected@file@percent }
 \newlabel{tab:vmas}{{11}{26}{Preliminary VMAS portability: both slope signs of Empirical Claim~1 reproduce on a continuous substrate in the coupling regime ($N{=}8$, $T{=}3$, 40 seeds, horizon $25$). $\mathrm {Spearman}(P(M^\star |R^\star ),K){=}-1.00$ and $\mathrm {Spearman}(P(C^\star |M^\star ),K){=}+1.00$. Beyond $K\!\approx \!32$ the system enters the independent regime (rare broadcast, no contention) and $P(M^\star |R^\star )$ rebounds, the same regime boundary seen on the grid}{table.11}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {F.8}Open problems suggested by the diagnostics}{26}{subsection.F.8}\protected@file@percent }
 \newlabel{app:open-problems}{{F.8}{26}{Open problems suggested by the diagnostics}{subsection.F.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.9}Extended related work}{26}{subsection.F.9}\protected@file@percent }
+\newlabel{app:related-work-extended}{{F.9}{26}{Extended related work}{subsection.F.9}{}}
 \citation{rashid2018qmix}
 \citation{yu2022mappo}
 \citation{lowe2017maddpg}
@@ -256,31 +258,29 @@
 \citation{park2023generative}
 \citation{wu2023autogen}
 \citation{packer2023memgpt,chhikara2025mem0}
-\@writefile{toc}{\contentsline {subsection}{\numberline {F.9}Extended related work}{27}{subsection.F.9}\protected@file@percent }
-\newlabel{app:related-work-extended}{{F.9}{27}{Extended related work}{subsection.F.9}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {F.10}SOTA baseline and coverage matrix}{27}{subsection.F.10}\protected@file@percent }
 \newlabel{app:sota-coverage}{{F.10}{27}{SOTA baseline and coverage matrix}{subsection.F.10}{}}
 \@writefile{toc}{\contentsline {paragraph}{Positioning against SOTA memory designs.}{27}{section*.34}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces Where the framework sits in the memory-agent design space. Q/R/M/C stage-observability requires an explicit query/lock interface, which the symbolic-per-agent cell provides.}}{27}{table.12}\protected@file@percent }
 \newlabel{tab:sota-quadrants}{{12}{27}{Where the framework sits in the memory-agent design space. Q/R/M/C stage-observability requires an explicit query/lock interface, which the symbolic-per-agent cell provides}{table.12}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {F.11}Multi-agent oracle-intervention numerics}{28}{subsection.F.11}\protected@file@percent }
-\newlabel{app:multi-oracle}{{F.11}{28}{Multi-agent oracle-intervention numerics}{subsection.F.11}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {F.12}Oracle C: definition and reading}{28}{subsection.F.12}\protected@file@percent }
-\newlabel{app:oracle-c-def}{{F.12}{28}{Oracle C: definition and reading}{subsection.F.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.11}Multi-agent oracle-intervention numerics}{27}{subsection.F.11}\protected@file@percent }
+\newlabel{app:multi-oracle}{{F.11}{27}{Multi-agent oracle-intervention numerics}{subsection.F.11}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.12}Oracle C: definition and reading}{27}{subsection.F.12}\protected@file@percent }
+\newlabel{app:oracle-c-def}{{F.12}{27}{Oracle C: definition and reading}{subsection.F.12}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {F.13}Stage-agnostic cadence hypotheses and what the framework changes}{28}{subsection.F.13}\protected@file@percent }
 \newlabel{app:standalone-hypotheses}{{F.13}{28}{Stage-agnostic cadence hypotheses and what the framework changes}{subsection.F.13}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {G}Assist on/off analysis}{28}{appendix.G}\protected@file@percent }
 \newlabel{app:assist}{{G}{28}{Assist on/off analysis}{appendix.G}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {H}Retrained retriever and CommNet baseline}{28}{appendix.H}\protected@file@percent }
+\newlabel{app:learned-baselines}{{H}{28}{Retrained retriever and CommNet baseline}{appendix.H}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {H.1}Retrained candidate-generation MLP (\S  \ref {sec:refined-attribution})}{28}{subsection.H.1}\protected@file@percent }
 \citation{sukhbaatar2016commnet}
 \citation{williams1992simple}
-\@writefile{toc}{\contentsline {section}{\numberline {H}Retrained retriever and CommNet baseline}{29}{appendix.H}\protected@file@percent }
-\newlabel{app:learned-baselines}{{H}{29}{Retrained retriever and CommNet baseline}{appendix.H}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {H.1}Retrained candidate-generation MLP (\S  \ref {sec:refined-attribution})}{29}{subsection.H.1}\protected@file@percent }
+\citation{schulman2017proximal}
+\citation{schulman2016gae}
 \@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Refined attribution diagnostic. \emph  {Left:} 349 retrieval calls aggregated across 10 seeds; 317 (90.8\%) returned empty candidate sets, 31 (8.9\%) returned at least one satisfied candidate, only 1 (0.3\%) returned candidates that were ranked but unsatisfied. The bottleneck is candidate generation, not candidate ranking. \emph  {Right:} the trained MLP underperforms a majority-class baseline on all three seed-disjoint splits, confirming that instantaneous state features alone are insufficient to predict candidate eligibility.}}{29}{figure.9}\protected@file@percent }
 \newlabel{fig:refined-attribution}{{9}{29}{Refined attribution diagnostic. \emph {Left:} 349 retrieval calls aggregated across 10 seeds; 317 (90.8\%) returned empty candidate sets, 31 (8.9\%) returned at least one satisfied candidate, only 1 (0.3\%) returned candidates that were ranked but unsatisfied. The bottleneck is candidate generation, not candidate ranking. \emph {Right:} the trained MLP underperforms a majority-class baseline on all three seed-disjoint splits, confirming that instantaneous state features alone are insufficient to predict candidate eligibility}{figure.9}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {H.2}CommNet-style learned communication baseline (\S  \ref {sec:multi-agent-results})}{29}{subsection.H.2}\protected@file@percent }
-\citation{schulman2017proximal}
-\citation{schulman2016gae}
 \@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Learned-communication baseline diagnostics. \emph  {Left:} CommNet training curve (smoothed success rate over a 100-episode window) over 2000 training episodes; success stays below 0.25 throughout. The dashed line is the symbolic peer architecture at $K\!=\!8$ on the same scenario for reference. \emph  {Right:} Q/R/M/C profile of the trained CommNet on 50 held-out seeds vs symbolic peer at $K\!=\!8$. $Q^\star $ is saturated at $1.0$ on CommNet (degenerate by construction); $R/M$ collapse together; only on the symbolic architecture are the conditional rates separated.}}{30}{figure.10}\protected@file@percent }
 \newlabel{fig:commnet}{{10}{30}{Learned-communication baseline diagnostics. \emph {Left:} CommNet training curve (smoothed success rate over a 100-episode window) over 2000 training episodes; success stays below 0.25 throughout. The dashed line is the symbolic peer architecture at $K\!=\!8$ on the same scenario for reference. \emph {Right:} Q/R/M/C profile of the trained CommNet on 50 held-out seeds vs symbolic peer at $K\!=\!8$. $Q^\star $ is saturated at $1.0$ on CommNet (degenerate by construction); $R/M$ collapse together; only on the symbolic architecture are the conditional rates separated}{figure.10}{}}
 \@writefile{toc}{\contentsline {paragraph}{PPO variant: structural degeneracy verified at competitive success.}{30}{section*.35}\protected@file@percent }
@@ -290,10 +290,10 @@
 \citation{chevalier2018babyai}
 \@writefile{toc}{\contentsline {section}{\numberline {J}Asset and license note}{31}{appendix.J}\protected@file@percent }
 \newlabel{app:assets}{{J}{31}{Asset and license note}{appendix.J}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces SOTA coverage for Paper 1. ``Instrumented'' means the run emits the operational $Q^\star ,R^\star ,M^\star ,C^\star $ events used by Definition~1.}}{33}{table.13}\protected@file@percent }
-\newlabel{tab:sota-coverage}{{13}{33}{SOTA coverage for Paper 1. ``Instrumented'' means the run emits the operational $Q^\star ,R^\star ,M^\star ,C^\star $ events used by Definition~1}{table.13}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {14}{\ignorespaces Multi-agent oracle interventions on the scarcity cases at three cadences. Mean time-to-success (and success rate) averaged across $(N,T)\in \{(3,2),(5,3),(8,5)\}$, two layouts (asymmetric, random), 15 seeds. Oracle R returns ground-truth water positions; oracle M locks the nearest real water; \textbf  {oracle C} guarantees completion of a real materialised lock (Appendix~\ref {app:oracle-c-def}). Oracle C gives the largest \emph  {time} reduction (it removes travel) but the smallest \emph  {success} gain --- completion is a time cost, not the success bottleneck, which sits upstream at R/M.}}{34}{table.14}\protected@file@percent }
-\newlabel{tab:multi-agent-oracle}{{14}{34}{Multi-agent oracle interventions on the scarcity cases at three cadences. Mean time-to-success (and success rate) averaged across $(N,T)\in \{(3,2),(5,3),(8,5)\}$, two layouts (asymmetric, random), 15 seeds. Oracle R returns ground-truth water positions; oracle M locks the nearest real water; \textbf {oracle C} guarantees completion of a real materialised lock (Appendix~\ref {app:oracle-c-def}). Oracle C gives the largest \emph {time} reduction (it removes travel) but the smallest \emph {success} gain --- completion is a time cost, not the success bottleneck, which sits upstream at R/M}{table.14}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces REINFORCE vs PPO CommNet vs symbolic peer ($K{=}8$) on the scarcity scenario ($N{=}3$, $T{=}2$, asymmetric, hazard $0.05$). PPO is competitive on success rate, yet still exhibits Q-saturation and R/M collapse --- the diagnostic claim verified, not asserted.}}{34}{table.15}\protected@file@percent }
-\newlabel{tab:ppo-commnet}{{15}{34}{REINFORCE vs PPO CommNet vs symbolic peer ($K{=}8$) on the scarcity scenario ($N{=}3$, $T{=}2$, asymmetric, hazard $0.05$). PPO is competitive on success rate, yet still exhibits Q-saturation and R/M collapse --- the diagnostic claim verified, not asserted}{table.15}{}}
-\gdef \@abspage@last{41}
+\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces SOTA coverage for Paper 1. ``Instrumented'' means the run emits the operational $Q^\star ,R^\star ,M^\star ,C^\star $ events used by Definition~1.}}{32}{table.13}\protected@file@percent }
+\newlabel{tab:sota-coverage}{{13}{32}{SOTA coverage for Paper 1. ``Instrumented'' means the run emits the operational $Q^\star ,R^\star ,M^\star ,C^\star $ events used by Definition~1}{table.13}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {14}{\ignorespaces Multi-agent oracle interventions on the scarcity cases at three cadences. Mean time-to-success (and success rate) averaged across $(N,T)\in \{(3,2),(5,3),(8,5)\}$, two layouts (asymmetric, random), 15 seeds. Oracle R returns ground-truth water positions; oracle M locks the nearest real water; \textbf  {oracle C} guarantees completion of a real materialised lock (Appendix~\ref {app:oracle-c-def}). Oracle C gives the largest \emph  {time} reduction (it removes travel) but the smallest \emph  {success} gain --- completion is a time cost, not the success bottleneck, which sits upstream at R/M.}}{33}{table.14}\protected@file@percent }
+\newlabel{tab:multi-agent-oracle}{{14}{33}{Multi-agent oracle interventions on the scarcity cases at three cadences. Mean time-to-success (and success rate) averaged across $(N,T)\in \{(3,2),(5,3),(8,5)\}$, two layouts (asymmetric, random), 15 seeds. Oracle R returns ground-truth water positions; oracle M locks the nearest real water; \textbf {oracle C} guarantees completion of a real materialised lock (Appendix~\ref {app:oracle-c-def}). Oracle C gives the largest \emph {time} reduction (it removes travel) but the smallest \emph {success} gain --- completion is a time cost, not the success bottleneck, which sits upstream at R/M}{table.14}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces REINFORCE vs PPO CommNet vs symbolic peer ($K{=}8$) on the scarcity scenario ($N{=}3$, $T{=}2$, asymmetric, hazard $0.05$). PPO is competitive on success rate, yet still exhibits Q-saturation and R/M collapse --- the diagnostic claim verified, not asserted.}}{33}{table.15}\protected@file@percent }
+\newlabel{tab:ppo-commnet}{{15}{33}{REINFORCE vs PPO CommNet vs symbolic peer ($K{=}8$) on the scarcity scenario ($N{=}3$, $T{=}2$, asymmetric, hazard $0.05$). PPO is competitive on success rate, yet still exhibits Q-saturation and R/M collapse --- the diagnostic claim verified, not asserted}{table.15}{}}
+\gdef \@abspage@last{40}
