@@ -38,7 +38,7 @@
 \textbf{Setting.} Success-only metrics collapse qualitatively different memory-based navigation failures into a single scalar, hiding \emph{which stage} of the retrieval pipeline is responsible. This paper develops a measurement framework, not a new theoretical result: the Q/R/M/C stage decomposition (\textbf{Q}uery formation, \textbf{R}etrieval satisfaction, target \textbf{M}aterialization, \textbf{C}ompletion after retrieval) is operationalised so that the four conditional rates are computable directly from standard trajectory logs (Definition~1; the consistency argument is the chain rule and we say so explicitly).
 \textbf{Single-agent measurement.} On a 10-seed MiniGrid benchmark (FourRooms, LavaGapS7) and a BabyAI portability check, the framework localises bottlenecks: hazard recovery is retrieval-limited (oracle retrieval lifts success $0.39\to0.60$), goal-region rejoin is downstream-limited. Log inspection refines the attribution: candidate ranking is near-optimal ($96.9\%$) while candidate generation fails at 91\% of decision points --- a memory-accumulation, not a ranking, limit.
 \textbf{Multi-agent measurement.} On a 35{,}640-run multi-agent sweep over four communication architectures (independent, shared-bus, central-aggregator, peer-broadcast at eight cadences $K{\in}\{1,2,4,8,16,32,48,64\}$, 40 seeds), the bottleneck-shift between the M and C links appears directly as a negative within-cadence correlation peaking at $K{=}4$ (Pearson $-0.61$); mean time-to-success has an interior minimum at $K{=}8$ (robust in location but shallow in margin --- not resolved from the adjacent fast cadences). Both slope signs (Empirical Claim~1) hold as moderate, cluster-robust effect sizes (Spearman $-0.53$ and $+0.43$ vs.\ $K$, 95\% CIs $[-0.59,-0.47]$ and $[+0.37,+0.50]$ over 81 configuration cells, not raw $p$-values; Appendix~\ref{app:effect-sizes}); we do \emph{not} claim an interior maximum on the conditional product $\Phi$, where the data show a monotone trend toward the independent-agent boundary.
-\textbf{Diagnostic use.} The same four rates also expose why learned policies with implicit communication can be competitive on success while collapsing Q/R/M/C observability: their communication vectors are never informatively empty and they lack an explicit target-lock interface. A local TextNav smoke test over two Ollama LLMs verifies that the same logger can instrument language-agent traces; the resulting rates are reported as a diagnostic sanity check, not as a leaderboard claim. Thus the contribution is a measurement protocol for making memory failures comparable across symbolic, learned, LLM, single-agent, and multi-agent systems.
+\textbf{Diagnostic use.} The same four rates also expose why learned policies with implicit communication can be competitive on success while collapsing Q/R/M/C observability: their communication vectors are never informatively empty and they lack an explicit target-lock interface. On two local LLM agents (qwen3:4b, llama3.1 on TextNav), the same logger localizes a completion-limited failure: under a tight step budget both agents form the query, retrieve, and lock the target ($Q^\star{=}R^\star{=}M^\star{=}1$) yet none complete ($C^\star{=}0$), so an otherwise opaque success collapse is resolved into a specific failing stage rather than a leaderboard number. Thus the contribution is a measurement protocol for making memory failures comparable across symbolic, learned, LLM, single-agent, and multi-agent systems.
 \textbf{Scope.} The primary experiments are in grid-world substrates (MiniGrid, BabyAI, a custom $12{\times}10$ grid). The contribution is the diagnostic framework and its validation; a preliminary continuous-state check on VMAS reproduces both slope signs directionally (Appendix~\ref{app:vmas}), and a full continuous/3D validation with cluster-robust CIs (Habitat, ProcTHOR) is future work.
 \end{abstract}
 
@@ -294,110 +294,11 @@ The four starred events anchor at concrete logged triggers. We state the trigger
 \paragraph{Why a deterministic strategy: bounded and ecological rationality.}
 A natural objection is that the semantic stack is a fixed, deterministic strategy rather than a learned policy. We treat the determinism as principled and name it: the pipeline is a satisficing agent in Simon's sense \citep{simon1955behavioral,simon1956rational}. Candidacy is threshold-gated instead of exhaustively scored, the target commitment is made once instead of re-optimized at every tick, and the intent is a few tags instead of the full state. Bounded rationality is also what makes the four failure loci observable: each stage is a distinct resource bound (attention, memory, deliberation, control), and Q/R/M/C is the audit trail of where the bound binds. The learned baselines make the converse point empirically: policies without an explicit query/lock interface collapse the stages even at competitive success (BC in \S\ref{sec:single-results}; CommNet PPO in \S\ref{sec:multi-agent-results}), so observability is traded away exactly where end-to-end optimization is traded in. That the \emph{same} heuristic is strong on water and rest, retrieval-starved on hazard recovery, and downstream-limited on goal-region (Figure~\ref{fig:hero}b) is the ecological-rationality point that heuristic success is a property of the heuristic--environment pair \citep{simon1956rational,gigerenzer1996reasoning}; the framework is the instrument that locates the mismatch. The same lens reads the $\Phi$-versus-$t_{\mathrm{succ}}$ split of \S\ref{sec:multi-agent-results}: the chain probability $\Phi$ ignores the cost of traversing the chain, so under a resource-rational reading \citep{lieder2020resource} an optimum should be sought on a cost-bearing metric; that is where it appears ($K{=}8$ on mean time-to-success) and not on $\Phi$.
 
-\paragraph{An order-theoretic reading of the Q--R polarity.}
-The query--retrieval interface carries standard order-theoretic structure that explains, rather than decorates, the single-agent diagnosis. Let $G$ be the set of place records, $\Sigma$ the tag alphabet, and $I_\theta \subseteq G\times\Sigma$ the incidence ``place $p$ carries tag $\tau$ with confidence at least $\theta$'' induced by the memory's per-place tag tables (Appendix~\ref{app:schemas}). For $B\subseteq\Sigma$ and $A\subseteq G$ put $\mathrm{ext}(B)=\{p : \forall\tau\in B,\ (p,\tau)\in I_\theta\}$ and $\mathrm{int}(A)=\{\tau : \forall p\in A,\ (p,\tau)\in I_\theta\}$. Then
-\[
-A \subseteq \mathrm{ext}(B) \iff B \subseteq \mathrm{int}(A),
-\]
-an antitone Galois connection; equivalently, $\mathrm{int}$ and $\mathrm{ext}$ form an adjoint pair between the two power-set posets (one taken with reversed order) viewed as thin categories \citep{ganter1999fca,maclane1998categories}, and the closed pairs form the concept lattice realized by the memory. In this vocabulary the single-agent diagnosis is exact: a query issues an intent $B = q^{\mathrm{req}}$; retrieval fails empty precisely when $\mathrm{ext}(B)=\emptyset$, that is, when the queried meaning lies outside the realized lattice; and consolidation acts on $I_\theta$, so growing the context grows every extent. The 91\%/96.9\% pattern of \S\ref{sec:refined-attribution} says the binding regime is absence of evidence rather than contradiction, which is the regime where the monotone-growth reading applies (Appendix~\ref{app:galois} states the caveat). The multi-agent axes then separate cleanly: memory coupling $\mathcal{M}^{(K)}_{-i}$ merges peer contexts at a rate set by $K$, which can only grow extents, while occupancy $\mathcal{O}_{-i}$ is not part of the context at all; the M$\leftrightarrow$C trade-off of Empirical Claim~1 is a competition between lattice growth (semantic) and resource contention (extra-semantic). The precise statement, its four-line argument, and its deliberate scope limits (graded scores, non-monotone updates, no structure claimed for M or C) are in Appendix~\ref{app:galois}.
+\paragraph{An order-theoretic reading (deferred to Appendix~\ref{app:galois}).}
+The query--retrieval interface carries a standard order-theoretic structure: places and tags form a formal context whose Galois connection realizes the memory's concept lattice, so retrieval fails empty exactly when the queried intent's extent is empty --- ``absence of evidence,'' the $91\%/96.9\%$ regime of \S\ref{sec:refined-attribution}, and the regime where growing the context can only grow extents. We use this as a naming device, not a contribution; the statement, its four-line argument, and its scope limits are in Appendix~\ref{app:galois}.
 
-\subsection{An options / hierarchical-MDP reading of the stages}
-\label{sec:hmdp}
-
-The order-theoretic reading fixes the \emph{static} content of the
-stages---which meanings are retrievable from the realized lattice---but
-it is silent on time and cost, and it is precisely a time-and-cost
-statement (the interior optimum on $t_{\mathrm{succ}}$ that does not
-appear on $\Phi$) that the multi-agent result turns on. We therefore
-give a second, dynamic reading in the language of temporally extended
-actions. It introduces no new algorithm: it names the object the
-pipeline already computes and makes the $\Phi$-versus-$t_{\mathrm{succ}}$
-split a property of that object.
-
-\paragraph{Q/R/M/C as an audit of an option.}
-Each query instantiates one temporally extended action---an option
-$o=\langle \mathcal{I},\pi,\beta\rangle$ in the sense of
-\citet{sutton1999between}: an initiation set $\mathcal{I}$, an internal
-policy $\pi$, and a termination condition $\beta$. Standard
-trajectory-level analysis treats an option as a black box scored by its
-return. The Q/R/M/C decomposition is instead an audit of the option's
-\emph{internal} structure, and it lines up edge-for-edge with the
-factorization $Q^\star\!\rightarrow\!R^\star\!\rightarrow\!M^\star\!\rightarrow\!C^\star$:
-\begin{description}[leftmargin=14pt,topsep=2pt,itemsep=2pt]
-\item[$Q^\star\!\rightarrow\!R^\star$ (initiation).] The option ``reach a place satisfying $q$'' is well-initiated only when its initiation set is non-empty. In the vocabulary of \S\ref{sec:event-semantics} this is exactly $\mathrm{ext}(q^{\mathrm{req}})\neq\emptyset$: an empty extent is not a bad choice of option but the absence of any admissible one, so $R$ fails before a target is ever locked.
-\item[$R^\star\!\rightarrow\!M^\star$ (policy over options).] Materialization is the high-level policy that commits to a single option out of the admissible set---the target lock $g^\star=\chi(\mathrm{ext}(q^{\mathrm{req}}))$ under the satisficing choice function $\chi$ of \S\ref{sec:event-semantics}.
-\item[$M^\star\!\rightarrow\!C^\star$ (execution to termination).] Completion is the roll-out of the internal policy $\pi$ until the termination condition $\beta$ fires (arrival at $g^\star$, or timeout). This is the only edge whose failure modes are extra-semantic: controller competence and, in a collective, occupancy $\mathcal{O}_{-i}$.
-\end{description}
-So Q/R/M/C is, on this reading, a stage-resolved instrument for the
-internal structure of a hierarchical-MDP option generator, rather than
-a bespoke logger for a single environment.
-
-\paragraph{Why the optimum lives on $t_{\mathrm{succ}}$ and not on $\Phi$: a semi-MDP reading.}
-In the options / semi-MDP formalism, an option is evaluated by a
-return accumulated over a \emph{random} execution duration $\tau$,
-\[
-R(s,o)=\mathbb{E}\!\left[\textstyle\sum_{t=0}^{\tau-1}\gamma^{t}\,r_{t+1}\;\middle|\;s_0=s,\,o\right],
-\]
-where $\tau$ is the number of low-level steps until $\beta$ fires
-\citep{sutton1999between}. The chain probability
-$\Phi=P(M^\star|R^\star)\!\cdot\!P(C^\star|M^\star)$ records only
-\emph{whether} the option-audit succeeds; it is by construction blind to
-$\tau$, which is the cost of traversing it. The cost-bearing metric
-$t_{\mathrm{succ}}$ is $\tau$. This is the structural reason---and not
-merely an empirical coincidence---that the resource-rational reading of
-\S\ref{sec:event-semantics} \citep{lieder2020resource} locates an
-interior optimum on $t_{\mathrm{succ}}$ ($K{=}8$) while $\Phi$ stays
-monotone: the two metrics measure different faces of the same option,
-success versus duration.
-
-\paragraph{The bottleneck shift as multi-agent option collision.}
-The dynamic reading makes the M$\leftrightarrow$C trade-off of
-Empirical Claim~1 physically concrete. Faster broadcast (smaller $K$)
-merges peer contexts $\mathcal{M}^{(K)}_{-i}$ more often, which can only
-enlarge each agent's extent and therefore raises the probability that a
-target is admissible and locked: $P(M^\star|R^\star)$ increases. But
-because agents share a spatial basis and a tag alphabet
-(\S\ref{sec:notation}), fresher shared memory also \emph{synchronizes}
-the high-level policy: several agents commit to the same option over the
-same scarce target. Under occupancy $\mathcal{O}_{-i}$ this inflates the
-execution duration $\tau$ and depresses $P(C^\star|M^\star)$. Cadence
-$K$ thus regulates the dispersion of the agents' option distribution:
-rare exchange desynchronizes option selection and shortens $\tau$,
-giving the minimum of $t_{\mathrm{succ}}$ at an interior $K$. The
-bottleneck is therefore grounded in a competition between
-initiation-set growth (semantic, contextual) and option-collision cost
-(extra-semantic, occupancy), exactly the two edges the cadence protocol
-$\mathcal{C}_K$ acts on in Figure~\ref{fig:causal}.
-
-\paragraph{Belief--desire--intention gloss and scope.}
-The high-level state audited above can be named in
-belief--desire--intention terms, which is the form used by the
-collective-memory companion: \emph{belief} is the realized concept
-lattice of \S\ref{sec:event-semantics} (what is retrievable), \emph{desire}
-is the state-conditioned predicate that selects the query $q$ (e.g.\ a
-thirst variable switching the required tags to \method{water\_source}),
-and \emph{intention} is the locked option $g^\star$. The hierarchical
-state is then $h=(\,\text{lattice},\,\text{desire},\,g^\star,\,s\,)$ with
-$s$ the low-level physical state, and the three failure loci separate as
-before: an empty extent is a belief/$R$ failure, a non-empty extent
-with no stable lock is an $M$ failure, and a lock unreachable under
-occupancy is a $C$ failure. Two scope caveats, in the spirit of
-\S\ref{sec:event-semantics}. We claim no options-\emph{learning} result:
-the pipeline is a fixed satisficing option generator
-\citep{simon1955behavioral} and Q/R/M/C audits it. And we attach the
-option structure only to the semantic path---$\mathcal{I}$ to
-$Q\!\rightarrow\!R$, $(\pi,\beta)$ to $M\!\rightarrow\!C$---while the
-semi-MDP return is used as an explanatory lens for the
-$\Phi$-versus-$t_{\mathrm{succ}}$ split, not fitted to the data.
-More broadly, neither this options reading nor the order-theoretic
-reading of \S\ref{sec:event-semantics} is claimed as a contribution:
-both are standard constructions (the options framework and formal
-concept analysis) used here as interpretive lenses on the measurement
-protocol, which is the paper's contribution. Their value is that each
-makes a testable statement on the logs---an empty extent localises the
-$R$ failure, and the semi-MDP duration $\tau$ predicts that the optimum
-appears on $t_{\mathrm{succ}}$ and not on $\Phi$---rather than adding
-theoretical weight for its own sake.
+\paragraph{A dynamic (options / H-MDP) reading (deferred to Appendix~\ref{app:hmdp}).}
+The stages also admit a temporally-extended-action reading: each query instantiates an option $o=\langle\mathcal{I},\pi,\beta\rangle$ \citep{sutton1999between} whose internal structure Q/R/M/C audits edge-for-edge (initiation $\to$ high-level policy over options $\to$ execution-to-termination), and the semi-MDP execution duration $\tau$ explains structurally why the interior optimum appears on $t_{\mathrm{succ}}$ but not on the $\tau$-blind chain probability $\Phi$. Like the order-theoretic reading, this is an interpretive lens, not a contribution; the full development, the belief--desire--intention gloss (shared with the collective-memory companion), and the multi-agent option-collision account of the bottleneck shift are in Appendix~\ref{app:hmdp}.
 
 \section{Single agent: stage diagnostics localize failure}
 \label{sec:single}
@@ -412,7 +313,7 @@ The system uses a graph substrate with a semantic retrieval interface on top: ob
 Four single-agent task families are evaluated (water, safe-rest, goal-region on Empty-6x6 / FourRooms~\citep{sutton1999between}, hazard recovery on LavaGapS7), 10 seeds $\times$ 8 episodes each, $\times$ 2 assist modes. Semantic stack (node, concept, state-conditioned variants) is compared against four baselines: random, graph-only, SPTM-like, learned BC. Reported: end-to-end success, steps, four operational stage rates, assist deltas, weakest stage per task and per method. All means are seed-aggregated; 95\% bootstrap CIs use $B{=}5{,}000$ resamples~\citep{efron1979bootstrap}; assist comparisons use paired Wilcoxon signed-rank tests~\citep{wilcoxon1945individual} with Holm-Bonferroni correction~\citep{holm1979simple} (Appendix~\ref{app:assist}). For the two hardest tasks (FourRooms, LavaGapS7), four oracle regimes (\emph{base}, \emph{oracle R/M/C}) are run — each replaces exactly one stage while leaving the rest of the pipeline unchanged. BabyAI portability check in Appendix~\ref{app:babyai}. All single-agent experiments ran on a 10-core ARM CPU, 32\,GB RAM (CPU-only); oracle sweep $<1$\,min wall-clock.
 
 \paragraph{LLM diagnostic block.}
-To check that Q/R/M/C is not tied to the symbolic planner implementation, we also run a fixed TextNav substrate with an LLM-driven observe/query/retrieve/decide loop. The TextNav task, prompts, parser contract, and event definitions are held fixed while only the local Ollama model changes; the backend uses model-compatible completion settings when an Ollama chat template otherwise hides short structured answers in a separate thinking field. This block is intentionally reported as a smoke diagnostic (Table~\ref{tab:llm-smoke}), because reproducing full ReAct/Reflexion/Voyager/MemGPT-style agents is a separate systems contribution; the comparison to those systems is a coverage comparison in Appendix~\ref{app:sota-coverage}.
+To check that Q/R/M/C is not tied to the symbolic planner implementation, we also run a fixed TextNav substrate with an LLM-driven observe/query/retrieve/decide loop. The TextNav task, prompts, parser contract, and event definitions are held fixed while only the local Ollama model changes; the backend uses model-compatible completion settings when an Ollama chat template otherwise hides short structured answers in a separate thinking field. This block is a controlled step-budget study (Table~\ref{tab:llm-smoke}): sweeping the completion budget drives both LLM agents into a failure that Q/R/M/C localizes to the $C$ stage while $Q/R/M$ stay saturated, exhibiting the framework's diagnostic property on real language agents. Reproducing full ReAct/Reflexion/Voyager/MemGPT-style agents is a separate systems contribution; the comparison to those systems is a coverage comparison in Appendix~\ref{app:sota-coverage}.
 
 \subsection{Stage-estimator validation}
 \label{sec:validation}
@@ -646,20 +547,25 @@ coupling at higher $N$ delaying the cost-regime transition
 \paragraph{Learned-communication baseline: stage events are structurally degenerate even at competitive success.}
 A CommNet-style policy \citep{sukhbaatar2016commnet} trained with PPO~\citep{schulman2017proximal} on the same scenario ($N{=}3$, $T{=}2$) reaches $0.667$ held-out success ($n{=}100$ seeds) --- matching the symbolic peer architecture at $K{=}8$ ($0.65$). Despite this, the Q/R/M/C profile remains structurally degenerate: $Q^\star{=}1.00$ saturated by construction; $R^\star{=}0.997$, $M^\star{=}0.997$ collapsed together ($P(M^\star|R^\star){=}1.00$). This is the verified structural claim: a real-valued comm vector is never informatively empty (Q saturates) and lacks an explicit target-lock interface (R/M merge), regardless of training budget. The multi-agent counterpart of the single-agent learned-BC analysis (\S\ref{sec:single-results}). Full architecture, PPO hyperparameters, and side-by-side REINFORCE vs PPO comparison in Appendix~\ref{app:learned-baselines}.
 
-\paragraph{LLM model sweep: same logger, language-agent traces.}
-Table~\ref{tab:llm-smoke} reports a minimal local TextNav smoke test using the same Q/R/M/C event contract. A naive qwen3:4b/Ollama chat-template call returned empty \texttt{response} strings because the model spent the short structured-output budget in the separate thinking field; the reported sweep fixes this as an instrumentation issue by using raw structured completion for qwen3:4b and a first-line parser that ignores copied few-shot continuations. Under that compatible interface, both local LLMs emit non-empty queries, retrieve and lock semantic candidates, and complete the task. The result is not a claim about model quality or a leaderboard; it demonstrates that the logger can instrument language-agent traces and expose implementation-level collapses when they occur. We state its limits plainly: with all four stage rates saturated at $1.00$ on this small fixed sweep, there is no task-level failure for the framework to localise, so the block demonstrates \emph{instrument portability}, not diagnostic power on language agents. A larger LLM evaluation on failure-exhibiting tasks --- where a stage actually breaks and must be identified --- is future work; this block and its coverage positioning (Appendix~\ref{app:sota-coverage}) are deliberately confined to the portability claim.
+\paragraph{LLM model sweep: the logger localizes a real failure in language agents.}
+Table~\ref{tab:llm-smoke} runs the same Q/R/M/C event contract on two local LLM agents (qwen3:4b and llama3.1 via Ollama) on TextNav, sweeping the step budget over $\{6,12,25\}$ ($8$ episodes each; the task needs $\sim$10 low-level steps). At a generous budget ($12$, $25$) both agents succeed and all four stages fire. At a budget below the requirement ($6$), success drops to $0/8$ for \emph{both} models --- and the decomposition shows \emph{where}: $Q^\star{=}R^\star{=}M^\star{=}1.00$ (the agents form the query, retrieve, and lock the correct target every episode) while $C^\star{=}0.00$ (none complete in time). The framework localizes the failure precisely to a budget-limited completion ($C$) rather than to query formation, retrieval, or materialization; that both models fail identically shows the failure is structural, not a model artifact. This is the diagnostic property the framework claims, now exhibited on \emph{real language agents}: an otherwise opaque success collapse ($1.00\to0.00$) is resolved into a specific failing stage. (Instrumentation note: a naive qwen3:4b/Ollama chat-template call initially returned empty \texttt{response} strings because the model spent the short structured-output budget in a separate thinking field; we use raw structured completion for qwen3:4b and a first-line parser, recorded for reproducibility.) Scope: this is a small, controlled TextNav study on local models; scaling the same contract to full ReAct/Voyager/MemGPT-style agents on richer tasks with multiple failure modes is future work (Appendix~\ref{app:sota-coverage}).
 
 \begin{table}[h]
-  \caption{LLM TextNav diagnostic sweep. Three episodes per local Ollama model, step limit 10, temperature 0.0. Artifacts: \texttt{tmp/paper1\_llm\_model\_sweep\_3ep\_fixed}.}
+  \caption{LLM TextNav step-budget sweep: Q/R/M/C localizes a completion-limited failure in two local Ollama agents. Eight episodes per (model, step limit), temperature 0.0; the task needs $\sim$10 low-level steps. At a budget below that requirement (step limit 6) success drops to $0.00$ for both models, yet $Q^\star{=}R^\star{=}M^\star{=}1.00$ (the agents form the query, retrieve, and lock the correct target every episode) while $C^\star{=}0.00$: the framework localizes the failure to the C stage, not to Q/R/M. Both models behave identically, so the failure is structural (budget), not model-specific. Artifacts: \texttt{tmp/llm\_steplimit\_\{6,12,25\}}.}
   \label{tab:llm-smoke}
   \centering
   \small
-  \begin{tabular}{l c c c c c c c}
+  \begin{tabular}{l c c c c c c}
     \toprule
-    Model & Calls & Mean latency & Success & $Q^\star$ & $R^\star$ & $M^\star$ & $C^\star$ \\
+    Model & Step limit & Success & $Q^\star$ & $R^\star$ & $M^\star$ & $C^\star$ \\
     \midrule
-    qwen3:4b & 63 & 4.29s & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
-    llama3.1 & 63 & 2.87s & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+    qwen3:4b & 6  & 0.00 & 1.00 & 1.00 & 1.00 & \textbf{0.00} \\
+    llama3.1 & 6  & 0.00 & 1.00 & 1.00 & 1.00 & \textbf{0.00} \\
+    \midrule
+    qwen3:4b & 12 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+    llama3.1 & 12 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+    qwen3:4b & 25 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+    llama3.1 & 25 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -994,6 +900,98 @@ $A \subseteq \mathrm{ext}(B)$ unfolds to $\forall p \in A\ \forall \tau \in B:\ 
 
 \paragraph{Instantiation and scope.}
 In our memory, take $G$ to be the place records, $\Sigma$ the tag alphabet, and $I_\theta = \{(p,\tau) : \text{the per-place tag table assigns } \tau \text{ to } p \text{ with confidence} \ge \theta\}$ (Appendix~\ref{app:schemas}); the intent of a query is $B = q^{\mathrm{req}}$ and R-availability is $\mathrm{ext}(B) \ne \emptyset$. Three deliberate scope restrictions. (i) \emph{Graded scores.} The deployed retrieval score is graded (the weighted log-score over required, preferred, and penalty tags of Appendix~\ref{app:schemas}), so the crisp connection above formalizes the thresholded required-tag skeleton of candidacy; the graded analogue is the theory of fuzzy Galois connections \citep{belohlavek1999fuzzy} and we do not use it here. (ii) \emph{Non-monotone updates.} Dirichlet--multinomial updates are not literally monotone in $I_\theta$: contrary evidence can remove an incidence. On the reported benchmarks the binding failure is absence of evidence rather than contradiction (91\% empty extents, 96.9\% precision when non-empty, \S\ref{sec:refined-attribution}), so the monotone-growth reading is the empirically relevant regime, and we flag the exception rather than assume it away. (iii) \emph{No structure for M or C.} Materialization is a satisficing choice function on non-empty extents and Completion is a control problem under occupancy; neither carries the order structure, and we attach no categorical claims to them. The reading earns its place by naming the failure mode exactly (a queried intent whose extent is empty lies outside the realized concept lattice), by giving consolidation a precise object (growth of the context, hence of every extent), and by locating the cadence axis structurally: memory coupling $\mathcal{M}^{(K)}_{-i}$ merges peer contexts at rate $K^{-1}$, while occupancy $\mathcal{O}_{-i}$ is extra-contextual --- which is the structural content behind the two slope signs of Empirical Claim~1.
+
+\section{An options / hierarchical-MDP reading of the stages}
+\label{app:hmdp}
+
+This appendix develops the dynamic reading pointed to from
+\S\ref{sec:event-semantics}. It introduces no new algorithm: it names the
+object the pipeline already computes and makes the
+$\Phi$-versus-$t_{\mathrm{succ}}$ split a property of that object. Where the
+order-theoretic reading (Appendix~\ref{app:galois}) fixes the \emph{static}
+content of the stages, this one addresses time and cost.
+
+\paragraph{Q/R/M/C as an audit of an option.}
+Each query instantiates one temporally extended action---an option
+$o=\langle \mathcal{I},\pi,\beta\rangle$ in the sense of
+\citet{sutton1999between}: an initiation set $\mathcal{I}$, an internal
+policy $\pi$, and a termination condition $\beta$. Standard
+trajectory-level analysis treats an option as a black box scored by its
+return. The Q/R/M/C decomposition is instead an audit of the option's
+\emph{internal} structure, and it lines up edge-for-edge with the
+factorization $Q^\star\!\rightarrow\!R^\star\!\rightarrow\!M^\star\!\rightarrow\!C^\star$:
+\begin{description}[leftmargin=14pt,topsep=2pt,itemsep=2pt]
+\item[$Q^\star\!\rightarrow\!R^\star$ (initiation).] The option ``reach a place satisfying $q$'' is well-initiated only when its initiation set is non-empty. In the vocabulary of \S\ref{sec:event-semantics} this is exactly $\mathrm{ext}(q^{\mathrm{req}})\neq\emptyset$: an empty extent is not a bad choice of option but the absence of any admissible one, so $R$ fails before a target is ever locked.
+\item[$R^\star\!\rightarrow\!M^\star$ (policy over options).] Materialization is the high-level policy that commits to a single option out of the admissible set---the target lock $g^\star=\chi(\mathrm{ext}(q^{\mathrm{req}}))$ under the satisficing choice function $\chi$ of \S\ref{sec:event-semantics}.
+\item[$M^\star\!\rightarrow\!C^\star$ (execution to termination).] Completion is the roll-out of the internal policy $\pi$ until the termination condition $\beta$ fires (arrival at $g^\star$, or timeout). This is the only edge whose failure modes are extra-semantic: controller competence and, in a collective, occupancy $\mathcal{O}_{-i}$.
+\end{description}
+So Q/R/M/C is, on this reading, a stage-resolved instrument for the
+internal structure of a hierarchical-MDP option generator, rather than
+a bespoke logger for a single environment.
+
+\paragraph{Why the optimum lives on $t_{\mathrm{succ}}$ and not on $\Phi$: a semi-MDP reading.}
+In the options / semi-MDP formalism, an option is evaluated by a
+return accumulated over a \emph{random} execution duration $\tau$,
+\[
+R(s,o)=\mathbb{E}\!\left[\textstyle\sum_{t=0}^{\tau-1}\gamma^{t}\,r_{t+1}\;\middle|\;s_0=s,\,o\right],
+\]
+where $\tau$ is the number of low-level steps until $\beta$ fires
+\citep{sutton1999between}. The chain probability
+$\Phi=P(M^\star|R^\star)\!\cdot\!P(C^\star|M^\star)$ records only
+\emph{whether} the option-audit succeeds; it is by construction blind to
+$\tau$, which is the cost of traversing it. The cost-bearing metric
+$t_{\mathrm{succ}}$ is $\tau$. This is the structural reason---and not
+merely an empirical coincidence---that the resource-rational reading of
+\S\ref{sec:event-semantics} \citep{lieder2020resource} locates an
+interior optimum on $t_{\mathrm{succ}}$ ($K{=}8$) while $\Phi$ stays
+monotone: the two metrics measure different faces of the same option,
+success versus duration.
+
+\paragraph{The bottleneck shift as multi-agent option collision.}
+The dynamic reading makes the M$\leftrightarrow$C trade-off of
+Empirical Claim~1 physically concrete. Faster broadcast (smaller $K$)
+merges peer contexts $\mathcal{M}^{(K)}_{-i}$ more often, which can only
+enlarge each agent's extent and therefore raises the probability that a
+target is admissible and locked: $P(M^\star|R^\star)$ increases. But
+because agents share a spatial basis and a tag alphabet
+(\S\ref{sec:notation}), fresher shared memory also \emph{synchronizes}
+the high-level policy: several agents commit to the same option over the
+same scarce target. Under occupancy $\mathcal{O}_{-i}$ this inflates the
+execution duration $\tau$ and depresses $P(C^\star|M^\star)$. Cadence
+$K$ thus regulates the dispersion of the agents' option distribution:
+rare exchange desynchronizes option selection and shortens $\tau$,
+giving the minimum of $t_{\mathrm{succ}}$ at an interior $K$. The
+bottleneck is therefore grounded in a competition between
+initiation-set growth (semantic, contextual) and option-collision cost
+(extra-semantic, occupancy), exactly the two edges the cadence protocol
+$\mathcal{C}_K$ acts on in Figure~\ref{fig:causal}.
+
+\paragraph{Belief--desire--intention gloss and scope.}
+The high-level state audited above can be named in
+belief--desire--intention terms, which is the form used by the
+collective-memory companion: \emph{belief} is the realized concept
+lattice of \S\ref{sec:event-semantics} (what is retrievable), \emph{desire}
+is the state-conditioned predicate that selects the query $q$ (e.g.\ a
+thirst variable switching the required tags to \method{water\_source}),
+and \emph{intention} is the locked option $g^\star$. The hierarchical
+state is then $h=(\,\text{lattice},\,\text{desire},\,g^\star,\,s\,)$ with
+$s$ the low-level physical state, and the three failure loci separate as
+before: an empty extent is a belief/$R$ failure, a non-empty extent
+with no stable lock is an $M$ failure, and a lock unreachable under
+occupancy is a $C$ failure. Two scope caveats. We claim no
+options-\emph{learning} result: the pipeline is a fixed satisficing option
+generator \citep{simon1955behavioral} and Q/R/M/C audits it. And we attach
+the option structure only to the semantic path---$\mathcal{I}$ to
+$Q\!\rightarrow\!R$, $(\pi,\beta)$ to $M\!\rightarrow\!C$---while the
+semi-MDP return is used as an explanatory lens for the
+$\Phi$-versus-$t_{\mathrm{succ}}$ split, not fitted to the data. Neither
+this options reading nor the order-theoretic reading of
+Appendix~\ref{app:galois} is claimed as a contribution: both are standard
+constructions used as interpretive lenses on the measurement protocol,
+which is the paper's contribution. Their value is that each makes a
+testable statement on the logs---an empty extent localises the $R$
+failure, and the semi-MDP duration $\tau$ predicts that the optimum
+appears on $t_{\mathrm{succ}}$ and not on $\Phi$.
 
 \section{Operational vs.\ nested stage estimators}
 \label{app:estimators}
@@ -1353,7 +1351,7 @@ Classical cognitive-map perspectives motivate explicit place abstractions \citep
 \subsection{SOTA baseline and coverage matrix}
 \label{app:sota-coverage}
 
-Table~\ref{tab:sota-coverage} separates direct experimental baselines from broader SOTA references. The local experiments are intentionally modest and fully instrumented: random / graph-only / SPTM-like / learned BC in MiniGrid, CommNet PPO in the multi-agent grid, and a TextNav LLM smoke over local Ollama models. ReAct, Reflexion, Voyager, Generative Agents, AutoGen, MemGPT, and Mem0 are not reimplemented as full systems here; they define the current memory-agent design space against which Q/R/M/C is positioned as a diagnostic protocol.
+Table~\ref{tab:sota-coverage} separates direct experimental baselines from broader SOTA references. The local experiments are intentionally modest and fully instrumented: random / graph-only / SPTM-like / learned BC in MiniGrid, CommNet PPO in the multi-agent grid, and a TextNav LLM step-budget study over two local Ollama models (in which Q/R/M/C localizes a completion-limited failure, \S\ref{sec:multi-agent-results}). ReAct, Reflexion, Voyager, Generative Agents, AutoGen, MemGPT, and Mem0 are not reimplemented as full systems here; they define the current memory-agent design space against which Q/R/M/C is positioned as a diagnostic protocol.
 
 \paragraph{Positioning against SOTA memory designs.}
 The memory-agent design space can be organised on two axes: single- vs.\ multi-agent, and how memory is represented and shared (Table~\ref{tab:sota-quadrants}). Vector-embedding memory (MemGPT, Voyager single-agent; Generative Agents multi-agent) retrieves by opaque nearest-neighbour lookup, so a failure is not localisable to a stage. Shared-context designs (MetaGPT, AutoGen) pool everything into one window, dissolving per-agent state. Learned-communication MARL (CommNet, and stronger CTDE methods QMIX \citep{rashid2018qmix}, MAPPO \citep{yu2022mappo}, MADDPG \citep{lowe2017maddpg}) optimises a message channel end-to-end and, as we verify for CommNet PPO (\S\ref{sec:multi-agent-results}), emits no separable query/lock/completion events. The cell our system occupies---per-agent \emph{symbolic} memory with an explicit query/retrieve/materialise interface, exchanged at a tunable cadence---is empty in this matrix, and it is exactly the interface that makes the four Q/R/M/C stages observable. Our claim against SOTA is therefore not higher reward but higher \emph{diagnosability at matched task success}: the same interface that a strong learned method trades away for end-to-end optimisation is what lets the framework localise where memory helps.
@@ -1394,7 +1392,7 @@ Embodied LLM agents & Voyager \citep{wang2023voyager} & Primary-source reference
 Social/memory simulations & Generative Agents \citep{park2023generative} & Primary-source reference & Their observation/memory/reflection loop motivates logging stage-specific memory use rather than only believability. \\
 Multi-agent LLM frameworks & AutoGen \citep{wu2023autogen} & Primary-source reference & Conversation traces provide candidate Q/R/M/C events; this paper supplies the measurement contract. \\
 Long-term LLM memory systems & MemGPT / Mem0 \citep{packer2023memgpt,chhikara2025mem0} & Primary-source reference & Persistent memory systems can be evaluated by where they fail: retrieval, materialization, or completion. \\
-Local LLM substrate & qwen3:4b, llama3.1 & Direct TextNav smoke & Verifies that a language-agent loop can emit the same event contract; see Table~\ref{tab:llm-smoke}. \\
+Local LLM substrate & qwen3:4b, llama3.1 & Direct TextNav step-budget study & Q/R/M/C localizes a completion-limited failure ($C^\star{\to}0$ while $Q/R/M$ stay saturated) in real LLM agents; see Table~\ref{tab:llm-smoke}. \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -1588,7 +1586,7 @@ An anonymized public repository accompanies this submission. The main paper arti
 \begin{itemize}[leftmargin=16pt]
 \item smoke suite (all local non-LLM blocks): \path{python scripts/run_paper1_clean_experiments.py --mode smoke --skip_llm --out_dir tmp/paper1_clean_experiments_smoke}
 \item full local suite (single-agent, oracle, multi-agent, CommNet, portability/noise): \path{python scripts/run_paper1_clean_experiments.py --mode full --skip_llm --workers 8 --out_dir tmp/paper1_clean_experiments_full}
-\item LLM TextNav sweep (requires local Ollama): \path{python -m experiments.llm_collective.run_model_sweep --models qwen3:4b llama3.1:latest --episodes 3 --step_limit 10 --timeout_s 60 --out_dir tmp/paper1_llm_model_sweep_3ep_fixed}
+\item LLM TextNav step-budget sweep (requires local Ollama), run once per budget $K'\in\{6,12,25\}$: \path{python -m experiments.llm_collective.run_model_sweep --models qwen3:4b llama3.1:latest --episodes 8 --step_limit <K'> --out_dir tmp/llm_steplimit_<K'>}
 \end{itemize}
 
 \subsection*{Single-agent (\S\ref{sec:validation}--\S\ref{sec:oracle})}
