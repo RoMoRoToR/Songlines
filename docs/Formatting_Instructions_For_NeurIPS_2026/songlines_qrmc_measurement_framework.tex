@@ -593,7 +593,33 @@ mechanistic reading of Empirical Claim~1.
 A CommNet-style policy \citep{sukhbaatar2016commnet} trained with PPO~\citep{schulman2017proximal} on the same scenario ($N{=}3$, $T{=}2$) reaches $0.667$ held-out success ($n{=}100$ seeds) --- matching the symbolic peer architecture at $K{=}8$ ($0.65$). Despite this, the Q/R/M/C profile remains structurally degenerate: $Q^\star{=}1.00$ saturated by construction; $R^\star{=}0.997$, $M^\star{=}0.997$ collapsed together ($P(M^\star|R^\star){=}1.00$). This is the verified structural claim: a real-valued comm vector is never informatively empty (Q saturates) and lacks an explicit target-lock interface (R/M merge), regardless of training budget. The multi-agent counterpart of the single-agent learned-BC analysis (\S\ref{sec:single-results}). Full architecture, PPO hyperparameters, and side-by-side REINFORCE vs PPO comparison in Appendix~\ref{app:learned-baselines}.
 
 \paragraph{LLM model sweep: the logger localizes a real failure in language agents.}
-Table~\ref{tab:llm-smoke} runs the same Q/R/M/C event contract on two local LLM agents (qwen3:4b and llama3.1 via Ollama) on TextNav, sweeping the step budget over $\{6,12,25\}$ ($8$ episodes each; the task needs $\sim$10 low-level steps). At a generous budget ($12$, $25$) both agents succeed and all four stages fire. At a budget below the requirement ($6$), success drops to $0/8$ for \emph{both} models --- and the decomposition shows \emph{where}: $Q^\star{=}R^\star{=}M^\star{=}1.00$ (the agents form the query, retrieve, and lock the correct target every episode) while $C^\star{=}0.00$ (none complete in time). The framework localizes the failure precisely to a budget-limited completion ($C$) rather than to query formation, retrieval, or materialization; that both models fail identically shows the failure is structural, not a model artifact. This is the diagnostic property the framework claims, now exhibited on \emph{real language agents}: an otherwise opaque success collapse ($1.00\to0.00$) is resolved into a specific failing stage. (Instrumentation note: a naive qwen3:4b/Ollama chat-template call initially returned empty \texttt{response} strings because the model spent the short structured-output budget in a separate thinking field; we use raw structured completion for qwen3:4b and a first-line parser, recorded for reproducibility.) Scope: this is a small, controlled TextNav study on local models; scaling the same contract to full ReAct/Voyager/MemGPT-style agents on richer tasks with multiple failure modes is future work (Appendix~\ref{app:sota-coverage}).
+Table~\ref{tab:llm-smoke} runs the same Q/R/M/C event contract on two local LLM agents (qwen3:4b and llama3.1 via Ollama) on TextNav, sweeping the step budget over $\{6,12,25\}$ ($8$ episodes each; the task needs $\sim$10 low-level steps). At a generous budget ($12$, $25$) both agents succeed and all four stages fire. At a budget below the requirement ($6$), success drops to $0/8$ for \emph{both} models --- and the decomposition shows \emph{where}: $Q^\star{=}R^\star{=}M^\star{=}1.00$ (the agents form the query, retrieve, and lock the correct target every episode) while $C^\star{=}0.00$ (none complete in time). The framework localizes the failure precisely to a budget-limited completion ($C$) rather than to query formation, retrieval, or materialization; that both models fail identically shows the failure is structural, not a model artifact. This is the diagnostic property the framework claims, now exhibited on \emph{real language agents}: an otherwise opaque success collapse ($1.00\to0.00$) is resolved into a specific failing stage. (Instrumentation note: a naive qwen3:4b/Ollama chat-template call initially returned empty \texttt{response} strings because the model spent the short structured-output budget in a separate thinking field; we use raw structured completion for qwen3:4b and a first-line parser, recorded for reproducibility.)
+
+\paragraph{The multi-agent phenomenology reproduces on a live LLM collective.}
+Beyond the single-agent budget study, the same event contract
+instruments a collective of $N{=}3$ LLM agents (llama3.1) sharing
+symbolic place memory by peer broadcast under scarcity ($M{=}2$
+takeable targets, four layouts, $K\in\{2,8\}$), with all predictions
+registered before the runs. The cadence phenomenology of
+\S\ref{sec:multi-agent-results} carries over to the language
+substrate: a paired comparison against the no-communication baseline
+on identical layouts shows raw sharing \emph{lowering} success from
+$2/3$ to $1/3$ per episode --- the occupancy-racing C-collapse, now
+produced by agents whose queries, tag extraction, and commitments are
+LLM-made --- and target collisions appear in $7/8$ shared-memory
+episodes. Attaching the reservation-and-rollback repair protocol (the
+constructive answer to open problem~3 of
+Appendix~\ref{app:open-problems}) recovers part of the loss
+($0.333\to0.417$ at both cadences, rollback latency again
+${\approx}K$). Two interface findings transfer to any
+LLM-over-symbolic-memory design: LLM query formers free-generate
+retrieval tags outside the memory's vocabulary (requiring tolerant
+retrieval gates), and small local models are reliable at semantic
+commitment but not at coordinate arithmetic or systematic exploration
+(requiring layered execution). Full protocol and provenance analysis
+in the companion manuscript.
+
+Scope: these are controlled studies on local models; scaling the same contract to full Voyager/MemGPT-style agents on richer tasks with multiple failure modes is developed next (external-framework validation) and in Appendix~\ref{app:sota-coverage}.
 
 \begin{table}[h]
   \caption{LLM TextNav step-budget sweep: Q/R/M/C localizes a completion-limited failure in two local Ollama agents. Eight episodes per (model, step limit), temperature 0.0; the task needs $\sim$10 low-level steps. At a budget below that requirement (step limit 6) success drops to $0.00$ for both models, yet $Q^\star{=}R^\star{=}M^\star{=}1.00$ (the agents form the query, retrieve, and lock the correct target every episode) while $C^\star{=}0.00$: the framework localizes the failure to the C stage, not to Q/R/M. Both models behave identically, so the failure is structural (budget), not model-specific. Artifacts: \texttt{tmp/llm\_steplimit\_\{6,12,25\}}.}
