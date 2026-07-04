@@ -680,11 +680,11 @@ are recorded in the registration file.
 
 \begin{table}[h]
 \caption{Q/R/M/C on three third-party agent frameworks (llama3.1,
-8 episodes per cell, identical episodes/tools/budgets). Structural
+20 episodes per cell, identical episodes/tools/budgets). Structural
 failures localize identically everywhere: the consolidation gap is
 $R{=}0.00$ and the budget failure is $C{=}0.00$ at $Q{=}R{=}1$, for
 all three stacks. On the \emph{clean} control the frameworks spread
-from $0.38$ to $0.75$ end-to-end --- and the decomposition attributes
+from $0.50$ to $0.75$ end-to-end --- and the decomposition attributes
 the spread (see text). $M_1$: first \method{goto} targets the true
 place; stale$_1$: first \method{goto} targets the stale distractor.}
 \label{tab:external}
@@ -694,20 +694,20 @@ place; stale$_1$: first \method{goto} targets the stale distractor.}
 \toprule
 Framework & Variant & $Q^\star$ & $R^\star$ & $M^\star$ & $C^\star$ & $M_1$ & stale$_1$ \\
 \midrule
-OpenAI SDK & control     & 1.00 & 1.00 & 0.75 & 0.75 & 0.12 & --- \\
-           & consolidation gap & 1.00 & \textbf{0.00} & 0.38 & 0.38 & 0.12 & --- \\
-           & stale ambiguity   & 1.00 & 1.00 & 0.88 & 0.12 & 0.12 & 0.38 \\
-           & tight budget      & 1.00 & 1.00 & 0.12 & \textbf{0.00} & 0.12 & --- \\
+OpenAI SDK & control     & 1.00 & 1.00 & 0.85 & 0.75 & 0.25 & --- \\
+           & consolidation gap & 1.00 & \textbf{0.00} & 0.50 & 0.40 & 0.25 & --- \\
+           & stale ambiguity   & 1.00 & 1.00 & 0.90 & 0.30 & 0.25 & 0.20 \\
+           & tight budget      & 1.00 & 1.00 & 0.25 & \textbf{0.00} & 0.25 & --- \\
 \midrule
-LangGraph  & control     & 1.00 & 1.00 & 0.75 & 0.50 & 0.50 & --- \\
-           & consolidation gap & 1.00 & \textbf{0.00} & 0.38 & 0.25 & 0.12 & --- \\
-           & stale ambiguity   & 1.00 & 1.00 & 0.62 & 0.62 & 0.38 & 0.38 \\
-           & tight budget      & 1.00 & 1.00 & 0.12 & \textbf{0.00} & 0.12 & --- \\
+LangGraph  & control     & 1.00 & 1.00 & 0.70 & 0.50 & 0.50 & --- \\
+           & consolidation gap & 1.00 & \textbf{0.00} & 0.20 & 0.15 & 0.10 & --- \\
+           & stale ambiguity   & 1.00 & 1.00 & 0.65 & 0.60 & 0.50 & 0.35 \\
+           & tight budget      & 1.00 & 1.00 & 0.10 & \textbf{0.00} & 0.10 & --- \\
 \midrule
-AutoGen    & control     & 1.00 & 1.00 & 0.88 & 0.38 & 0.38 & --- \\
-           & consolidation gap & 1.00 & \textbf{0.00} & 0.50 & 0.25 & 0.12 & --- \\
-           & stale ambiguity   & 1.00 & 1.00 & 0.38 & 0.25 & 0.12 & 0.62 \\
-           & tight budget      & 1.00 & 1.00 & 0.12 & \textbf{0.00} & 0.12 & --- \\
+AutoGen    & control     & 1.00 & 1.00 & 0.85 & 0.55 & 0.45 & --- \\
+           & consolidation gap & 1.00 & \textbf{0.00} & 0.30 & 0.20 & 0.15 & --- \\
+           & stale ambiguity   & 1.00 & 1.00 & 0.50 & 0.45 & 0.35 & 0.40 \\
+           & tight budget      & 1.00 & 1.00 & 0.15 & \textbf{0.00} & 0.15 & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -716,30 +716,34 @@ Three findings (Table~\ref{tab:external}). \textbf{(1) Structural
 localizations are exact and framework-independent.} When the memory
 lacks the fact, $R^\star{=}0.00$ on every stack; when the budget
 cannot fit completion, $C^\star{=}0.00$ at $Q^\star{=}R^\star{=}1$ on
-every stack. The contract needs no per-framework adaptation.
-\textbf{(2) The clean control separates the frameworks, and the
-decomposition says how.} End-to-end success on the SAME clean episodes
-ranges $0.38$ (AutoGen) to $0.75$ (OpenAI SDK). A leaderboard would
-report ``different quality''; the stages show a shared pathology plus
-different recovery loops: first-commitment discipline is weak
-everywhere ($M_1{=}0.12$--$0.50$ --- the agent's first \method{goto}
-frequently ignores its own just-retrieved evidence), and the
-frameworks differ in whether they \emph{recover} from the bad first
-lock within budget (OpenAI SDK re-queries and recovers,
-$M^\star{=}0.75\to C^\star{=}0.75$; AutoGen locks the true place
-eventually but burns its turns, $M^\star{=}0.88$ vs.\
-$C^\star{=}0.38$). \textbf{(3) The stale distractor pulls, measurably
-and unevenly.} The outdated record captures the first commitment in
-$0.38$--$0.62$ of ambiguous episodes --- most strongly for AutoGen ---
-the LLM-memory analogue of the staleness gating that the collective
-experiments showed to be decisive. Honestly failed registrations: the
-behavioral predictions that assumed a clean control (all-stages
-$\ge 6/8$; an ambiguity-induced completion drop below control) broke
-\emph{because the frameworks themselves fail a clean memory task
-25--62\% of the time} --- which is finding (2), not noise; both are
-recorded as registered failures with mechanisms. Scope: one model,
-$n{=}8$ per cell, three stacks; Letta/CrewAI (Python $\ge$3.10) and
-API-scale models are the natural extension.
+every stack ($20/20$ episodes each). The contract needs no
+per-framework adaptation. \textbf{(2) The clean control separates the
+frameworks, and the decomposition says how.} End-to-end success on the
+SAME clean episodes ranges $0.50$ (LangGraph) to $0.75$ (OpenAI SDK).
+A leaderboard would report ``different quality''; the stages show a
+shared pathology plus different loop economics: first-commitment
+discipline is weak everywhere ($M_1{=}0.25$--$0.50$ --- the agent's
+first \method{goto} frequently ignores its own just-retrieved
+evidence), episode-level materialization recovers to $0.70$--$0.85$
+through re-query loops, and the frameworks then differ in how much of
+that recovery survives to completion ($C^\star/M^\star$ from $0.88$
+for the OpenAI SDK loop down to $0.65$ for AutoGen). \textbf{(3) The
+stale distractor pulls, measurably and unevenly.} The outdated record
+captures the first commitment in $0.20$--$0.40$ of ambiguous episodes
+(most strongly for AutoGen), and its completion cost is
+framework-specific: the OpenAI SDK loop pays hardest
+($C^\star:0.75\to0.30$) while LangGraph and AutoGen absorb the detour
+($0.50\to0.60$; $0.55\to0.45$) --- the LLM-memory analogue of the
+staleness gating that the collective experiments showed to be
+decisive. Honestly failed registrations: the behavioral predictions
+that assumed a clean control (all stages $\ge 0.75$; a uniform
+ambiguity-induced completion drop) broke \emph{because the frameworks
+themselves fail a clean memory task 25--50\% of the time and pay for
+ambiguity in different places} --- which is finding (2)--(3), not
+noise; all revisions are recorded as registered failures with
+mechanisms. Scope: three stacks at $n{=}20$ per cell on one primary
+model; Letta/CrewAI (Python $\ge$3.10) and API-scale models are the
+natural extension.
 
 \section{Limitations and future work}
 \label{sec:limitations}
