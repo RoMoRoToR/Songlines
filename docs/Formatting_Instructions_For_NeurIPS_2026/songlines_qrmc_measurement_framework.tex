@@ -712,7 +712,21 @@ AutoGen    & control     & 1.00 & 1.00 & 0.85 & 0.55 & 0.45 & --- \\
 \end{tabular}
 \end{table}
 
-Three findings (Table~\ref{tab:external}). \textbf{(1) Structural
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_external_stages}
+\caption{Stage profiles of three third-party agent stacks on the four
+engineered variants (llama3.1, $n{=}20$ per cell). Query and retrieval
+saturate identically everywhere; the two structural failures produce
+exact zero columns on every stack ($R^\star{=}0$ under the
+consolidation gap, $C^\star{=}0$ under the tight budget); the
+behavioral spread between frameworks lives entirely in the M and C
+stages.}
+\label{fig:external-stages}
+\end{figure}
+
+Three findings (Table~\ref{tab:external},
+Figure~\ref{fig:external-stages}). \textbf{(1) Structural
 localizations are exact and framework-independent.} When the memory
 lacks the fact, $R^\star{=}0.00$ on every stack; when the budget
 cannot fit completion, $C^\star{=}0.00$ at $Q^\star{=}R^\star{=}1$ on

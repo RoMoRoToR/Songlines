@@ -303,6 +303,38 @@ meaning alone, it composes with merge/trust/staleness unchanged, and
 --- unlike the coordinate convention it replaces --- it knows when it
 does not know.
 
+\paragraph{The categorical indicator: adjunction round-trip defect.}
+Frame recovery is exactly the operation the categorical reading of
+\S\ref{sec:categorical} needs once the shared basis $X$ is dropped: with
+private frames each agent carries its own place category, and
+communication is a pair of recovery functors $F=\textsc{align}(A,B)$
+(the sender $B$'s frame expressed in receiver $A$'s coordinates) and
+$G=\textsc{align}(B,A)$. If the two are genuinely adjoint --- the frames
+are glued --- the round trip $\eta_X: X\to G(F(X))$ is the identity, so
+the \emph{adjunction defect}
+\[
+\mathrm{def}=\lVert F.\mathrm{offset}+G.\mathrm{offset}\rVert_1
+\ \text{(translation)},\qquad
+r_F{+}r_G\equiv 0\,(\mathrm{mod}\,4)\ \text{and}\
+\lVert R_{r_G}F.\delta+G.\delta\rVert_1\ (SE(2)),
+\]
+is zero \citep{maclane1998categories}. Measured on the recovery method
+above (\texttt{experiments/warp/alignment\_defect.py}, 3 offsets
+$\times$ 10 seeds per cell): the defect is \emph{exactly} $0$ in $30/30$
+runs for translation frames and $30/30$ for each of the four $90^\circ$
+rotations --- the recovered functors are strict adjoints. Where recovery
+must fail (an agent that has observed only a featureless interior band),
+$F$ or $G$ is undefined in $30/30$ runs with \emph{zero} spurious
+gluings ($\mathrm{def}>0$): no adjoint exists and the aligner refuses to
+build one. The exact discrete aligner therefore realizes a dichotomy ---
+strict adjoint ($\mathrm{def}{=}0$) or no adjunction --- and never a
+confident wrong gluing; ``failing closed'' above is precisely
+\emph{refusing a non-adjoint pair}. This is the quantity the categorical
+model computes that a re-description does not: a scalar that is zero iff
+the collective's local frames are coherently glued, and it is this
+gluing --- not a shared coordinate convention --- that
+\S\ref{sec:categorical}'s merge silently presupposed.
+
 \section{Categorical BDI reading of collective semantic memory}
 \label{sec:categorical}
 
@@ -493,7 +525,13 @@ the colimit reading its missing scientific function:
   incomparable diagrams support equal consensus), and the
   implementation detects exactly this and refuses to merge --- the
   fail-closed behaviour of Section~\ref{sec:semantic-identity} is the
-  categorical non-existence made operational.
+  categorical non-existence made operational. This predicate is
+  measured, not asserted: the adjunction round-trip defect of
+  \S\ref{sec:semantic-identity} is exactly $0$ when the pairwise
+  alignment is a strict adjoint (in every recovered translation and
+  $90^\circ$-rotation case, $30/30$) and undefined when no adjoint
+  exists (fail-closed, $30/30$, with zero spurious gluings) --- a scalar
+  witness for colimit existence.
 \item \textbf{Decay stays outside the morphisms} (invariant 3), and
   empirically the trust$\times$staleness gate is unchanged by frame
   recovery --- the same integer breakpoints with and without a shared
@@ -835,6 +873,8 @@ Final coinductive core / society & $\nu\mathbf{B}$; greatest bisimulation $\appr
 \path{python -m experiments.collective_semantic_memory.run_csm_benchmark --out_dir tmp/csm_benchmark}
 \item MiniGrid portability sweep:
 \path{python -m experiments.minigrid_multiagent_wrapper.run_portability_sweep --out_dir tmp/minigrid_portability}
+\item Adjunction round-trip defect of frame recovery (Section~\ref{sec:semantic-identity}):
+\path{python experiments/warp/alignment_defect.py}
 \end{itemize}
 
 \section{Asset and license note}
