@@ -133,8 +133,9 @@ observation on the conditional rates, not a theorem.
 $\Phi$; in our data it is monotone in $K$, and the interior optimum
 lives on mean time-to-success (\S\ref{sec:multi-agent-results}).
 (iv)~Primary substrates are grid worlds; VMAS is a directional
-continuous-state check, and the LLM study is a small controlled one
-(two local models, TextNav). (v)~Multi-agent place identity assumes a
+continuous-state check, and the LLM studies are small and controlled
+(two local models on TextNav; an $N{=}3$ collective; a three-framework
+external validation at $n{=}8$ per cell, \S\ref{sec:external}). (v)~Multi-agent place identity assumes a
 shared coordinate frame (\S\ref{sec:limitations}). A stage-level
 operationalisation is testable on specific summaries and can be
 \emph{wrong} on others --- (iii) is an instance we report --- which is
@@ -652,6 +653,93 @@ its cost channel is occupancy coupling, and that both effects are
 visible stage-by-stage on the same Q/R/M/C chain used for single
 agents. Consolidation is not only the single-agent limit; in a
 collective it is a tunable, measurable design axis.
+
+\section{The contract on third-party agent stacks}
+\label{sec:external}
+
+The strongest external-validity question a reader can ask of a
+diagnostic protocol is whether it works on systems its authors did not
+build. We therefore instrument three third-party agent stacks --- a
+function-calling loop on the OpenAI SDK, LangGraph's prebuilt ReAct
+agent, and AutoGen's AssistantAgent/UserProxy pair, all driving the
+same local model (llama3.1, temperature $0$) --- with the identical
+Q/R/M/C contract, defined once over \emph{tool traces}: an episodic
+household memory is exposed through \method{recall}/\method{goto}/%
+\method{take} tools, and $Q^\star$ fires on querying memory, $R^\star$
+on \emph{attribution} (a returned record names the item at its true
+place), $M^\star$ on an episode-level lock (a \method{goto} to the
+true place, faithful to Definition~1; first-commitment discipline
+$M_1$ is logged as an auxiliary lock-quality diagnostic), and
+$C^\star$ on task completion within a tool budget. Three variants
+engineer one failure each --- a consolidation gap (the location fact
+was never written to memory), a stale-distractor ambiguity, a tool
+budget below the task's requirement --- plus a clean control; all
+predictions were registered before the runs, and the two revisions of
+the event semantics (an attribution leak; an over-tightened $M^\star$)
+are recorded in the registration file.
+
+\begin{table}[h]
+\caption{Q/R/M/C on three third-party agent frameworks (llama3.1,
+8 episodes per cell, identical episodes/tools/budgets). Structural
+failures localize identically everywhere: the consolidation gap is
+$R{=}0.00$ and the budget failure is $C{=}0.00$ at $Q{=}R{=}1$, for
+all three stacks. On the \emph{clean} control the frameworks spread
+from $0.38$ to $0.75$ end-to-end --- and the decomposition attributes
+the spread (see text). $M_1$: first \method{goto} targets the true
+place; stale$_1$: first \method{goto} targets the stale distractor.}
+\label{tab:external}
+\centering
+\small
+\begin{tabular}{llcccccc}
+\toprule
+Framework & Variant & $Q^\star$ & $R^\star$ & $M^\star$ & $C^\star$ & $M_1$ & stale$_1$ \\
+\midrule
+OpenAI SDK & control     & 1.00 & 1.00 & 0.75 & 0.75 & 0.12 & --- \\
+           & consolidation gap & 1.00 & \textbf{0.00} & 0.38 & 0.38 & 0.12 & --- \\
+           & stale ambiguity   & 1.00 & 1.00 & 0.88 & 0.12 & 0.12 & 0.38 \\
+           & tight budget      & 1.00 & 1.00 & 0.12 & \textbf{0.00} & 0.12 & --- \\
+\midrule
+LangGraph  & control     & 1.00 & 1.00 & 0.75 & 0.50 & 0.50 & --- \\
+           & consolidation gap & 1.00 & \textbf{0.00} & 0.38 & 0.25 & 0.12 & --- \\
+           & stale ambiguity   & 1.00 & 1.00 & 0.62 & 0.62 & 0.38 & 0.38 \\
+           & tight budget      & 1.00 & 1.00 & 0.12 & \textbf{0.00} & 0.12 & --- \\
+\midrule
+AutoGen    & control     & 1.00 & 1.00 & 0.88 & 0.38 & 0.38 & --- \\
+           & consolidation gap & 1.00 & \textbf{0.00} & 0.50 & 0.25 & 0.12 & --- \\
+           & stale ambiguity   & 1.00 & 1.00 & 0.38 & 0.25 & 0.12 & 0.62 \\
+           & tight budget      & 1.00 & 1.00 & 0.12 & \textbf{0.00} & 0.12 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three findings (Table~\ref{tab:external}). \textbf{(1) Structural
+localizations are exact and framework-independent.} When the memory
+lacks the fact, $R^\star{=}0.00$ on every stack; when the budget
+cannot fit completion, $C^\star{=}0.00$ at $Q^\star{=}R^\star{=}1$ on
+every stack. The contract needs no per-framework adaptation.
+\textbf{(2) The clean control separates the frameworks, and the
+decomposition says how.} End-to-end success on the SAME clean episodes
+ranges $0.38$ (AutoGen) to $0.75$ (OpenAI SDK). A leaderboard would
+report ``different quality''; the stages show a shared pathology plus
+different recovery loops: first-commitment discipline is weak
+everywhere ($M_1{=}0.12$--$0.50$ --- the agent's first \method{goto}
+frequently ignores its own just-retrieved evidence), and the
+frameworks differ in whether they \emph{recover} from the bad first
+lock within budget (OpenAI SDK re-queries and recovers,
+$M^\star{=}0.75\to C^\star{=}0.75$; AutoGen locks the true place
+eventually but burns its turns, $M^\star{=}0.88$ vs.\
+$C^\star{=}0.38$). \textbf{(3) The stale distractor pulls, measurably
+and unevenly.} The outdated record captures the first commitment in
+$0.38$--$0.62$ of ambiguous episodes --- most strongly for AutoGen ---
+the LLM-memory analogue of the staleness gating that the collective
+experiments showed to be decisive. Honestly failed registrations: the
+behavioral predictions that assumed a clean control (all-stages
+$\ge 6/8$; an ambiguity-induced completion drop below control) broke
+\emph{because the frameworks themselves fail a clean memory task
+25--62\% of the time} --- which is finding (2), not noise; both are
+recorded as registered failures with mechanisms. Scope: one model,
+$n{=}8$ per cell, three stacks; Letta/CrewAI (Python $\ge$3.10) and
+API-scale models are the natural extension.
 
 \section{Limitations and future work}
 \label{sec:limitations}
