@@ -1,0 +1,317 @@
+\relax 
+\providecommand \babel@aux [2]{\global \let \babel@toc \@gobbletwo }
+\@nameuse{bbl@beforestart}
+\catcode `"\active 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\babel@aux{russian}{}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Q/R/M/C раскладывает один эпизод семантической навигации на четыре наблюдаемые стадии. \textbf  {Сверху:} четыре стадии и их определения на уровне событий. \textbf  {(a)}~Успешный эпизод поиска воды закрепляется на одном событии на стадию, порождая логируемые «звёздные» события $Q^\star , R^\star , M^\star , C^\star $. \textbf  {(b)}~Одна и та же скалярная сводка «сквозного успеха» маскирует качественно различные отказы на четырёх одноагентных семействах задач: вода и отдых сильны; возврат в целевой регион (FourRooms) ограничен нижележащими стадиями; восстановление после опасности (LavaGapS7) ограничено извлечением (оракульные интервенции, \S  \ref {sec:oracle}).}}{2}{figure.1}\protected@file@percent }
+\newlabel{fig:hero}{{1}{2}{Q/R/M/C раскладывает один эпизод семантической навигации на четыре наблюдаемые стадии. \textbf {Сверху:} четыре стадии и их определения на уровне событий. \textbf {(a)}~Успешный эпизод поиска воды закрепляется на одном событии на стадию, порождая логируемые «звёздные» события $Q^\star , R^\star , M^\star , C^\star $. \textbf {(b)}~Одна и та же скалярная сводка «сквозного успеха» маскирует качественно различные отказы на четырёх одноагентных семействах задач: вода и отдых сильны; возврат в целевой регион (FourRooms) ограничен нижележащими стадиями; восстановление после опасности (LavaGapS7) ограничено извлечением (оракульные интервенции, \S \ref {sec:oracle})}{figure.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Введение}{2}{section.1}\protected@file@percent }
+\citation{andrychowicz2017hindsight,ghosh2021learning,savva2019habitat}
+\citation{wang2023voyager,shinn2023reflexion,packer2023memgpt}
+\citation{lowe2017maddpg,foerster2018ctde}
+\citation{savva2019habitat,kolve2017ai2thor,deitke2022procthor}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Декомпозиция Q/R/M/C}{4}{section.2}\protected@file@percent }
+\newlabel{sec:framework}{{2}{4}{Декомпозиция Q/R/M/C}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Постановка задачи и нотация}{4}{subsection.2.1}\protected@file@percent }
+\newlabel{sec:notation}{{2.1}{4}{Постановка задачи и нотация}{subsection.2.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Одноагентная факторизация}{5}{subsection.2.2}\protected@file@percent }
+\newlabel{sec:single-theory}{{2.2}{5}{Одноагентная факторизация}{subsection.2.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Предположение 1 (условное постадийно-марковское свойство).}{5}{section*.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Предположение 2 (положительность).}{5}{section*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Определение 1 (одноагентная оцениваемость стадий).}{5}{section*.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Когда Предположение~1 может нарушаться.}{5}{section*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Механизменное прочтение.}{5}{section*.5}\protected@file@percent }
+\citation{tolman1948cognitive,okeefe1978hippocampus,kuipers2000spatial,gupta2017cognitive,savinov2018semi}
+\citation{andrychowicz2017hindsight,ghosh2021learning,dayan1993improving,stachenfeld2017hippocampus,momennejad2017successor}
+\citation{lowe2017maddpg,foerster2018ctde,sukhbaatar2016commnet,foerster2016learning}
+\citation{boyd2006gossip,xiao2007distributed}
+\citation{wang2023voyager,shinn2023reflexion,packer2023memgpt}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Стадийно-структурированная интерпретация фреймворка Q/R/M/C. Абляции включения/выключения ассиста нацелены на промежуточные механизмы; в многоагентном расширении каденционный протокол $\mathcal  {C}_K$ действует на рёбра R$\to $M и M$\to $C.}}{6}{figure.2}\protected@file@percent }
+\newlabel{fig:causal}{{2}{6}{Стадийно-структурированная интерпретация фреймворка Q/R/M/C. Абляции включения/выключения ассиста нацелены на промежуточные механизмы; в многоагентном расширении каденционный протокол $\mathcal {C}_K$ действует на рёбра R$\to $M и M$\to $C}{figure.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Связь с предшествующими работами.}{6}{section*.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Семантика событий, ограниченная рациональность и теоретико-порядковое прочтение}{6}{subsection.2.3}\protected@file@percent }
+\newlabel{sec:event-semantics}{{2.3}{6}{Семантика событий, ограниченная рациональность и теоретико-порядковое прочтение}{subsection.2.3}{}}
+\citation{simon1955behavioral,simon1956rational}
+\citation{simon1956rational,gigerenzer1996reasoning}
+\citation{lieder2020resource}
+\citation{sutton1999between}
+\citation{sutton1999between}
+\citation{efron1979bootstrap}
+\citation{wilcoxon1945individual}
+\citation{holm1979simple}
+\@writefile{toc}{\contentsline {paragraph}{Почему детерминированная стратегия: ограниченная и экологическая рациональность.}{7}{section*.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Теоретико-порядковое прочтение (вынесено в Приложение~\ref {app:galois}).}{7}{section*.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Динамическое прочтение (options / H-MDP) (вынесено в Приложение~\ref {app:hmdp}).}{7}{section*.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Один агент: постадийная диагностика локализует отказ}{7}{section.3}\protected@file@percent }
+\newlabel{sec:single}{{3}{7}{Один агент: постадийная диагностика локализует отказ}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Система, задачи и протокол}{7}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:single-setup}{{3.1}{7}{Система, задачи и протокол}{subsection.3.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Стек памяти.}{7}{section*.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Задачи, бейзлайны, протокол.}{7}{section*.11}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Аудит согласованности постадийных факторов для лучшего семантического метода в каждом семействе задач. Произведение вложенных условных оценок совпадает с завершением семантического пути; общий успех может быть выше, поскольку некоторые эпизоды успешны без прохождения полного семантического пути извлечения.}}{8}{table.1}\protected@file@percent }
+\newlabel{tab:consistency}{{1}{8}{Аудит согласованности постадийных факторов для лучшего семантического метода в каждом семействе задач. Произведение вложенных условных оценок совпадает с завершением семантического пути; общий успех может быть выше, поскольку некоторые эпизоды успешны без прохождения полного семантического пути извлечения}{table.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Диагностический блок LLM.}{8}{section*.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Валидация постадийных оценок}{8}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:validation}{{3.2}{8}{Валидация постадийных оценок}{subsection.3.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Сводка «только успех» и что она скрывает}{8}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:single-results}{{3.3}{8}{Сводка «только успех» и что она скрывает}{subsection.3.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Сравнение с бейзлайнами. Обученный поведенчески клонированный бейзлайн доминирует на самых лёгких ресурсных задачах и восстановлении после опасности, тогда как семантический стек остаётся сильнейшим на насыщенном отношениями семействе целевого региона и остаётся единственным семейством с интерпретируемой структурой Q/R/M/C.}}{9}{table.2}\protected@file@percent }
+\newlabel{tab:baselines}{{2}{9}{Сравнение с бейзлайнами. Обученный поведенчески клонированный бейзлайн доминирует на самых лёгких ресурсных задачах и восстановлении после опасности, тогда как семантический стек остаётся сильнейшим на насыщенном отношениями семействе целевого региона и остаётся единственным семейством с интерпретируемой структурой Q/R/M/C}{table.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Сравнение с бейзлайнами.}{9}{section*.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Оракульные постадийные интервенции локализуют бутылочное горлышко}{9}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:oracle}{{3.4}{9}{Оракульные постадийные интервенции локализуют бутылочное горлышко}{subsection.3.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Логи уточняют диагноз: предел накопления памяти}{9}{subsection.3.5}\protected@file@percent }
+\newlabel{sec:refined-attribution}{{3.5}{9}{Логи уточняют диагноз: предел накопления памяти}{subsection.3.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Четыре многоагентные архитектуры памяти. \textbf  {(a)}~Независимая: приватная память на агента, без обмена. \textbf  {(b)}~Общая шина: одна глобальная память, каждый агент читает/пишет каждый тик. \textbf  {(c)}~Центральный агрегатор: памяти агентов плюс хаб, сливающий их в консенсусный отчёт. \textbf  {(d)}~Широковещательная рассылка peer-to-peer: памяти агентов с попарным обменом снимками каждые $K$ тиков (ось каденции Эмпирического утверждения~1).}}{10}{figure.3}\protected@file@percent }
+\newlabel{fig:architectures}{{3}{10}{Четыре многоагентные архитектуры памяти. \textbf {(a)}~Независимая: приватная память на агента, без обмена. \textbf {(b)}~Общая шина: одна глобальная память, каждый агент читает/пишет каждый тик. \textbf {(c)}~Центральный агрегатор: памяти агентов плюс хаб, сливающий их в консенсусный отчёт. \textbf {(d)}~Широковещательная рассылка peer-to-peer: памяти агентов с попарным обменом снимками каждые $K$ тиков (ось каденции Эмпирического утверждения~1)}{figure.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Много агентов: память как разделяемый ресурс}{10}{section.4}\protected@file@percent }
+\newlabel{sec:multi}{{4}{10}{Много агентов: память как разделяемый ресурс}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Четыре архитектуры памяти и ось каденции}{10}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:archs}{{4.1}{10}{Четыре архитектуры памяти и ось каденции}{subsection.4.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Многоагентная факторизация}{10}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:multi-theory}{{4.2}{10}{Многоагентная факторизация}{subsection.4.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Определение 2 (многоагентная оцениваемость стадий).}{10}{section*.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Когда Определение~2 может нарушаться.}{11}{section*.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Смещение бутылочного горлышка}{11}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:shift}{{4.3}{11}{Смещение бутылочного горлышка}{subsection.4.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Эмпирическое утверждение~1 (смещение бутылочного горлышка M$\leftrightarrow $C, на уровне наклонов).}{11}{section*.16}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Чем это утверждение является и чем не является.}{11}{section*.17}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Хронология.}{11}{section*.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Протокол свипа}{11}{subsection.4.4}\protected@file@percent }
+\newlabel{sec:multi-agent-protocol}{{4.4}{11}{Протокол свипа}{subsection.4.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Поархитектурные условные частоты (сверху) и среднее время до успеха (снизу) на свипе из 35{,}640 прогонов. Общая шина, центральный агрегатор и быстрая пировая рассылка ($K \le 4$) живут в режиме насыщения M / коллапса C; независимая и медленная пировая ($K \ge 16$) --- в режиме дефицита M / насыщения C. Среднее время до успеха имеет внутренний минимум при $K{=}8$ ($7.47$ тиков), ниже бейзлайна независимых агентов ($8.02$); положение устойчиво, но мелко --- запас над соседними быстрыми каденциями не разрешён (Приложение~\ref {app:effect-sizes}).}}{12}{figure.4}\protected@file@percent }
+\newlabel{fig:conditional-rates}{{4}{12}{Поархитектурные условные частоты (сверху) и среднее время до успеха (снизу) на свипе из 35{,}640 прогонов. Общая шина, центральный агрегатор и быстрая пировая рассылка ($K \le 4$) живут в режиме насыщения M / коллапса C; независимая и медленная пировая ($K \ge 16$) --- в режиме дефицита M / насыщения C. Среднее время до успеха имеет внутренний минимум при $K{=}8$ ($7.47$ тиков), ниже бейзлайна независимых агентов ($8.02$); положение устойчиво, но мелко --- запас над соседними быстрыми каденциями не разрешён (Приложение~\ref {app:effect-sizes})}{figure.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Результаты: постадийная декомпозиция и смещение бутылочного горлышка}{12}{subsection.4.5}\protected@file@percent }
+\newlabel{sec:multi-agent-results}{{4.5}{12}{Результаты: постадийная декомпозиция и смещение бутылочного горлышка}{subsection.4.5}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.5.1}Условная декомпозиция показывает, где отказывает каждая архитектура.}{12}{subsubsection.4.5.1}\protected@file@percent }
+\citation{sukhbaatar2016commnet}
+\citation{schulman2017proximal}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.5.2}Смещение бутылочного горлышка и внутренний оптимум эффективности.}{13}{subsubsection.4.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Стратификация по провенансу: механизм за смещением.}{13}{section*.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Чего мы не утверждаем о $\Phi $.}{13}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Бейзлайн с обученной коммуникацией: стадийные события структурно вырождены даже при конкурентоспособном успехе.}{13}{section*.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Свип LLM-моделей: логгер локализует реальный отказ в языковых агентах.}{14}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Многоагентная феноменология воспроизводится на живом LLM-коллективе.}{14}{section*.23}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Свип бюджета шагов LLM TextNav: Q/R/M/C локализует ограниченный завершением отказ у двух локальных Ollama-агентов. Восемь эпизодов на (модель, лимит шагов), температура 0.0; задача требует $\sim $10 низкоуровневых шагов. При бюджете ниже этого требования (лимит шагов 6) успех падает до $0.00$ у обеих моделей, однако $Q^\star {=}R^\star {=}M^\star {=}1.00$ (агенты формируют запрос, извлекают и фиксируют правильную цель в каждом эпизоде), тогда как $C^\star {=}0.00$: фреймворк локализует отказ на стадии C, а не на Q/R/M. Обе модели ведут себя идентично, так что отказ структурен (бюджет), а не специфичен для модели. Артефакты: \texttt  {tmp/llm\_steplimit\_\{6,12,25\}}.}}{14}{table.3}\protected@file@percent }
+\newlabel{tab:llm-smoke}{{3}{14}{Свип бюджета шагов LLM TextNav: Q/R/M/C локализует ограниченный завершением отказ у двух локальных Ollama-агентов. Восемь эпизодов на (модель, лимит шагов), температура 0.0; задача требует $\sim $10 низкоуровневых шагов. При бюджете ниже этого требования (лимит шагов 6) успех падает до $0.00$ у обеих моделей, однако $Q^\star {=}R^\star {=}M^\star {=}1.00$ (агенты формируют запрос, извлекают и фиксируют правильную цель в каждом эпизоде), тогда как $C^\star {=}0.00$: фреймворк локализует отказ на стадии C, а не на Q/R/M. Обе модели ведут себя идентично, так что отказ структурен (бюджет), а не специфичен для модели. Артефакты: \texttt {tmp/llm\_steplimit\_\{6,12,25\}}}{table.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Многоагентные оракульные интервенции замыкают цикл диагностика$\to $интервенция$\to $верификация.}{15}{section*.24}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Контракт на сторонних агентных стеках}{15}{section.5}\protected@file@percent }
+\newlabel{sec:external}{{5}{15}{Контракт на сторонних агентных стеках}{section.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Q/R/M/C на трёх сторонних агентных фреймворках (llama3.1, 20 эпизодов на ячейку, идентичные эпизоды/инструменты/бюджеты). Структурные отказы локализуются везде идентично: консолидационный разрыв --- $R{=}0.00$, а бюджетный отказ --- $C{=}0.00$ при $Q{=}R{=}1$ для всех трёх стеков. На \emph  {чистом} контроле фреймворки расходятся от $0.50$ до $0.75$ сквозным образом --- и декомпозиция атрибутирует этот разброс (см. текст). $M_1$: первый \texttt  {goto} целится в истинное место; stale$_1$: первый \texttt  {goto} целится в устаревший дистрактор.}}{15}{table.4}\protected@file@percent }
+\newlabel{tab:external}{{4}{15}{Q/R/M/C на трёх сторонних агентных фреймворках (llama3.1, 20 эпизодов на ячейку, идентичные эпизоды/инструменты/бюджеты). Структурные отказы локализуются везде идентично: консолидационный разрыв --- $R{=}0.00$, а бюджетный отказ --- $C{=}0.00$ при $Q{=}R{=}1$ для всех трёх стеков. На \emph {чистом} контроле фреймворки расходятся от $0.50$ до $0.75$ сквозным образом --- и декомпозиция атрибутирует этот разброс (см. текст). $M_1$: первый \method {goto} целится в истинное место; stale$_1$: первый \method {goto} целится в устаревший дистрактор}{table.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Постадийные профили трёх сторонних агентных стеков на четырёх инженерных вариантах (llama3.1, $n{=}20$ на ячейку). Запрос и извлечение насыщаются везде идентично; два структурных отказа дают точные нулевые столбцы на каждом стеке ($R^\star {=}0$ при консолидационном разрыве, $C^\star {=}0$ при жёстком бюджете); поведенческий разброс между фреймворками целиком живёт на стадиях M и C.}}{16}{figure.5}\protected@file@percent }
+\newlabel{fig:external-stages}{{5}{16}{Постадийные профили трёх сторонних агентных стеков на четырёх инженерных вариантах (llama3.1, $n{=}20$ на ячейку). Запрос и извлечение насыщаются везде идентично; два структурных отказа дают точные нулевые столбцы на каждом стеке ($R^\star {=}0$ при консолидационном разрыве, $C^\star {=}0$ при жёстком бюджете); поведенческий разброс между фреймворками целиком живёт на стадиях M и C}{figure.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Ограничения и будущая работа}{16}{section.6}\protected@file@percent }
+\newlabel{sec:limitations}{{6}{16}{Ограничения и будущая работа}{section.6}{}}
+\citation{bettini2022vmas}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Более широкое влияние}{17}{section.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Заключение}{17}{section.8}\protected@file@percent }
+\bibcite{andrychowicz2017hindsight}{{1}{2017}{{Andrychowicz et~al.}}{{}}}
+\bibcite{belohlavek1999fuzzy}{{2}{1999}{{B\v {e}lohl\'avek}}{{}}}
+\bibcite{bettini2022vmas}{{3}{2022}{{Bettini et~al.}}{{}}}
+\bibcite{boyd2006gossip}{{4}{2006}{{Boyd et~al.}}{{}}}
+\bibcite{chevalier2018babyai}{{5}{2018}{{Chevalier-Boisvert et~al.}}{{}}}
+\bibcite{MinigridMiniworld23}{{6}{2023}{{Chevalier-Boisvert et~al.}}{{}}}
+\bibcite{chhikara2025mem0}{{7}{2025}{{Chhikara et~al.}}{{}}}
+\bibcite{dayan1993improving}{{8}{1993}{{Dayan}}{{}}}
+\bibcite{deitke2022procthor}{{9}{2022}{{Deitke et~al.}}{{}}}
+\bibcite{efron1979bootstrap}{{10}{1979}{{Efron}}{{}}}
+\bibcite{foerster2016learning}{{11}{2016}{{Foerster et~al.}}{{}}}
+\bibcite{foerster2018ctde}{{12}{2018}{{Foerster et~al.}}{{}}}
+\bibcite{ganter1999fca}{{13}{1999}{{Ganter and Wille}}{{}}}
+\bibcite{ghosh2021learning}{{14}{2021}{{Ghosh et~al.}}{{}}}
+\bibcite{gigerenzer1996reasoning}{{15}{1996}{{Gigerenzer and Goldstein}}{{}}}
+\bibcite{gupta2017cognitive}{{16}{2017}{{Gupta et~al.}}{{}}}
+\bibcite{holm1979simple}{{17}{1979}{{Holm}}{{}}}
+\bibcite{kolve2017ai2thor}{{18}{2017}{{Kolve et~al.}}{{}}}
+\bibcite{kuipers2000spatial}{{19}{2000}{{Kuipers}}{{}}}
+\bibcite{lieder2020resource}{{20}{2020}{{Lieder and Griffiths}}{{}}}
+\bibcite{lowe2017maddpg}{{21}{2017}{{Lowe et~al.}}{{}}}
+\bibcite{maclane1998categories}{{22}{1998}{{Mac~Lane}}{{}}}
+\bibcite{momennejad2017successor}{{23}{2017}{{Momennejad et~al.}}{{}}}
+\bibcite{okeefe1978hippocampus}{{24}{1978}{{O'Keefe and Nadel}}{{}}}
+\bibcite{packer2023memgpt}{{25}{2023}{{Packer et~al.}}{{}}}
+\bibcite{park2023generative}{{26}{2023}{{Park et~al.}}{{}}}
+\bibcite{rashid2018qmix}{{27}{2018}{{Rashid et~al.}}{{}}}
+\bibcite{savinov2018semi}{{28}{2018}{{Savinov et~al.}}{{}}}
+\bibcite{savva2019habitat}{{29}{2019}{{Savva et~al.}}{{}}}
+\bibcite{schulman2016gae}{{30}{2016}{{Schulman et~al.}}{{}}}
+\bibcite{schulman2017proximal}{{31}{2017}{{Schulman et~al.}}{{}}}
+\bibcite{shinn2023reflexion}{{32}{2023}{{Shinn et~al.}}{{}}}
+\bibcite{simon1955behavioral}{{33}{1955}{{Simon}}{{}}}
+\bibcite{simon1956rational}{{34}{1956}{{Simon}}{{}}}
+\bibcite{stachenfeld2017hippocampus}{{35}{2017}{{Stachenfeld et~al.}}{{}}}
+\bibcite{sukhbaatar2016commnet}{{36}{2016}{{Sukhbaatar et~al.}}{{}}}
+\bibcite{sutton1999between}{{37}{1999}{{Sutton et~al.}}{{}}}
+\bibcite{tolman1948cognitive}{{38}{1948}{{Tolman}}{{}}}
+\bibcite{wang2023voyager}{{39}{2023}{{Wang et~al.}}{{}}}
+\bibcite{wu2023autogen}{{40}{2023}{{Wu et~al.}}{{}}}
+\bibcite{wilcoxon1945individual}{{41}{1945}{{Wilcoxon}}{{}}}
+\bibcite{williams1992simple}{{42}{1992}{{Williams}}{{}}}
+\bibcite{yao2022react}{{43}{2023}{{Yao et~al.}}{{}}}
+\bibcite{xiao2007distributed}{{44}{2007}{{Xiao et~al.}}{{}}}
+\bibcite{yu2022mappo}{{45}{2022}{{Yu et~al.}}{{}}}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Формальные доказательства}{19}{appendix.A}\protected@file@percent }
+\newlabel{app:proofs}{{A}{19}{Формальные доказательства}{appendix.A}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Аргумент для Определения~1 (одноагентная оцениваемость)}{19}{subsection.A.1}\protected@file@percent }
+\citation{ganter1999fca}
+\citation{ganter1999fca}
+\citation{maclane1998categories}
+\citation{belohlavek1999fuzzy}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Аргумент для Определения~2 (многоагентная оцениваемость)}{20}{subsection.A.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Аргумент для Эмпирического утверждения~1 (формулировка на уровне наклонов)}{20}{subsection.A.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.4}Связь Галуа запрос--извлечение: формулировка, аргумент, границы}{20}{subsection.A.4}\protected@file@percent }
+\newlabel{app:galois}{{A.4}{20}{Связь Галуа запрос--извлечение: формулировка, аргумент, границы}{subsection.A.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Факт (стандартный).}{20}{section*.26}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Аргумент.}{20}{section*.27}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Инстанцирование и границы.}{20}{section*.28}\protected@file@percent }
+\citation{sutton1999between}
+\citation{sutton1999between}
+\citation{lieder2020resource}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Прочтение стадий через опции / иерархический MDP}{21}{appendix.B}\protected@file@percent }
+\newlabel{app:hmdp}{{B}{21}{Прочтение стадий через опции / иерархический MDP}{appendix.B}{}}
+\@writefile{toc}{\contentsline {paragraph}{Q/R/M/C как аудит опции.}{21}{section*.29}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Почему оптимум живёт на $t_{\mathrm  {succ}}$, а не на $\Phi $: прочтение через полу-MDP.}{21}{section*.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Смещение бутылочного горлышка как многоагентное столкновение опций.}{21}{section*.31}\protected@file@percent }
+\citation{simon1955behavioral}
+\@writefile{toc}{\contentsline {paragraph}{Глосса belief--desire--intention и границы.}{22}{section*.32}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {C}Операциональные и вложенные постадийные оценки}{22}{appendix.C}\protected@file@percent }
+\newlabel{app:estimators}{{C}{22}{Операциональные и вложенные постадийные оценки}{appendix.C}{}}
+\@writefile{toc}{\contentsline {paragraph}{Операциональные диагностические частоты.}{22}{section*.33}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Вложенные постадийные оценки для факторизации.}{22}{section*.34}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.1}Многоагентные операциональные определения}{22}{subsection.C.1}\protected@file@percent }
+\newlabel{app:multi-agent-defs}{{C.1}{22}{Многоагентные операциональные определения}{subsection.C.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {D}Схема памяти и задач}{23}{appendix.D}\protected@file@percent }
+\newlabel{app:schemas}{{D}{23}{Схема памяти и задач}{appendix.D}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.1}Полная таблица нотации}{23}{subsection.D.1}\protected@file@percent }
+\newlabel{app:notation}{{D.1}{23}{Полная таблица нотации}{subsection.D.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.2}Стек памяти и паттерны задач}{23}{subsection.D.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.3}Одноагентные вспомогательные таблицы и рисунки}{23}{subsection.D.3}\protected@file@percent }
+\newlabel{app:single-results-table}{{D.3}{23}{Одноагентные вспомогательные таблицы и рисунки}{subsection.D.3}{}}
+\citation{chevalier2018babyai}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Лучший семантический результат по каждому семейству задач из финального 10-сидового бенчмарка, с 95\%-ми бутстреп-ДИ. Восстановление после опасности упирается в извлечение; целевой регион остаётся ограниченным нижележащими стадиями.}}{24}{table.5}\protected@file@percent }
+\newlabel{tab:main-results}{{5}{24}{Лучший семантический результат по каждому семейству задач из финального 10-сидового бенчмарка, с 95\%-ми бутстреп-ДИ. Восстановление после опасности упирается в извлечение; целевой регион остаётся ограниченным нижележащими стадиями}{table.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Оракульные постадийные интервенции на двух самых трудных одноагентных семействах задач (10 сидов $\times $ 8 эпизодов). \textbf  {(a)}~Возврат к цели в FourRooms: замена любой одной стадии оракулом оставляет сквозной успех на $0.07$; бутылочное горлышко --- ниже по потоку от стадий цепочки. \textbf  {(b)}~Восстановление после опасности в LavaGapS7: оракульный контроллер добавляет лишь $+0.04$, но оракульная материализация добавляет $+0.16$, а оракульное извлечение --- ещё $+0.01$ до $0.60$. Фреймворк локализует стадию бутылочного горлышка постадийно.}}{24}{figure.6}\protected@file@percent }
+\newlabel{fig:oracle-waterfall}{{6}{24}{Оракульные постадийные интервенции на двух самых трудных одноагентных семействах задач (10 сидов $\times $ 8 эпизодов). \textbf {(a)}~Возврат к цели в FourRooms: замена любой одной стадии оракулом оставляет сквозной успех на $0.07$; бутылочное горлышко --- ниже по потоку от стадий цепочки. \textbf {(b)}~Восстановление после опасности в LavaGapS7: оракульный контроллер добавляет лишь $+0.04$, но оракульная материализация добавляет $+0.16$, а оракульное извлечение --- ещё $+0.01$ до $0.60$. Фреймворк локализует стадию бутылочного горлышка постадийно}{figure.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {E}Переносимость и масштабирование}{24}{appendix.E}\protected@file@percent }
+\newlabel{app:babyai}{{E}{24}{Переносимость и масштабирование}{appendix.E}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.1}Перенос переносимости на BabyAI (10 сидов, полный бенчмарк)}{24}{subsection.E.1}\protected@file@percent }
+\newlabel{app:babyai-deeper}{{E.1}{24}{Перенос переносимости на BabyAI (10 сидов, полный бенчмарк)}{subsection.E.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Бенчмарк переносимости BabyAI: 10 сидов $\times $ 8 эпизодов на \texttt  {BabyAI-GoToObjMaze-v0}, max-steps 200. Варианты семантического стека успешны с той же сквозной частотой, что и жадный бейзлайн (0.15), но являются единственными методами, порождающими ненулевые события Q/R/M/C --- протокол фреймворка переносится на субстрат BabyAI без модификаций. Операциональные частоты Q/R/M/C здесь оцениваются на одном и том же знаменателе (числе точек принятия решений), поэтому $Q{=}R{=}M$ у обоих семантических вариантов, поскольку GoToObjMaze эмитирует один семантический тип цели на эпизод.}}{25}{table.6}\protected@file@percent }
+\newlabel{tab:babyai-deeper}{{6}{25}{Бенчмарк переносимости BabyAI: 10 сидов $\times $ 8 эпизодов на \texttt {BabyAI-GoToObjMaze-v0}, max-steps 200. Варианты семантического стека успешны с той же сквозной частотой, что и жадный бейзлайн (0.15), но являются единственными методами, порождающими ненулевые события Q/R/M/C --- протокол фреймворка переносится на субстрат BabyAI без модификаций. Операциональные частоты Q/R/M/C здесь оцениваются на одном и том же знаменателе (числе точек принятия решений), поэтому $Q{=}R{=}M$ у обоих семантических вариантов, поскольку GoToObjMaze эмитирует один семантический тип цели на эпизод}{table.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.2}Многоагентное масштабирование при $N=12$}{25}{subsection.E.2}\protected@file@percent }
+\newlabel{app:scale-N12}{{E.2}{25}{Многоагентное масштабирование при $N=12$}{subsection.E.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Числовая детализация свипа масштабирования $N\!=\!12$ (пировая архитектура; $27$ конфигурационных ячеек). Размеры эффекта с кластерно-робастными 95\%-ми ДИ (блочный бутстреп по ячейкам): Спирмен $P(C^\star |M^\star )$ с $K$ равен $+0.31$ (ДИ $[+0.21,+0.41]$, исключает ноль), тогда как Спирмен $P(M^\star |R^\star )$ с $K$ --- лишь $-0.14$ (ДИ $[-0.28,+0.02]$, \emph  {не} отделён от нуля при $N{=}12$). C-наклон Эмпирического утверждения~1 выполняется; M-наклон направленно согласован, но не кластерно-робастен при этом числе агентов. При $N{=}12$ заостряются внутрикаденционная корреляция и минимум $t_{\mathrm  {succ}}$ (Рисунок~\ref {fig:scale-n12}), а не M-наклон по $K$.}}{25}{table.7}\protected@file@percent }
+\newlabel{tab:scale-n12}{{7}{25}{Числовая детализация свипа масштабирования $N\!=\!12$ (пировая архитектура; $27$ конфигурационных ячеек). Размеры эффекта с кластерно-робастными 95\%-ми ДИ (блочный бутстреп по ячейкам): Спирмен $P(C^\star |M^\star )$ с $K$ равен $+0.31$ (ДИ $[+0.21,+0.41]$, исключает ноль), тогда как Спирмен $P(M^\star |R^\star )$ с $K$ --- лишь $-0.14$ (ДИ $[-0.28,+0.02]$, \emph {не} отделён от нуля при $N{=}12$). C-наклон Эмпирического утверждения~1 выполняется; M-наклон направленно согласован, но не кластерно-робастен при этом числе агентов. При $N{=}12$ заостряются внутрикаденционная корреляция и минимум $t_{\mathrm {succ}}$ (Рисунок~\ref {fig:scale-n12}), а не M-наклон по $K$}{table.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.3}Q/R/M/C при семантическом, безрамочном сопоставлении мест}{25}{subsection.E.3}\protected@file@percent }
+\newlabel{app:semantic-matching}{{E.3}{25}{Q/R/M/C при семантическом, безрамочном сопоставлении мест}{subsection.E.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Сигнатура бутылочного горлышка при масштабировании $N\!=\!12$ ($n\!=\!8{,}640$ прогонов, 40 сидов). Сверху: покаденционные средние частоты движутся в предсказанных направлениях по $K$; внутрикаденционная корреляция Пирсона (красный пунктир, правая ось) достигает пика $-0.70$ при $K\!=\!8$ (именно этот внутрикаденционный пик и заостряется при $N{=}12$; сам M-наклон по $K$ не является кластерно-робастным при этом числе агентов, Таблица~\ref {tab:scale-n12}). Снизу: среднее время до успеха сохраняет внутренний минимум при $K\!=\!8$ ($4.77$ тиков); как и на основном свипе, положение устойчиво, но запас мелок --- зазор до соседнего $K\!=\!4$ ($4.82$ тиков) составляет $\approx 0.05$ тика и не разрешён при этом размере выборки. Пик смещения бутылочного горлышка мигрирует наружу с $K\!=\!4$ при $N\!\le \!8$ до $K\!=\!8$ при $N\!=\!12$, что согласуется с тем, что более сильное связывание занятости при большем числе агентов задерживает переход между режимами издержек.}}{26}{figure.7}\protected@file@percent }
+\newlabel{fig:scale-n12}{{7}{26}{Сигнатура бутылочного горлышка при масштабировании $N\!=\!12$ ($n\!=\!8{,}640$ прогонов, 40 сидов). Сверху: покаденционные средние частоты движутся в предсказанных направлениях по $K$; внутрикаденционная корреляция Пирсона (красный пунктир, правая ось) достигает пика $-0.70$ при $K\!=\!8$ (именно этот внутрикаденционный пик и заостряется при $N{=}12$; сам M-наклон по $K$ не является кластерно-робастным при этом числе агентов, Таблица~\ref {tab:scale-n12}). Снизу: среднее время до успеха сохраняет внутренний минимум при $K\!=\!8$ ($4.77$ тиков); как и на основном свипе, положение устойчиво, но запас мелок --- зазор до соседнего $K\!=\!4$ ($4.82$ тиков) составляет $\approx 0.05$ тика и не разрешён при этом размере выборки. Пик смещения бутылочного горлышка мигрирует наружу с $K\!=\!4$ при $N\!\le \!8$ до $K\!=\!8$ при $N\!=\!12$, что согласуется с тем, что более сильное связывание занятости при большем числе агентов задерживает переход между режимами издержек}{figure.7}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Поархитектурные условные частоты Q/R/M/C из свипа в 35{,}640 прогонов (40 сидов). $P(R^\star |Q^\star )$ насыщено. POM = произведение средних; MOP = среднее произведений (правильное поконфигурационное ожидаемое произведение). Две сводки систематически расходятся при малых/промежуточных $K$, потому что внутрикаденционная корреляция между $P(M^\star |R^\star )$ и $P(C^\star |M^\star )$ там сильно отрицательна (последний столбец) --- сигнатура смещения бутылочного горлышка. \textbf  {Жирным}: лучший по MOP среди пировых каденций. Среднее $t_{\mathrm  {succ}}$ (последний столбец) --- практически значимая мера эффективности; её внутренний минимум при $K=8$ --- результат предсказанной формы, устойчивый по положению, но мелкий по запасу (соседние быстрые каденции не разрешены; Приложение~\ref {app:effect-sizes}).}}{27}{table.8}\protected@file@percent }
+\newlabel{tab:multi-agent-cond}{{8}{27}{Поархитектурные условные частоты Q/R/M/C из свипа в 35{,}640 прогонов (40 сидов). $P(R^\star |Q^\star )$ насыщено. POM = произведение средних; MOP = среднее произведений (правильное поконфигурационное ожидаемое произведение). Две сводки систематически расходятся при малых/промежуточных $K$, потому что внутрикаденционная корреляция между $P(M^\star |R^\star )$ и $P(C^\star |M^\star )$ там сильно отрицательна (последний столбец) --- сигнатура смещения бутылочного горлышка. \textbf {Жирным}: лучший по MOP среди пировых каденций. Среднее $t_{\mathrm {succ}}$ (последний столбец) --- практически значимая мера эффективности; её внутренний минимум при $K=8$ --- результат предсказанной формы, устойчивый по положению, но мелкий по запасу (соседние быстрые каденции не разрешены; Приложение~\ref {app:effect-sizes})}{table.8}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {F}Расширенная диагностика}{27}{appendix.F}\protected@file@percent }
+\newlabel{app:diagnostics}{{F}{27}{Расширенная диагностика}{appendix.F}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.1}Детализация условного произведения и разрыв Йенсена}{27}{subsection.F.1}\protected@file@percent }
+\newlabel{app:phi-detail}{{F.1}{27}{Детализация условного произведения и разрыв Йенсена}{subsection.F.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.2}Декомпозиция дизайна и сверка числа прогонов}{27}{subsection.F.2}\protected@file@percent }
+\newlabel{app:design}{{F.2}{27}{Декомпозиция дизайна и сверка числа прогонов}{subsection.F.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.3}Размеры эффекта и кластерно-робастный вывод}{27}{subsection.F.3}\protected@file@percent }
+\newlabel{app:effect-sizes}{{F.3}{27}{Размеры эффекта и кластерно-робастный вывод}{subsection.F.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Смещение бутылочного горлышка по восьми пировым каденциям (40-сидовый свип). Сверху: $P(M^\star |R^\star )$ падает, а $P(C^\star |M^\star )$ растёт по $K$ (умеренные, кластерно-робастные спирменовские размеры эффекта $-0.53$ и $+0.43$; ДИ в Приложении~\ref {app:effect-sizes}). Снизу: среднее время до успеха имеет внутренний минимум при $K=8$ ($7.47$ тиков) ниже бейзлайна независимых агентов ($8.02$, пунктир); положение устойчиво, но его запас над соседними быстрыми каденциями ($K{=}1,4$) не разрешён (Приложение~\ref {app:effect-sizes}). Планки погрешностей и затенённая полоса --- 95\%-е бутстреп-ДИ.}}{28}{figure.8}\protected@file@percent }
+\newlabel{fig:bottleneck-shift}{{8}{28}{Смещение бутылочного горлышка по восьми пировым каденциям (40-сидовый свип). Сверху: $P(M^\star |R^\star )$ падает, а $P(C^\star |M^\star )$ растёт по $K$ (умеренные, кластерно-робастные спирменовские размеры эффекта $-0.53$ и $+0.43$; ДИ в Приложении~\ref {app:effect-sizes}). Снизу: среднее время до успеха имеет внутренний минимум при $K=8$ ($7.47$ тиков) ниже бейзлайна независимых агентов ($8.02$, пунктир); положение устойчиво, но его запас над соседними быстрыми каденциями ($K{=}1,4$) не разрешён (Приложение~\ref {app:effect-sizes}). Планки погрешностей и затенённая полоса --- 95\%-е бутстреп-ДИ}{figure.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Сверка числа прогонов для основного многоагентного свипа ($35{,}640$ прогонов). Счётчики пересчитаны напрямую из опубликованного лога прогонов.}}{28}{table.9}\protected@file@percent }
+\newlabel{tab:design}{{9}{28}{Сверка числа прогонов для основного многоагентного свипа ($35{,}640$ прогонов). Счётчики пересчитаны напрямую из опубликованного лога прогонов}{table.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Поконфигурационный скаттер $P(M^\star |R^\star )$ против $P(C^\star |M^\star )$ при трёх каденциях. Сильная отрицательная корреляция при $K=4$ (Пирсон $-0.61$) --- сигнатура смещения бутылочного горлышка: те же конфигурации, что успешны на $M$, склонны отказывать на $C$, и наоборот. Корреляция затухает до шума к $K=64$.}}{29}{figure.9}\protected@file@percent }
+\newlabel{fig:jensen-scatter}{{9}{29}{Поконфигурационный скаттер $P(M^\star |R^\star )$ против $P(C^\star |M^\star )$ при трёх каденциях. Сильная отрицательная корреляция при $K=4$ (Пирсон $-0.61$) --- сигнатура смещения бутылочного горлышка: те же конфигурации, что успешны на $M$, склонны отказывать на $C$, и наоборот. Корреляция затухает до шума к $K=64$}{figure.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.4}Конструктная валидность: успех задачи $Y$ против завершения семантического пути $C^\star $}{29}{subsection.F.4}\protected@file@percent }
+\newlabel{app:y-vs-c}{{F.4}{29}{Конструктная валидность: успех задачи $Y$ против завершения семантического пути $C^\star $}{subsection.F.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.5}Робастность диагноза пустого множества кандидатов к порогу ($\theta $)}{30}{subsection.F.5}\protected@file@percent }
+\newlabel{app:theta-robustness}{{F.5}{30}{Робастность диагноза пустого множества кандидатов к порогу ($\theta $)}{subsection.F.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Доля пустых множеств кандидатов против порога обязательных тегов $\theta $ (семантический метод, ассист выкл., восстановление после опасности / целевой регион). Доля \emph  {инвариантна} по всему реалистичному диапазону $\theta \in [0.05,0.95]$; лишь вырожденные крайние точки её сдвигают, и лишь до пола отсутствия кандидатов. Пустоты, следовательно, --- отсутствие сохранённых свидетельств, а не подпороговая фильтрация.}}{30}{table.10}\protected@file@percent }
+\newlabel{tab:theta-robustness}{{10}{30}{Доля пустых множеств кандидатов против порога обязательных тегов $\theta $ (семантический метод, ассист выкл., восстановление после опасности / целевой регион). Доля \emph {инвариантна} по всему реалистичному диапазону $\theta \in [0.05,0.95]$; лишь вырожденные крайние точки её сдвигают, и лишь до пола отсутствия кандидатов. Пустоты, следовательно, --- отсутствие сохранённых свидетельств, а не подпороговая фильтрация}{table.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.6}Робастность к нарушениям Предположения~1}{30}{subsection.F.6}\protected@file@percent }
+\newlabel{app:assumption1-stress}{{F.6}{30}{Робастность к нарушениям Предположения~1}{subsection.F.6}{}}
+\citation{bettini2022vmas}
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces Смещение наивных условных оценок при нелогируемой латентной силы $\delta $, связывающей стадии M и C (нарушая Предположение~1). $P(M^\star |R^\star )$ остаётся несмещённым; $P(C^\star |M^\star )$ смещено вверх, существенно лишь при сильном связывании.}}{31}{table.11}\protected@file@percent }
+\newlabel{tab:assumption1-stress}{{11}{31}{Смещение наивных условных оценок при нелогируемой латентной силы $\delta $, связывающей стадии M и C (нарушая Предположение~1). $P(M^\star |R^\star )$ остаётся несмещённым; $P(C^\star |M^\star )$ смещено вверх, существенно лишь при сильном связывании}{table.11}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.7}Предварительная проверка на непрерывном субстрате (VMAS)}{31}{subsection.F.7}\protected@file@percent }
+\newlabel{app:vmas}{{F.7}{31}{Предварительная проверка на непрерывном субстрате (VMAS)}{subsection.F.7}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces Предварительная переносимость VMAS: оба знака наклонов Эмпирического утверждения~1 воспроизводятся на непрерывном субстрате в режиме связывания ($N{=}8$, $T{=}3$, 40 сидов, горизонт $25$). $\mathrm  {Spearman}(P(M^\star |R^\star ),K){=}-1.00$ и $\mathrm  {Spearman}(P(C^\star |M^\star ),K){=}+1.00$. За пределами $K\!\approx \!32$ система входит в независимый режим (редкая рассылка, нет соперничества), и $P(M^\star |R^\star )$ отскакивает --- та же граница режимов, что видна на сетке.}}{31}{table.12}\protected@file@percent }
+\newlabel{tab:vmas}{{12}{31}{Предварительная переносимость VMAS: оба знака наклонов Эмпирического утверждения~1 воспроизводятся на непрерывном субстрате в режиме связывания ($N{=}8$, $T{=}3$, 40 сидов, горизонт $25$). $\mathrm {Spearman}(P(M^\star |R^\star ),K){=}-1.00$ и $\mathrm {Spearman}(P(C^\star |M^\star ),K){=}+1.00$. За пределами $K\!\approx \!32$ система входит в независимый режим (редкая рассылка, нет соперничества), и $P(M^\star |R^\star )$ отскакивает --- та же граница режимов, что видна на сетке}{table.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.8}Каденционная робастность: сдвиг отслеживает дефицит, а не устройство сетки}{31}{subsection.F.8}\protected@file@percent }
+\newlabel{app:cadence-robustness}{{F.8}{31}{Каденционная робастность: сдвиг отслеживает дефицит, а не устройство сетки}{subsection.F.8}{}}
+\citation{savva2019habitat}
+\citation{tolman1948cognitive,okeefe1978hippocampus,kuipers2000spatial}
+\citation{gupta2017cognitive}
+\citation{savinov2018semi}
+\citation{andrychowicz2017hindsight,ghosh2021learning}
+\citation{dayan1993improving,stachenfeld2017hippocampus,momennejad2017successor}
+\citation{lowe2017maddpg,foerster2018ctde}
+\citation{sukhbaatar2016commnet,foerster2016learning}
+\citation{boyd2006gossip,xiao2007distributed}
+\citation{yao2022react,shinn2023reflexion,wang2023voyager,park2023generative,wu2023autogen,packer2023memgpt,chhikara2025mem0}
+\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces Два условия на наклоны Эмпирического утверждения~1 (\S  \ref {sec:shift}) выполняются при дефиците и выполаживаются при изобилии. $P(M^\star |R^\star )$ должно падать, а $P(C^\star |M^\star )$ расти по $K$; «корр» --- внутрикаденционная корреляция Пирсона двух звеньев при $K{=}64$ (сигнатура сдвига). $P(C^\star |M^\star )$ --- операциональное отношение (ограничено $1$; изобилие завершает без формальной фиксации).}}{32}{table.13}\protected@file@percent }
+\newlabel{tab:cadence-robustness}{{13}{32}{Два условия на наклоны Эмпирического утверждения~1 (\S \ref {sec:shift}) выполняются при дефиците и выполаживаются при изобилии. $P(M^\star |R^\star )$ должно падать, а $P(C^\star |M^\star )$ расти по $K$; «корр» --- внутрикаденционная корреляция Пирсона двух звеньев при $K{=}64$ (сигнатура сдвига). $P(C^\star |M^\star )$ --- операциональное отношение (ограничено $1$; изобилие завершает без формальной фиксации)}{table.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.9}Открытые проблемы, подсказанные диагностикой}{32}{subsection.F.9}\protected@file@percent }
+\newlabel{app:open-problems}{{F.9}{32}{Открытые проблемы, подсказанные диагностикой}{subsection.F.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.10}Расширенный обзор литературы}{32}{subsection.F.10}\protected@file@percent }
+\newlabel{app:related-work-extended}{{F.10}{32}{Расширенный обзор литературы}{subsection.F.10}{}}
+\citation{rashid2018qmix}
+\citation{yu2022mappo}
+\citation{lowe2017maddpg}
+\citation{packer2023memgpt,wang2023voyager}
+\citation{park2023generative}
+\citation{wu2023autogen}
+\citation{sukhbaatar2016commnet,rashid2018qmix,yu2022mappo,lowe2017maddpg}
+\citation{savinov2018semi}
+\citation{sukhbaatar2016commnet,schulman2017proximal}
+\citation{rashid2018qmix,yu2022mappo,lowe2017maddpg}
+\citation{yao2022react}
+\citation{shinn2023reflexion}
+\citation{wang2023voyager}
+\citation{park2023generative}
+\citation{wu2023autogen}
+\citation{packer2023memgpt,chhikara2025mem0}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.11}SOTA-бейзлайн и матрица покрытия}{33}{subsection.F.11}\protected@file@percent }
+\newlabel{app:sota-coverage}{{F.11}{33}{SOTA-бейзлайн и матрица покрытия}{subsection.F.11}{}}
+\@writefile{toc}{\contentsline {paragraph}{Позиционирование относительно SOTA-дизайнов памяти.}{33}{section*.35}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {14}{\ignorespaces Где фреймворк сидит в пространстве дизайна агентов с памятью. Постадийная наблюдаемость Q/R/M/C требует явного интерфейса запроса/фиксации, который и предоставляет ячейка «символьная поагентная».}}{33}{table.14}\protected@file@percent }
+\newlabel{tab:sota-quadrants}{{14}{33}{Где фреймворк сидит в пространстве дизайна агентов с памятью. Постадийная наблюдаемость Q/R/M/C требует явного интерфейса запроса/фиксации, который и предоставляет ячейка «символьная поагентная»}{table.14}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.12}Числа многоагентных оракульных интервенций}{34}{subsection.F.12}\protected@file@percent }
+\newlabel{app:multi-oracle}{{F.12}{34}{Числа многоагентных оракульных интервенций}{subsection.F.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.13}Оракульное C: определение и прочтение}{34}{subsection.F.13}\protected@file@percent }
+\newlabel{app:oracle-c-def}{{F.13}{34}{Оракульное C: определение и прочтение}{subsection.F.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.14}Безразличные к стадиям каденционные гипотезы и что меняет фреймворк}{34}{subsection.F.14}\protected@file@percent }
+\newlabel{app:standalone-hypotheses}{{F.14}{34}{Безразличные к стадиям каденционные гипотезы и что меняет фреймворк}{subsection.F.14}{}}
+\citation{sukhbaatar2016commnet}
+\@writefile{toc}{\contentsline {section}{\numberline {G}Анализ ассиста вкл/выкл}{35}{appendix.G}\protected@file@percent }
+\newlabel{app:assist}{{G}{35}{Анализ ассиста вкл/выкл}{appendix.G}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {H}Переобученный ретривер и бейзлайн CommNet}{35}{appendix.H}\protected@file@percent }
+\newlabel{app:learned-baselines}{{H}{35}{Переобученный ретривер и бейзлайн CommNet}{appendix.H}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {H.1}Переобученный MLP генерации кандидатов (\S  \ref {sec:refined-attribution})}{35}{subsection.H.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Диагностика уточнённой атрибуции. \emph  {Слева:} 349 вызовов извлечения, агрегированных по 10 сидам; 317 (90.8\%) вернули пустые множества кандидатов, 31 (8.9\%) вернул хотя бы одного удовлетворяющего кандидата, лишь 1 (0.3\%) вернул кандидатов, отранжированных, но неудовлетворяющих. Бутылочное горлышко --- генерация кандидатов, а не их ранжирование. \emph  {Справа:} обученный MLP уступает мажоритарному бейзлайну на всех трёх сид-дизъюнктных разбиениях, подтверждая, что одних лишь мгновенных признаков состояния недостаточно для предсказания пригодности кандидата.}}{35}{figure.10}\protected@file@percent }
+\newlabel{fig:refined-attribution}{{10}{35}{Диагностика уточнённой атрибуции. \emph {Слева:} 349 вызовов извлечения, агрегированных по 10 сидам; 317 (90.8\%) вернули пустые множества кандидатов, 31 (8.9\%) вернул хотя бы одного удовлетворяющего кандидата, лишь 1 (0.3\%) вернул кандидатов, отранжированных, но неудовлетворяющих. Бутылочное горлышко --- генерация кандидатов, а не их ранжирование. \emph {Справа:} обученный MLP уступает мажоритарному бейзлайну на всех трёх сид-дизъюнктных разбиениях, подтверждая, что одних лишь мгновенных признаков состояния недостаточно для предсказания пригодности кандидата}{figure.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {H.2}Бейзлайн обученной коммуникации в стиле CommNet (\S  \ref {sec:multi-agent-results})}{35}{subsection.H.2}\protected@file@percent }
+\citation{williams1992simple}
+\citation{schulman2017proximal}
+\citation{schulman2016gae}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Диагностика бейзлайна обученной коммуникации. \emph  {Слева:} кривая обучения CommNet (сглаженная доля успеха по окну в 100 эпизодов) на 2000 обучающих эпизодов; успех остаётся ниже 0.25 на всём протяжении. Пунктирная линия --- символьная пировая архитектура при $K\!=\!8$ на том же сценарии для сравнения. \emph  {Справа:} профиль Q/R/M/C обученного CommNet на 50 отложенных сидах против символьного peer при $K\!=\!8$. $Q^\star $ насыщен на $1.0$ у CommNet (вырожден по построению); $R/M$ схлопываются вместе; только у символьной архитектуры условные частоты разделены.}}{36}{figure.11}\protected@file@percent }
+\newlabel{fig:commnet}{{11}{36}{Диагностика бейзлайна обученной коммуникации. \emph {Слева:} кривая обучения CommNet (сглаженная доля успеха по окну в 100 эпизодов) на 2000 обучающих эпизодов; успех остаётся ниже 0.25 на всём протяжении. Пунктирная линия --- символьная пировая архитектура при $K\!=\!8$ на том же сценарии для сравнения. \emph {Справа:} профиль Q/R/M/C обученного CommNet на 50 отложенных сидах против символьного peer при $K\!=\!8$. $Q^\star $ насыщен на $1.0$ у CommNet (вырожден по построению); $R/M$ схлопываются вместе; только у символьной архитектуры условные частоты разделены}{figure.11}{}}
+\@writefile{toc}{\contentsline {paragraph}{Вариант PPO: структурная вырожденность верифицирована при конкурентоспособном успехе.}{36}{section*.36}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {I}Команды воспроизводимости}{37}{appendix.I}\protected@file@percent }
+\newlabel{app:repro}{{I}{37}{Команды воспроизводимости}{appendix.I}{}}
+\@writefile{toc}{\contentsline {paragraph}{Вычислительная инфраструктура.}{37}{section*.37}\protected@file@percent }
+\citation{MinigridMiniworld23}
+\citation{chevalier2018babyai}
+\@writefile{toc}{\contentsline {section}{\numberline {J}Замечание об ассетах и лицензиях}{38}{appendix.J}\protected@file@percent }
+\newlabel{app:assets}{{J}{38}{Замечание об ассетах и лицензиях}{appendix.J}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces SOTA-покрытие для Статьи 1. «Инструментировано» означает, что прогон эмитирует операциональные события $Q^\star ,R^\star ,M^\star ,C^\star $, используемые Определением~1.}}{39}{table.15}\protected@file@percent }
+\newlabel{tab:sota-coverage}{{15}{39}{SOTA-покрытие для Статьи 1. «Инструментировано» означает, что прогон эмитирует операциональные события $Q^\star ,R^\star ,M^\star ,C^\star $, используемые Определением~1}{table.15}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {16}{\ignorespaces Многоагентные оракульные интервенции на случаях дефицита при трёх каденциях. Среднее время до успеха (и доля успеха), усреднённые по $(N,T)\in \{(3,2),(5,3),(8,5)\}$, двум раскладкам (асимметричная, случайная), 15 сидам. Оракульное R возвращает истинные позиции воды; оракульное M фиксирует ближайшую реальную воду; \textbf  {оракульное C} гарантирует завершение реальной материализованной фиксации (Приложение~\ref {app:oracle-c-def}). Оракульное C даёт наибольшее сокращение \emph  {времени} (устраняет путь), но наименьший прирост \emph  {успеха} --- завершение есть временная издержка, а не бутылочное горлышко успеха, которое сидит выше по потоку на R/M.}}{40}{table.16}\protected@file@percent }
+\newlabel{tab:multi-agent-oracle}{{16}{40}{Многоагентные оракульные интервенции на случаях дефицита при трёх каденциях. Среднее время до успеха (и доля успеха), усреднённые по $(N,T)\in \{(3,2),(5,3),(8,5)\}$, двум раскладкам (асимметричная, случайная), 15 сидам. Оракульное R возвращает истинные позиции воды; оракульное M фиксирует ближайшую реальную воду; \textbf {оракульное C} гарантирует завершение реальной материализованной фиксации (Приложение~\ref {app:oracle-c-def}). Оракульное C даёт наибольшее сокращение \emph {времени} (устраняет путь), но наименьший прирост \emph {успеха} --- завершение есть временная издержка, а не бутылочное горлышко успеха, которое сидит выше по потоку на R/M}{table.16}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {17}{\ignorespaces REINFORCE против PPO CommNet против символьного peer ($K{=}8$) на сценарии дефицита ($N{=}3$, $T{=}2$, асимметричная, опасность $0.05$). PPO конкурентоспособен по доле успеха, но всё равно демонстрирует Q-насыщение и коллапс R/M --- диагностическое утверждение верифицировано, а не постулировано.}}{40}{table.17}\protected@file@percent }
+\newlabel{tab:ppo-commnet}{{17}{40}{REINFORCE против PPO CommNet против символьного peer ($K{=}8$) на сценарии дефицита ($N{=}3$, $T{=}2$, асимметричная, опасность $0.05$). PPO конкурентоспособен по доле успеха, но всё равно демонстрирует Q-насыщение и коллапс R/M --- диагностическое утверждение верифицировано, а не постулировано}{table.17}{}}
+\gdef \@abspage@last{47}
