@@ -358,6 +358,31 @@ first --- Section~\ref{sec:semantic-identity} solves it constructively
 Section~\ref{sec:colimit} states what that construction is,
 categorically. Symbol alignment (a shared $\Sigma$) remains assumed.
 
+\paragraph{What parametrises commonality of interpretation.} It is
+worth stating explicitly that the categorical setup localises ``how
+much the agents mean the same thing'' in exactly three parameters with
+three different statuses. \emph{(i) The alphabet $\Sigma$} --- what
+counts as the same \emph{predicate} --- is a parameter of the category
+itself (the subscript of $\mathbf{Ctx}_\Sigma$) and is here
+\emph{assumed}; relaxing it means constructing a translation between
+$\mathbf{Ctx}_{\Sigma_1}$ and $\mathbf{Ctx}_{\Sigma_2}$, which we leave
+open. \emph{(ii) The alignment morphisms} of the merge diagram ---
+what counts as the same \emph{place} --- were assumed in earlier
+drafts and are now \emph{constructed}
+(Sections~\ref{sec:semantic-identity} and~\ref{sec:colimit}), with
+their existence an empirically decidable predicate. \emph{(iii) The
+trust$\times$staleness enrichment} --- how much a peer's
+interpretation \emph{counts} --- makes commonality graded rather than
+binary, with its own closed-form horizon and a discrete trust-flip.
+The three are ordered by hardness: weights are tunable, place
+correspondence is solvable from co-observation, and predicate
+correspondence is genuinely open. The same triple reappears one level
+up, at the evaluator: scoring retrieval and materialization
+presupposes a correspondence between memory entities and world
+referents (see the companion measurement paper's limitations), and
+grounding \emph{that} correspondence by the mechanisms of
+Section~\ref{sec:semantic-identity} is future work.
+
 At time $t$, agent $i$ maintains a local semantic context
 $\mathcal{K}_t^i=(G_t^i,\Sigma,I_t^i)$, where $G_t^i$ is the set of
 place records stored in the agent's private memory, and
@@ -539,6 +564,208 @@ the colimit reading its missing scientific function:
   reading requires.
 \end{enumerate}
 
+\subsection{Collective memory as a coherent gluing of local place categories}
+\label{sec:gluing}
+
+The colimit merge of \S\ref{sec:colimit} \emph{assumed} the alignment maps and
+\S\ref{sec:semantic-identity} \emph{constructs} them; we can now state, as the
+central categorical result, what object the collective memory is when agents
+hold \emph{different} frames, and exactly when it exists faithfully.
+
+\paragraph{Setup.} Agent $i$'s realized memory is a thin category (a poset):
+its concept lattice $L_i=\operatorname{Concepts}(\mathcal{K}_i)$ over $i$'s
+private frame, objects the places, order the extent inclusion of
+\S\ref{sec:categorical}. Frame recovery (\S\ref{sec:semantic-identity}) yields,
+on the co-observed subposet, a monotone map $F_{ij}:L_i\to L_j$ that transports
+$i$'s places into $j$'s frame, and its reverse $F_{ji}$. Because the categories
+are \emph{thin}, a recovered pair $(F_{ij},F_{ji})$ is an \emph{adjoint pair}
+precisely when it is a Galois connection, with unit
+$\eta^{ij}:\operatorname{Id}_{L_i}\Rightarrow F_{ji}\!\circ\!F_{ij}$ --- the
+adjunction defect measured in \S\ref{sec:semantic-identity}.
+
+\paragraph{Definition (coherent alignment system).} The family $\{F_{ij}\}$
+over the communication graph is \emph{coherent} if (i) each pair is an adjoint
+order-embedding ($\eta^{ij}$ an isomorphism, i.e.\ defect $0$: no place is
+aliased onto a distinct one), and (ii) it satisfies the cocycle condition
+$F_{jk}\!\circ\!F_{ij}=F_{ik}$ on triple overlaps.
+
+\paragraph{Proposition (two agents).} For an adjoint pair $F\dashv G$ between
+$L_A,L_B$, the collage (comma) category $\mathrm{Gl}(F)$ --- objects
+$L_A\sqcup L_B$, cross-hom $\mathrm{Gl}(F)(X,Y)=L_B(FX,Y)\cong L_A(X,GY)$
+\citep{maclane1998categories} --- contains $L_A,L_B$ as full subposets and is
+the two-agent collective memory; the defect $\eta_X$ is the obstruction to $X$
+round-tripping to itself, and the gluing collapses distinct places iff $\eta$
+is not an isomorphism.
+
+\paragraph{Theorem (collective memory = colimit of the alignment diagram).}
+Let $\mathbf{D}$ be the diagram in $\mathbf{Pos}$ (equivalently the enriched
+$\mathbf{Ctx}_\Sigma$) whose vertices are the $L_i$ and whose edges are the
+$F_{ij}$. The collective memory is $\operatorname{colim}\mathbf{D}$. As
+$\mathbf{Pos}$ is cocomplete this colimit always exists; it is a \emph{faithful}
+gluing --- every $L_i$ embeds and no two distinct places are identified ---
+\emph{iff} the alignment system is coherent. When all $F_{ij}=\operatorname{id}$
+(a shared frame) $\mathbf{D}$ is the constant diagram and
+$\operatorname{colim}\mathbf{D}$ is exactly the union-find colimit merge of
+\S\ref{sec:colimit}; the general statement removes the shared-frame assumption
+by replacing identities with the recovered adjoint embeddings.
+
+\emph{Argument.} Cocompleteness of $\mathbf{Pos}$ realizes the colimit as the
+disjoint union quotiented by the preorder generated by the
+$F_{ij}$-identifications. Each canonical injection
+$L_i\hookrightarrow\operatorname{colim}\mathbf{D}$ is faithful iff those
+identifications add no collapse inside an $L_i$, which holds iff every $F_{ij}$
+is an order-embedding (unit iso, defect $0$) and the identifications agree
+across overlaps (cocycle) --- i.e.\ coherence. The shared-frame case is the
+constant diagram, whose colimit is the componentwise union, i.e.\ union-find.
+\hfill$\square$
+
+\paragraph{Corollary (two computable witnesses).} Coherence is checkable
+without solving general semantic alignment. (a)~The pairwise \emph{adjunction
+defect} $\eta$ (\S\ref{sec:semantic-identity}) is zero iff each edge is a strict
+adjoint embedding --- measured exactly $0$ in $30/30$ recovered translation and
+rotation cases --- and guards against \emph{over-merge}. (b)~The
+\emph{connectedness} of the trust$\times$cadence reachability graph
+(\S\ref{sec:phase-diagram}, Figure~\ref{fig:phase-diagram}) decides whether a
+single $\operatorname{colim}\mathbf{D}$ spans all $N$ or the diagram
+disconnects into a coproduct of sub-consensuses (\emph{fragmentation}). The two
+failure modes are categorically distinct and separately measured: defect $>0$
+is collapse, disconnection is fragmentation --- the two axes of
+Figure~\ref{fig:phase-diagram} and the fail-closed behaviour of
+\S\ref{sec:semantic-identity}.
+
+\paragraph{Scope.} The proofs are the standard cocompleteness of $\mathbf{Pos}$
+and the collage construction \citep{maclane1998categories}; the theorem's job
+is to name the object and pin its existence to two measured quantities. The
+empirical content --- that fingerprint recovery actually yields the adjoint
+embeddings --- lives in \S\ref{sec:semantic-identity}, not in the theorem. One
+assumption is \emph{not} discharged: a shared tag alphabet $\Sigma$; with
+different alphabets the $F_{ij}$ would have to translate $\Sigma$ as well,
+which is beyond the present recovery and is the honest next frontier.
+
+\subsection{Protocol parameters as categorical structure: a trust\texorpdfstring{$\times$}{x}cadence phase diagram}
+\label{sec:phase-diagram}
+
+The reading so far models the \emph{memory} (objects are semantic contexts,
+merge is their colimit) under a shared frame and full exchange. Its
+predictive use comes from turning the lens on the \emph{communication
+structure} and asking \emph{when the colimit exists} as a function of the two
+protocol parameters --- so that the category computes a structural fact rather
+than re-describing an algorithm. Two parameters play two structural roles:
+\begin{description}[leftmargin=12pt,topsep=2pt,itemsep=1pt]
+\item[Trust $\tau$ gates morphisms.] An edge $i\!\to\!j$ (agent $i$
+incorporates $j$'s evidence) exists only where $i$'s trust in $j$ is at least
+$\tau$. Raising $\tau$ prunes the trust graph.
+\item[Cadence $K$ gates composition depth.] Over a horizon $H$ there are
+$R=\lfloor H/K\rfloor$ broadcast rounds, so a composed chain
+$i\!\to\!k\!\to\!\cdots\!\to\!j$ can be at most $R$ morphisms long. Low $K$
+(many rounds) allows deep composition; high $K$ allows only short paths.
+\end{description}
+A colimit over all $N$ agents --- a consensus object that fuses and serves
+every agent's evidence --- exists iff the $R$-round reachability of the
+$\tau$-thinned trust graph is all-to-all.
+
+Figure~\ref{fig:phase-diagram} sweeps $\tau\times K$ for $N{=}8$ agents whose
+pairwise trust is produced by the system's own EMA rule
+(\method{peer\_memory.peer\_trust.AsymmetricTrust}) under a ring co-observation
+topology (neighbours co-observe often and earn high trust; distant agents do
+not), averaged over $12$ seeds
+(\method{experiments/collective\_semantic\_memory/phase\_diagram\_trust\_cadence.py}).
+The result is a genuine phase transition with a diagonal boundary. At low
+$\tau$ the trust graph is dense and the colimit exists at every cadence.
+Raising $\tau$ prunes the long-range morphisms down to a near-neighbour ring;
+the collective then keeps a colimit \emph{only if} cadence is low enough for
+multi-hop composition through still-trusted intermediaries to reconnect it ---
+$\tau{=}0.55$ holds the colimit down to $R{=}2$, $\tau{=}0.80$ needs $R\ge4$
+(the ring diameter), and $\tau{=}0.90$ fragments throughout. Cadence and trust
+are therefore not opaque knobs: together they determine a categorical
+structural invariant, and the phase boundary is exactly where the collective
+transitions from a single consensus object to fragmented sub-consensuses.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_phase_diagram.pdf}
+  \caption{Communication-structure phase diagram over trust threshold $\tau$
+  (rows) and cadence $K$ (columns; $R=\lfloor H/K\rfloor$ broadcast rounds),
+  $N{=}8$ agents on an interaction ring, $12$ seeds. \textbf{Left:} reachability
+  density (fraction of ordered agent pairs whose evidence can compose within
+  $R$ rounds). \textbf{Right:} $P(\text{a colimit over all }N\text{ exists})$,
+  i.e.\ all-to-all reachability. The diagonal boundary is a structural
+  transition: the collective admits a single consensus object in the
+  low-$\tau$/low-$K$ region and fragments in the high-$\tau$/high-$K$ corner,
+  with higher $\tau$ demanding lower $K$ (more rounds) to stay connected.}
+  \label{fig:phase-diagram}
+\end{figure}
+
+This is the sense in which the categorical model is operational rather than
+descriptive: each protocol parameter maps to a concrete change in the
+communication diagram, and the diagram's structural invariant (existence of a
+colimit) predicts a qualitative regime of the collective. \emph{Scope.} The
+trust matrix is produced by the real EMA rule under a modelled ring
+co-observation topology, and ``colimit exists'' is operationalised as
+all-to-all $R$-round reachability; establishing quantitatively that crossing
+this structural boundary predicts the drop in observed Q/R/M/C performance is
+the natural next experiment.
+
+\subsection{Toward symbol alignment: grounding tag alphabets through shared places}
+\label{sec:symbol-alignment}
+
+The gluing theorem (\S\ref{sec:gluing}) still assumes a shared alphabet
+$\Sigma$. Dropping it, each agent holds a context $(G_i,\Sigma_i,I_i)$ over its
+\emph{own} vocabulary, and the right morphism is no longer a functor over one
+$\Sigma$ but an \emph{infomorphism} \citep{barwise1997information}: a pair
+$f:G_A\!\to\!G_B$, $\hat f:\Sigma_B\!\to\!\Sigma_A$ with
+$I_B(f g,\,y)\Leftrightarrow I_A(g,\,\hat f y)$. Infomorphisms compose and have
+colimits (Barwise--Seligman channels), so the collective memory over
+heterogeneous alphabets is the \emph{channel core} --- the colimit of the
+infomorphism diagram --- which extends \S\ref{sec:gluing} verbatim (functors
+over one $\Sigma$ become infomorphisms over the $\Sigma_i$; shared $\Sigma$ with
+$\hat f=\mathrm{id}$ is the old case).
+
+\paragraph{Grounding mechanism.} Symbols align through shared referents: on the
+places already anchored by frame recovery (\S\ref{sec:semantic-identity}), the
+co-occurrence of an $A$-tag and a $B$-tag is evidence they name the same
+feature, and $\hat f$ is read off the anchored co-occurrence. (When the
+alphabets differ so much that fingerprints themselves cannot seed the anchors,
+one bootstraps from the alphabet-independent structural constellations and
+alternates recovery of $f$ and $\hat f$.) The \emph{symbol-alignment defect}
+$\mathrm{def}_\Sigma$ --- the fraction of anchored $(\text{place},y)$ pairs
+violating the infomorphism biconditional --- is the symbol analogue of the
+frame adjunction defect of \S\ref{sec:semantic-identity}.
+
+\paragraph{Preliminary result.} A controlled study
+(\method{experiments/warp/symbol\_alignment.py}; $|\Sigma_A|{=}8$, $120$ places,
+$20$ seeds) gives agent $B$ a secret relabelling of $A$'s alphabet with
+observation noise, and recovers $\hat f$ from anchored co-occurrence.
+
+\begin{table}[h]
+\caption{Symbol alignment by grounding vs.\ assuming identical alphabets.
+Target-ID F1 is identifying $A$'s target feature from $B$'s (translated)
+evidence. ``naive'' assumes the alphabets coincide by index; ``recovered''
+learns $\hat f$; ``oracle'' is the true map.}
+\label{tab:symbol-alignment}
+\centering
+\small
+\begin{tabular}{c c c c c c}
+\toprule
+noise & transl.\ acc.\ & $\mathrm{def}_\Sigma$ & F1 naive & F1 recovered & F1 oracle \\
+\midrule
+0.00 & 1.00 & 0.000 & 0.56 & 1.00 & 1.00 \\
+0.10 & 1.00 & 0.099 & 0.55 & 0.92 & 0.92 \\
+0.30 & 0.89 & 0.304 & 0.56 & 0.69 & 0.73 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Assuming identical alphabets fails ($\text{F1}\approx0.55$: the relabelling
+sends $B$'s target tag to the wrong feature); grounding recovers the map
+(translation accuracy $1.00$, $\mathrm{def}_\Sigma$ tracking the noise floor)
+and reaches oracle-level target identification, robustly down to $15\%$
+anchored places (accuracy $0.95$). Coarsening two features into one $B$-tag
+bounds the achievable accuracy --- there is no faithful bijection, so the
+channel core coarsens rather than errs. Symbol alignment is thus not a wholly
+open problem but the same grounding-plus-defect recipe one alphabet up; a full
+treatment (genuine incommensurability, online drift) is the next paper.
+
 \section{Limitations and next experiments}
 \label{sec:limitations}
 
@@ -552,9 +779,11 @@ recover the inter-agent frame (translation and $90^\circ$ rotations)
 exactly, and the merge/trust/staleness results are unchanged on top of
 the recovered frames. What remains open is the harder end of the same
 axis: continuous $SE(2)$, appearance noise (the current matcher uses
-exact constellation equality because the substrate is noise-free), and
-symbol alignment --- agents with \emph{different tag alphabets} still
-cannot merge.
+exact constellation equality because the substrate is noise-free). Symbol
+alignment --- agents with \emph{different tag alphabets} --- is addressed
+preliminarily in \S\ref{sec:symbol-alignment} (grounding through shared places,
+recovered as an infomorphism); genuine incommensurability and vocabulary drift
+remain open.
 
 \textbf{Minimal CSM.} The CSM rules are deliberately simple. Adaptive
 cadence $K_t$, intent-conditioned trust, and selective consolidation of
@@ -591,6 +820,11 @@ is restricted to collective semantic memory.
 P.~Aczel.
 \newblock \emph{Non-Well-Founded Sets}.
 \newblock CSLI Lecture Notes 14, 1988.
+
+\bibitem[Barwise and Seligman(1997)]{barwise1997information}
+J.~Barwise and J.~Seligman.
+\newblock \emph{Information Flow: The Logic of Distributed Systems}.
+\newblock Cambridge University Press, 1997.
 
 \bibitem[Bettini et~al.(2022)]{bettini2022vmas}
 M.~Bettini, R.~Kortvelesy, J.~Blumenkamp, and A.~Prorok.
@@ -875,6 +1109,8 @@ Final coinductive core / society & $\nu\mathbf{B}$; greatest bisimulation $\appr
 \path{python -m experiments.minigrid_multiagent_wrapper.run_portability_sweep --out_dir tmp/minigrid_portability}
 \item Adjunction round-trip defect of frame recovery (Section~\ref{sec:semantic-identity}):
 \path{python experiments/warp/alignment_defect.py}
+\item Trust$\times$cadence structural phase diagram (Section~\ref{sec:phase-diagram}, Figure~\ref{fig:phase-diagram}):
+\path{python experiments/collective_semantic_memory/phase_diagram_trust_cadence.py --fig figures/fig_phase_diagram.pdf}
 \end{itemize}
 
 \section{Asset and license note}

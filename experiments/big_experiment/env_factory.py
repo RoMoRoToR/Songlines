@@ -202,7 +202,9 @@ def build_env(
     observation_radius: int = 2,
 ) -> BuiltEnv:
     assert 2 <= n_agents <= 12, "supported range 2..12 agents"
-    assert 1 <= n_waters <= n_agents, "M must satisfy 1 <= M <= N"
+    # M <= N is the scarcity regime; M > N (abundance) is allowed for the
+    # cadence-robustness study (random layout), bounded by available cells.
+    assert 1 <= n_waters, "M must satisfy 1 <= M"
     assert layout in ("symmetric", "asymmetric", "random")
 
     spawn_positions = SPAWN_POSITIONS_8[:n_agents]

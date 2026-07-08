@@ -18,6 +18,7 @@ For aggregation across seeds we emit BOTH:
 
 from __future__ import annotations
 
+import os
 import statistics
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
@@ -44,7 +45,11 @@ class RunConfig:
                 f"_A={self.architecture}_{k}_H={self.hazard_density}_s={self.seed}")
 
 
-def _xy_close(a, b, tol: float = 0.6) -> bool:
+def _xy_close(a, b, tol: float = None) -> bool:
+    # epsilon for R*/M* target matching; overridable via QRMC_MATCH_EPS for the
+    # threshold-sensitivity ablation (read per call so subprocesses pick it up).
+    if tol is None:
+        tol = float(os.environ.get("QRMC_MATCH_EPS", "0.6"))
     return abs(a[0] - b[0]) <= tol and abs(a[1] - b[1]) <= tol
 
 
