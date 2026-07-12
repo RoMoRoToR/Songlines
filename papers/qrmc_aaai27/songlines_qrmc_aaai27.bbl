@@ -1,0 +1,118 @@
+\begin{thebibliography}{18}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Andrychowicz et~al.(2017)Andrychowicz, Wolski, Ray, Schneider, Fong,
+  Welinder, McGrew, Tobin, Abbeel, and Zaremba}]{andrychowicz2017hindsight}
+Andrychowicz, M.; Wolski, F.; Ray, A.; Schneider, J.; Fong, R.; Welinder, P.;
+  McGrew, B.; Tobin, J.; Abbeel, P.; and Zaremba, W. 2017.
+\newblock Hindsight Experience Replay.
+\newblock In \emph{NeurIPS}.
+
+\bibitem[{Boyd et~al.(2006)Boyd, Ghosh, Prabhakar, and Shah}]{boyd2006gossip}
+Boyd, S.; Ghosh, A.; Prabhakar, B.; and Shah, D. 2006.
+\newblock Randomized Gossip Algorithms.
+\newblock \emph{IEEE Transactions on Information Theory}, 52(6): 2508--2530.
+
+\bibitem[{Carmona et~al.(2018)Carmona, van Dongen, Solti, and
+  Weidlich}]{carmona2018conformance}
+Carmona, J.; van Dongen, B.; Solti, A.; and Weidlich, M. 2018.
+\newblock \emph{Conformance Checking: Relating Processes and Models}.
+\newblock Springer.
+
+\bibitem[{Es et~al.(2024)Es, James, Espinosa-Anke, and
+  Schockaert}]{es2024ragas}
+Es, S.; James, J.; Espinosa-Anke, L.; and Schockaert, S. 2024.
+\newblock {RAGAs}: Automated Evaluation of Retrieval Augmented Generation.
+\newblock In \emph{EACL System Demonstrations}.
+
+\bibitem[{Foerster et~al.(2018)Foerster, Farquhar, Afouras, Nardelli, and
+  Whiteson}]{foerster2018ctde}
+Foerster, J.; Farquhar, G.; Afouras, T.; Nardelli, N.; and Whiteson, S. 2018.
+\newblock Counterfactual Multi-Agent Policy Gradients.
+\newblock In \emph{AAAI}.
+
+\bibitem[{Gupta et~al.(2017)Gupta, Davidson, Levine, Sukthankar, and
+  Malik}]{gupta2017cognitive}
+Gupta, S.; Davidson, J.; Levine, S.; Sukthankar, R.; and Malik, J. 2017.
+\newblock Cognitive Mapping and Planning for Visual Navigation.
+\newblock In \emph{CVPR}.
+
+\bibitem[{Lightman et~al.(2024)Lightman, Kosaraju, Burda, Edwards, Baker, Lee,
+  Leike, Schulman, Sutskever, and Cobbe}]{lightman2024verify}
+Lightman, H.; Kosaraju, V.; Burda, Y.; Edwards, H.; Baker, B.; Lee, T.; Leike,
+  J.; Schulman, J.; Sutskever, I.; and Cobbe, K. 2024.
+\newblock Let's Verify Step by Step.
+\newblock In \emph{ICLR}.
+
+\bibitem[{Ma et~al.(2024)Ma, Zhang, Zhu, Yang, Yang, Jin, Lan, Kong, and
+  He}]{ma2024agentboard}
+Ma, C.; Zhang, J.; Zhu, Z.; Yang, C.; Yang, Y.; Jin, Y.; Lan, Z.; Kong, L.; and
+  He, J. 2024.
+\newblock {AgentBoard}: An Analytical Evaluation Board of Multi-turn {LLM}
+  Agents.
+\newblock In \emph{NeurIPS}.
+
+\bibitem[{Packer et~al.(2023)Packer, Fang, Patil, Lin, Wooders, and
+  Gonzalez}]{packer2023memgpt}
+Packer, C.; Fang, V.; Patil, S.~G.; Lin, K.; Wooders, S.; and Gonzalez, J.~E.
+  2023.
+\newblock {MemGPT}: Towards {LLMs} as Operating Systems.
+\newblock \emph{arXiv preprint arXiv:2310.08560}.
+
+\bibitem[{Park et~al.(2023)Park, O'Brien, Cai, Morris, Liang, and
+  Bernstein}]{park2023generative}
+Park, J.~S.; O'Brien, J.; Cai, C.~J.; Morris, M.~R.; Liang, P.; and Bernstein,
+  M.~S. 2023.
+\newblock Generative Agents: Interactive Simulacra of Human Behavior.
+\newblock In \emph{UIST}.
+
+\bibitem[{Ru et~al.(2024)Ru, Qiu, Hu, Zhang, Shi, Chang
+  et~al.}]{ru2024ragchecker}
+Ru, D.; Qiu, L.; Hu, X.; Zhang, T.; Shi, P.; Chang, S.; et~al. 2024.
+\newblock {RAGChecker}: A Fine-grained Framework for Diagnosing
+  Retrieval-Augmented Generation.
+\newblock In \emph{NeurIPS Datasets and Benchmarks}.
+
+\bibitem[{Savinov, Dosovitskiy, and Koltun(2018)}]{savinov2018semi}
+Savinov, N.; Dosovitskiy, A.; and Koltun, V. 2018.
+\newblock Semi-parametric Topological Memory for Navigation.
+\newblock In \emph{ICLR}.
+
+\bibitem[{Shinn et~al.(2023)Shinn, Cassano, Gopinath, Narasimhan, and
+  Yao}]{shinn2023reflexion}
+Shinn, N.; Cassano, F.; Gopinath, A.; Narasimhan, K.; and Yao, S. 2023.
+\newblock Reflexion: Language Agents with Verbal Reinforcement Learning.
+\newblock In \emph{NeurIPS}.
+
+\bibitem[{Sukhbaatar, Szlam, and Fergus(2016)}]{sukhbaatar2016commnet}
+Sukhbaatar, S.; Szlam, A.; and Fergus, R. 2016.
+\newblock Learning Multiagent Communication with Backpropagation.
+\newblock In \emph{NeurIPS}.
+
+\bibitem[{Tolman(1948)}]{tolman1948cognitive}
+Tolman, E.~C. 1948.
+\newblock Cognitive Maps in Rats and Men.
+\newblock \emph{Psychological Review}, 55(4): 189--208.
+
+\bibitem[{van~der Aalst(2016)}]{vanderaalst2016process}
+van~der Aalst, W. M.~P. 2016.
+\newblock \emph{Process Mining: Data Science in Action}.
+\newblock Springer.
+
+\bibitem[{Wang et~al.(2024)Wang, Xie, Jiang, Mandlekar, Xiao, Zhu, Fan, and
+  Anandkumar}]{wang2023voyager}
+Wang, G.; Xie, Y.; Jiang, Y.; Mandlekar, A.; Xiao, C.; Zhu, Y.; Fan, L.; and
+  Anandkumar, A. 2024.
+\newblock Voyager: An Open-Ended Embodied Agent with Large Language Models.
+\newblock \emph{Transactions on Machine Learning Research}.
+
+\bibitem[{Wu et~al.(2023)Wu, Bansal, Zhang, Wu, Li, Zhu, Jiang, Zhang, Zhang,
+  Liu, Awadallah, White, Burger, and Wang}]{wu2023autogen}
+Wu, Q.; Bansal, G.; Zhang, J.; Wu, Y.; Li, B.; Zhu, E.; Jiang, L.; Zhang, X.;
+  Zhang, S.; Liu, J.; Awadallah, A.~H.; White, R.~W.; Burger, D.; and Wang, C.
+  2023.
+\newblock AutoGen: Enabling Next-Gen {LLM} Applications via Multi-Agent
+  Conversation.
+\newblock \emph{arXiv preprint arXiv:2308.08155}.
+
+\end{thebibliography}

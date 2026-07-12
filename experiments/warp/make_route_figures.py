@@ -32,7 +32,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-FIG_DIR = "docs/Formatting_Instructions_For_NeurIPS_2026/figures"
+FIG_DIR = "papers/figures"
 
 plt.rcParams.update({
     "font.size": 9, "axes.titlesize": 10, "axes.labelsize": 9,

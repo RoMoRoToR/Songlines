@@ -1,0 +1,567 @@
+\documentclass[letterpaper]{article} % DO NOT CHANGE THIS
+\usepackage[submission]{aaai2027}  % DO NOT CHANGE THIS
+\usepackage[hyphens]{url}  % DO NOT CHANGE THIS
+\usepackage{graphicx} % DO NOT CHANGE THIS
+\usepackage{natbib}  % DO NOT CHANGE THIS
+\usepackage{caption} % DO NOT CHANGE THIS
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\frenchspacing  % DO NOT CHANGE THIS
+\setlength{\pdfpagewidth}{8.5in} % DO NOT CHANGE THIS
+\setlength{\pdfpageheight}{11in} % DO NOT CHANGE THIS
+
+\newcommand{\method}[1]{\texttt{#1}}
+
+% AAAI-27 compressed version of the Q/R/M/C measurement-framework
+% manuscript.  The full single-column version (42 pp.) is the
+% Supplementary Document; this file keeps 7 pages of technical content
+% per the compression plan (docs/AAAI_COMPRESSION_PLAN.md, revised
+% 2026-07-04: the external-framework validation moved INTO the body).
+
+\pdfinfo{
+/TemplateVersion (2027.1)
+}
+
+\title{Q/R/M/C: A Stage-Decomposition Evaluation Protocol\\for Memory-Based Agents}
+\author{Anonymous submission}
+\affiliations{Anonymous submission}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Success-only metrics collapse qualitatively different memory failures
+into a single scalar and hide which stage of the retrieval pipeline is
+responsible. We describe an evaluation protocol, the Q/R/M/C
+decomposition (Query formation, Retrieval satisfaction, target
+Materialization, Completion), operationalised so that four conditional
+rates can be computed from standard trajectory logs. The arithmetic is
+an elementary chain rule over logged events; the substance is in the
+event definitions, which make the rates estimable in practice, much as
+precision and recall are useful because of their definitions and not
+their arithmetic. In single-agent experiments (MiniGrid, BabyAI),
+oracle-stage interventions separate a retrieval-limited task
+($0.39\!\to\!0.60$ under oracle retrieval) from downstream-limited
+ones, and log inspection refines the diagnosis: ranking among
+retrieved candidates is near-optimal ($96.9\%$), but the candidate set
+is empty at $91\%$ of decision points, so the limiting factor is
+memory accumulation. In multi-agent experiments (35{,}640 runs, four
+sharing architectures, cadence $K$), the predicted bottleneck shift
+between Materialization and Completion is confirmed as cluster-robust
+slopes (Spearman $-0.53$/$+0.43$), time-to-success among successes
+has an interior optimum at $K{=}8$, and a provenance annotation
+identifies the mechanism: under fast sharing the completion collapse
+is concentrated in locks backed by peers' evidence. The same tool-trace contract also
+instruments three third-party agent stacks (OpenAI SDK, LangGraph,
+AutoGen). Engineered structural failures localise identically on every
+stack ($R^\star{=}0$, $C^\star{=}0$ in $20/20$), while on clean tasks
+the frameworks spread $0.50$--$0.75$ end-to-end, and the stages
+attribute the spread to weak first-commitment discipline combined with
+different recovery loops. The protocol makes memory failures
+comparable across symbolic and LLM systems, single- and multi-agent,
+wherever a query/lock interface is exposed; on opaque learned
+policies it measures whether the stages are observable at all.
+\end{abstract}
+
+\section{Introduction}
+
+Embodied, goal-conditioned, and LLM agents increasingly retrieve
+places, objects, and facts \emph{by meaning} from an explicit memory,
+yet they are evaluated almost exclusively end-to-end: if success
+improves, memory is judged useful. Two systems with the same success
+rate can fail for different reasons. One never accumulates queryable
+evidence; another retrieves perfectly and then loses the target to a
+peer. This paper describes a measurement instrument that separates
+such cases.
+
+The instrument is a four-stage decomposition of memory-based task
+completion: \textbf{Q}uery formation (the planner emits a semantic
+intent), \textbf{R}etrieval satisfaction (memory returns a candidate
+matching the task), target \textbf{M}aterialization (the planner locks
+one candidate as an actionable target), and \textbf{C}ompletion (the
+controller reaches it). Logged as per-episode events
+$Q^\star,R^\star,M^\star,C^\star$, they factorise semantic-path
+completion into conditional rates estimable from ordinary trajectory
+logs (Definition~1; a multi-agent extension with memory and occupancy
+coupling channels is Definition~2). The consistency argument is the
+chain rule plus frequency estimation, and we claim no mathematical
+novelty for it. The precedent is the decomposition of accuracy into
+precision and recall, which was also arithmetically trivial and still
+changed evaluation practice. Our contribution is a logging discipline
+and the diagnoses it supports.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+\item \textbf{The protocol.} Operational, log-level definitions of the
+  four stage events for single agents (Definition~1) and communicating
+  collectives (Definition~2), with identifiability under a stated
+  conditional stage-Markov assumption, plus a stress test of that
+  assumption.
+\item \textbf{Stage-level diagnoses.} Single-agent:
+  oracle-stage interventions and log forensics attribute failures to
+  memory accumulation rather than to ranking. Multi-agent: a
+  registered slope-level claim (Empirical Claim~1: fast sharing
+  raises $P(M^\star|R^\star)$ and lowers $P(C^\star|M^\star)$) is
+  confirmed on a 35{,}640-run sweep, with an interior time-to-success
+  optimum at $K{=}8$ and a provenance-level mechanism.
+\item \textbf{External validity.} A two-layer contract (invariant
+  event roles plus a system-specific adapter) instruments OpenAI-SDK,
+  LangGraph, and AutoGen agents with one shared tool-trace adapter and
+  no per-framework changes; engineered structural failures localise
+  identically on all stacks, and behavioural differences between
+  stacks are attributed stage-by-stage.
+\end{enumerate}
+
+\begin{table}[t]
+\caption{Portability of the contract across system classes: the same
+four events, defined once, instrument each class without modification
+and localize a different failure in each. Sections
+\ref{sec:single}--\ref{sec:external} instantiate the rows in order.}
+\label{tab:portability}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{2.5cm} p{5.4cm}}
+\toprule
+System class & What the same four events revealed \\
+\midrule
+Symbolic single agent & ranking $96.9\%$ vs.\ empty candidates $91\%$: an \emph{accumulation} limit \\
+Symbolic collective & M$\leftrightarrow$C bottleneck shift; $t_{\mathrm{succ}}$ optimum $K{=}8$; provenance mechanism \\
+Learned policies & competitive success, collapsed stage observability \\
+LLM agents & $1.00\!\to\!0.00$ collapse $=$ pure C-budget; sharing lowers success $2/3\!\to\!1/3$ \\
+Third-party stacks $\times$ 2 models & structural failures localize identically; $M_1$ separates models; frameworks reshape it \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\fbox{\parbox{0.97\columnwidth}{\small
+\textbf{Scope and non-claims.} Each limitation is stated together with
+the reason the results survive it.
+(i)~The contribution is the operationalisation: log-level event
+definitions under which the four conditional rates are identifiable on
+any system exposing a query/lock interface. The factorisation
+arithmetic itself (the chain rule) carries no mathematical novelty,
+and none is claimed.
+(ii)~Empirical Claim~1 is a slope-level empirical observation rather
+than a theorem, stated deliberately so that each slope is separately
+falsifiable on logs; both were confirmed with cluster-robust
+confidence intervals.
+(iii)~No claim is made about the conditional product $\Phi$, which is
+monotone in our data; the interior optimum lives on conditional
+time-to-success, and we report the censoring-aware contrast under
+which it does not persist.
+The operationalisation is testable on specific summaries and can be
+wrong on others; a protocol without such exposure would be
+unfalsifiable.
+(iv)~Primary substrates are grid worlds because they admit oracle
+interventions and exhaustive sweeps (35{,}640 runs) that richer
+substrates do not; the directional VMAS check and the LLM and
+third-party studies indicate that the event definitions do not depend
+on grid structure.
+(v)~Multi-agent place identity assumes a shared coordinate frame in
+the main sweep; a companion manuscript removes the assumption
+constructively, leaving the event definitions unchanged.
+(vi)~$R^\star$ and $M^\star$ presuppose an entity correspondence
+between memory content and world referents, supplied here by
+instrumented environments. The requirement is mild in the common
+evaluation setting of this paper --- interchangeable agents (a shared
+perception interface, possibly different weights) situated in a single
+environment inherit the correspondence from the shared substrate ---
+and becomes a genuinely open problem only for heterogeneous agents in
+open worlds, where the protocol degrades gracefully to $Q^\star$ and
+$C^\star$.
+}}
+
+\section{The Q/R/M/C Protocol}
+\label{sec:protocol}
+
+An episode issues a semantic query (required/preferred/penalty
+tags); memory returns candidates; the planner locks one; the
+controller executes. The four events anchor at logged triggers on the
+episode's query--lock chain and are \emph{nested by construction}:
+$Q^\star$ fires on intent emission; $R^\star := Q^\star \wedge {}$(the
+returned candidate set contains a task-satisfying candidate);
+$M^\star := R^\star \wedge {}$(the planner locks a true target drawn
+from that candidate set); $C^\star := M^\star \wedge {}$(the
+controller reaches the locked target). An episode may run several
+query--retrieve--lock attempts; a link fires if some attempt realizes
+it together with its predecessors, so $C^\star \subseteq M^\star
+\subseteq R^\star \subseteq Q^\star$ holds at the episode level by
+definition. $C^\star$ is \emph{semantic-path completion} ---
+completion through the retrieval path --- and is distinct from raw
+task success, which can also occur off-path.
+
+We keep two kinds of quantities separate. \emph{Link rates} are the
+conditionals $q = P(Q^\star)$, $r = P(R^\star \mid Q^\star)$,
+$m = P(M^\star \mid R^\star)$, $c = P(C^\star \mid M^\star)$,
+estimated by conditional frequency over episodes; under the nesting
+above, $P(C^\star) = q\,r\,m\,c$ is an exact identity --- a chain
+rule that needs no further assumption. \emph{Marginal event
+frequencies} are used as four separate diagnostics on systems whose
+logs expose no lock chain (\S\ref{sec:external}); there an event can
+occur without its predecessor, the events are not nested, and no
+product is claimed.
+
+\textbf{Definition 1} (single-agent estimability, informal). With the
+nested events above, $P(C^\star) = q\,r\,m\,c$ holds identically and
+each link rate is consistently estimable from logs. The conditional
+stage-Markov property (each stage outcome depends on the trace only
+through its predecessor stage) is not needed for the identity; it is
+what licenses reading each link as a stable property of the owning
+subsystem, and hence predicting the effect of a stage intervention. A
+simulation stress test quantifies what breaks when it fails: with a
+hidden confounder, $m$ stays unbiased while $c$ inflates, so
+diagnoses that hinge on the M--C \emph{contrast} degrade gracefully
+(supplement).
+
+\textbf{Definition 2} (multi-agent extension, informal). With $N$
+agents sharing memory by peer broadcast every $K$ ticks, the
+conditioning sets enlarge with two coupling channels: the shared
+memory $\mathcal{M}^{(K)}_{-i}$ and occupancy $\mathcal{O}_{-i}$
+(scarce targets are consumed). The same four rates are logged per
+agent.
+
+\textbf{Empirical Claim 1} (bottleneck shift, slope-level). As $K$
+decreases (faster sharing), $P(M^\star|R^\star)$ rises, because
+fresher peer evidence enables reliable commitment, and
+$P(C^\star|M^\star)$ falls, because peers race for the same targets.
+Both are claims about conditional rates, not about their product.
+
+Interpretive readings of the stages (an order-theoretic account of
+empty retrieval via the query--extent Galois connection; an
+options/semi-MDP account of why optima appear on time-bearing metrics)
+are confined to the supplement and are not counted among the
+contributions.
+
+\section{Single Agent: Localizing the Failure}
+\label{sec:single}
+
+On a 10-seed MiniGrid benchmark (water/rest semantic search,
+goal-region rejoin in FourRooms, hazard recovery in LavaGapS7; BabyAI
+portability in the supplement), end-to-end success hides
+heterogeneity: water and rest are strong ($0.95$, $0.93$), while
+rejoin and hazard recovery are weak. The reasons differ, and
+oracle-stage interventions separate them. Replacing retrieval with an
+oracle lifts hazard-recovery success $0.39\!\to\!0.60$ (bootstrap
+95\% CIs $[0.35,0.43]$ vs.\ $[0.51,0.69]$; per-seed paired deltas
+positive in $9/10$ seeds, exact sign test $p{=}0.004$;
+retrieval-limited); the same oracle rescues semantic-path completion
+on goal-region rejoin without changing end-to-end success
+(downstream-limited). The framework's own logs refine the attribution
+further: when candidates exist, ranking precision is $96.9\%$, but the
+candidate set is empty at $91\%$ of decision points --- a figure
+robust to the weighting ($0.908$ pooled over calls, $0.909$
+seed-weighted, $0.891$ episode-weighted), so it is not an artefact of
+long failing episodes contributing more decision points. The binding
+constraint is accumulation, since the agent rarely has anything to
+rank. In our own development this number redirected effort from
+rankers to consolidation; success-only evaluation gives no indication
+of it. Accumulation itself is not one of the four stages: the
+protocol localises the failure to the R link, and within-link log
+forensics names the cause. We therefore read Q/R/M/C as coarse
+localisation with a designated drill-down, not as a complete causal
+ontology of memory failure.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\columnwidth]{figures/fig_oracle_waterfall.pdf}
+  \caption{The diagnose$\to$intervene$\to$verify loop on the
+  single-agent benchmark: oracle-stage interventions lift exactly the
+  stage that the decomposition identifies. Hazard recovery is
+  retrieval-limited (oracle-R: $0.39\!\to\!0.60$ end-to-end);
+  goal-region rejoin is downstream-limited (oracle-R rescues
+  semantic-path completion, end-to-end unchanged).}
+  \label{fig:oracle}
+\end{figure}
+
+A learned behaviour-cloning baseline illustrates the observability
+caveat: it reaches competitive success with collapsed stage structure
+(there is no explicit query/lock interface), so end-to-end
+optimisation removes exactly the events the protocol needs.
+
+\section{Multi-Agent: Memory as a Shared Resource}
+\label{sec:multi}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figures/fig_conditional_rates.pdf}
+  \caption{Per-architecture conditional Q/R/M/C rates (top) and mean
+  time-to-success (bottom) on the 35{,}640-run sweep. Shared bus,
+  central aggregator, and fast peer broadcast ($K{\le}4$) sit in the
+  M-saturation/C-collapse regime; independent and slow peer
+  ($K{\ge}16$) in the reverse. Error bars and band: 95\%
+  cluster-bootstrap CIs over the 81 design cells. Time-to-success
+  among successful runs has an interior minimum at $K{=}8$ (7.63 vs.\
+  8.04 independent); the sharp statement is the cell-paired contrasts
+  in the text, and the censoring-aware counterpart is also given
+  there.}
+  \label{fig:conditional-rates}
+\end{figure*}
+
+Four sharing architectures run a scarce water-search task over one
+symbolic substrate: independent private memories, a shared event bus,
+a central trust-weighted aggregator, and peer-to-peer broadcast at
+cadence $K{\in}\{1,\dots,64\}$ ($N{\in}\{3,5,8\}$ agents, $T{\le}N$
+targets, three layouts, three hazard densities, 40 seeds; 35{,}640
+runs). Figure~\ref{fig:conditional-rates} shows the stage profile of
+every architecture; retrieval saturates, and the differences between
+architectures are confined to the M and C links, as Empirical Claim~1
+predicts.
+
+\textbf{Bottleneck shift.} Across peer runs, Spearman of
+$P(M^\star|R^\star)$ vs.\ $K$ is $-0.53$ (cluster-robust 95\% CI
+$[-0.59,-0.47]$ over 81 configuration cells) and of
+$P(C^\star|M^\star)$ vs.\ $K$ is $+0.43$ ($[+0.37,+0.50]$). The
+sharper signature is within-cadence: Pearson between the two links
+inside a fixed $K$ peaks at $-0.61$ at $K{=}4$ and decays to noise by
+$K{=}64$, so the bottleneck migrates between stages within the same
+configuration as $K$ varies. Scaling to $N{=}12$ sharpens the
+signature (peak $-0.70$, migrating to $K{=}8$). On mean
+time-to-success among successful runs the trade-off produces an
+interior optimum at $K{=}8$ ($7.63$ vs.\ $8.04$ independent,
+cell-weighted): cell-paired contrasts show $K{=}8$ faster than
+$K{=}16$ ($-0.39$, 95\% CI $[-0.80,-0.08]$) and than independent
+($-0.40$ $[-0.59,-0.24]$), and statistically tied with
+$K{\in}\{2,4\}$. That metric conditions on success. Under a
+censoring-aware alternative that charges failed runs the full step
+limit, the fast end reverses and independent is marginally best
+(paired $\Delta(K{=}8-\text{indep}) = +0.32$ $[+0.05,+0.63]$): fast
+sharing's completion collapse costs more successes than its
+materialization gain buys back. The interior optimum is therefore a
+statement about conditional speed, not unconditional efficiency;
+consolidation rate remains a tunable design parameter, and closing
+the unconditional gap is what the reservation protocol below
+achieves. Oracle interventions confirm the attribution: at fast
+cadence, oracle-R/M/C progressively remove the excess time, placing
+it at the M$\leftrightarrow$C transition.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\columnwidth]{figures/fig_warp_strata.pdf}
+  \caption{Provenance stratification of $P(C^\star|M^\star)$ vs.\
+  cadence $K$ (peer, scarcity cells, episode-cluster bootstrap CIs).
+  The share of locks backed by foreign evidence (warp share, grey)
+  grows as sharing accelerates, while that stratum's completion
+  (orange) stays below $0.05$ and the own-evidence stratum (blue)
+  stays flat: the C-collapse of fast sharing is concentrated in the
+  foreign-evidence stratum.}
+  \label{fig:strata}
+\end{figure}
+
+\textbf{Provenance stratification.} We annotate each $M^\star$ with
+the foreign share $\varphi$ of its supporting evidence mass (computed
+from the merge's own weights, frozen at lock time) and call locks with
+$\varphi{\ge}0.8$ \emph{warps}. The warp share falls from $0.55$ at
+$K{=}1$ to $0.11$ at $K{=}8$, while own-evidence locks complete at a
+flat $0.26$--$0.34$ and warp locks stay below $0.05$ throughout. The
+completion collapse of fast sharing is therefore concentrated in the
+foreign-evidence stratum: cadence controls how much of the
+collective's commitment relies on peers' evidence, and this stratum
+loses the occupancy race. The stratification is not an artefact of
+the $0.8$ cutoff: recomputed at thresholds
+$\varphi{\in}\{0.5,\dots,0.95\}$, the foreign stratum completes at
+${\le}0.03$ while the own stratum stays at $0.26$--$0.50$, at every
+threshold and cadence. The two coupling channels also separate
+interventionally with arms already in the design: the independent arm
+removes peer evidence while leaving target contention in place, and a
+decentralized reservation-and-rollback protocol (companion
+manuscript) keeps peer evidence while managing contention --- under
+it, unconditional success at fast cadence exceeds the $K{=}8$
+baseline ($0.614$--$0.620$ vs.\ $0.583$), identifying occupancy
+racing rather than evidence quality as the cost channel of fast
+sharing. The same stratification curve reproduces on a continuous
+VMAS bridge ($0.72\!\to\!0.00$) and on an LLM text substrate
+($0.42\!\to\!0.08$).
+
+\textbf{Learned and LLM collectives.} A CommNet-PPO baseline matches
+symbolic peer success ($0.667$ vs.\ $0.65$) with structurally
+degenerate stages: its real-valued channel is never informatively
+empty, so R and M collapse and the stages cannot be read off at
+competitive success. A collective of three LLM agents (llama3.1)
+sharing symbolic memory reproduces the phenomenology on language.
+Paired against a no-communication baseline on identical layouts, raw
+sharing lowers success $2/3\!\to\!1/3$ (occupancy racing), and a
+decentralized reservation-and-rollback protocol recovers part of it
+($0.33\!\to\!0.42$) with rollback latency ${\approx}K$. On a
+step-budget sweep with two local models, an opaque success collapse
+($1.00\!\to\!0.00$) resolves to pure C-stage failure
+($Q^\star{=}R^\star{=}M^\star{=}1$, $C^\star{=}0$) identically for
+both models, which identifies the failure as structural rather than
+model-specific.
+
+\section{The Contract on Third-Party Agent Stacks}
+\label{sec:external}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figures/fig_external_stages.pdf}
+  \caption{Stage profiles of three third-party stacks on four
+  engineered variants (llama3.1, $n{=}20$/cell). Q and R saturate
+  identically; the structural failures give exact zero columns on
+  every stack; the inter-framework spread is confined to M and C.}
+  \label{fig:external-stages}
+\end{figure*}
+
+The strongest external-validity test of an evaluation protocol is its
+application to systems built by others. The contract has two layers:
+an \emph{invariant core} --- four event roles (a memory query is
+issued; returned evidence satisfies the task; the agent commits to a
+target; the task completes) --- and a \emph{system-specific adapter}
+that maps logged actions to those roles. This section instruments
+three third-party stacks --- an OpenAI-SDK function-calling loop,
+LangGraph's ReAct agent, and AutoGen --- with one tool-trace adapter
+shared by all three: an episodic household memory behind
+\method{recall}/\method{goto}/\method{take} tools; $Q^\star$ on
+querying, $R^\star$ on attribution (a returned record names the item
+at its true place), $M^\star$ on a commitment (\method{goto}) to the
+true place, $C^\star$ on completion within a tool budget. A tool
+trace exposes no lock chain, so these are the \emph{marginal event
+frequencies} of \S\ref{sec:protocol}: an agent can commit to the true
+place without a supporting retrieval, the events are not nested, and
+no factorisation is claimed --- the four rates serve as separate
+diagnostics. What varies across system classes is the adapter, not
+the event roles; two revisions of this adapter are recorded in the
+pre-run registration. Four variants engineer one failure each; all
+predictions were registered before the runs.
+
+\begin{table}[t]
+\caption{Marginal Q/R/M/C event frequencies on third-party stacks (20
+episodes/cell; the events are not nested here and no product is
+claimed). $M_1$: first commitment targets the true place.}
+\label{tab:external}
+\centering
+\small
+\setlength{\tabcolsep}{3.4pt}
+\begin{tabular}{llccccc}
+\toprule
+Stack & Variant & $Q^\star$ & $R^\star$ & $M^\star$ & $C^\star$ & $M_1$ \\
+\midrule
+OpenAI & control      & 1.00 & 1.00 & .85 & .75 & .25 \\
+SDK    & consol.\ gap & 1.00 & \textbf{.00} & .50 & .40 & .25 \\
+       & stale ambig. & 1.00 & 1.00 & .90 & .30 & .25 \\
+       & tight budget & 1.00 & 1.00 & .25 & \textbf{.00} & .25 \\
+\midrule
+Lang-  & control      & 1.00 & 1.00 & .70 & .50 & .50 \\
+Graph  & consol.\ gap & 1.00 & \textbf{.00} & .20 & .15 & .10 \\
+       & stale ambig. & 1.00 & 1.00 & .65 & .60 & .50 \\
+       & tight budget & 1.00 & 1.00 & .10 & \textbf{.00} & .10 \\
+\midrule
+Auto-  & control      & 1.00 & 1.00 & .85 & .55 & .45 \\
+Gen    & consol.\ gap & 1.00 & \textbf{.00} & .30 & .20 & .15 \\
+       & stale ambig. & 1.00 & 1.00 & .50 & .45 & .35 \\
+       & tight budget & 1.00 & 1.00 & .15 & \textbf{.00} & .15 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three findings emerge (Table~\ref{tab:external},
+Fig.~\ref{fig:external-stages}). \textbf{(1)~Structural localizations
+are exact and framework-independent.} With no consolidated fact,
+$R^\star{=}0.00$; with the budget below requirement,
+$C^\star{=}0.00$ at $Q^\star{=}R^\star{=}1$. Both hold in $20/20$
+episodes on every stack with no per-framework adaptation.
+\textbf{(2)~The clean control separates the stacks, and the stages
+localize the difference.} Success on identical clean episodes spreads
+$0.50$--$0.75$. A leaderboard would report a quality difference and
+stop; the stages show a pathology shared by all three stacks
+(first-commitment discipline is weak everywhere,
+$M_1{=}0.25$--$0.50$: the first \method{goto} frequently ignores the
+agent's own just-retrieved evidence) together with different loop
+economics: episode-level M recovers to $0.70$--$0.85$ by re-query, and
+the stacks differ in how much of that survives to completion ($C/M$
+from $0.88$ down to $0.65$). \textbf{(3)~The stale distractor has a
+framework-specific cost.} An outdated record captures the first
+commitment in $0.20$--$0.40$ of ambiguous episodes, and the completion
+cost varies (OpenAI SDK: $0.75\!\to\!0.30$; the others absorb the
+detour). Some registered behavioural predictions assumed a clean
+control and failed for exactly that reason: the stacks themselves fail
+a clean memory task 25--50\% of the time (finding~2). These are
+reported as registered failures together with the mechanism.
+
+\textbf{Model robustness (registered before the runs).} Repeating all
+240 episodes with a second model (qwen3:4b) confirms the registered
+prediction exactly: both structural localizations transfer unchanged
+($R^\star{=}0.00$ under the consolidation gap and $C^\star{=}0.00$
+under the tight budget, $20/20$ on every stack). The behavioural
+profile, by contrast, is a model property that the stages make
+explicit. qwen3:4b completes every clean episode ($C^\star{=}1.00$ on
+all three stacks) with first-commitment discipline
+$M_1{=}0.90$--$0.95$ where llama3.1 managed $0.25$--$0.50$, and is
+barely distracted by the stale record ($0.05$--$0.30$). The exception
+is AutoGen, which drops qwen's $M_1$ to $0.40$; the decomposition thus
+separates the model's contribution from the effect of the framework's
+prompting loop. The full second-model table is in the supplement.
+
+\section{Related Work}
+
+Cognitive-map and semantic-map lines motivate explicit place
+abstraction \citep{tolman1948cognitive,gupta2017cognitive,
+savinov2018semi}; goal-conditioned RL conditions on goals or
+embeddings \citep{andrychowicz2017hindsight}; multi-agent RL studies
+learned channels \citep{sukhbaatar2016commnet,foerster2018ctde} and
+gossip protocols \citep{boyd2006gossip}; LLM-agent systems add
+explicit memory layers evaluated end-to-end
+\citep{wang2023voyager,shinn2023reflexion,packer2023memgpt,
+park2023generative,wu2023autogen}. The protocol is orthogonal to
+these lines: it proposes no architecture, makes any of them
+stage-diagnosable from logs, and yields a slope-level cadence
+prediction testable on those logs.
+
+\textbf{Stage-wise evaluation.} The closest line decomposes
+retrieval-augmented generation: RAGAS scores retrieval and generation
+quality separately \citep{es2024ragas}, RAGChecker refines this to
+claim-level diagnostics meta-evaluated against human judgments
+\citep{ru2024ragchecker}, and AgentBoard replaces final success with
+analytic progress rates for multi-turn LLM agents
+\citep{ma2024agentboard}. Q/R/M/C differs on three axes: its events
+are logged actions of a task-executing agent, not LLM-judged text
+quality; it models commitment (M) and the multi-agent coupling
+channels (shared memory, occupancy) that RAG metrics do not
+represent; and its diagnoses are validated interventionally (oracle
+stages; engineered structural faults) rather than by correlation with
+human ratings. Process mining and conformance checking compare event
+logs against stage models
+\citep{vanderaalst2016process,carmona2018conformance}; the protocol
+shares that log-level discipline and adds agent-specific event
+semantics with intervention-based validation. Process reward models
+score intermediate reasoning steps to supervise training
+\citep{lightman2024verify}; Q/R/M/C is an evaluation-time instrument
+for memory pipelines.
+
+\section{Limitations}
+
+Primary substrates are grid worlds; VMAS is a directional continuous
+check; the LLM studies use small local models at modest $n$; place
+identity across agents assumes a shared coordinate frame (removed
+constructively in a companion manuscript); Empirical Claim~1 remains
+slope-level; a derivation under a generative model would make it a
+theorem. The four stages are one resolution level: sub-stage causes
+(accumulation within R; ranking, grounding, and staleness handling
+within M) require within-link forensics, which the protocol scopes
+but does not automate. Full tables, proofs of the estimability arguments,
+assumption stress tests, effect-size methodology, scale-up, and all
+registered-prediction files are in the supplement.
+
+\section{Conclusion}
+
+Q/R/M/C replaces the scalar verdict ``the agent's memory failed''
+with a diagnosis that names a stage. In our studies this located a
+consolidation limit in a single agent, a sharing-rate trade-off priced
+by occupancy in a collective, and a commitment-discipline gap in
+off-the-shelf agent stacks; in several cases the diagnosis was
+specific enough to act on. The protocol requires a logging contract
+rather than architectural modification, and the resulting rates are
+directly comparable across systems that expose a query/lock
+interface; for opaque learned policies the protocol measures stage
+observability itself.
+
+\bibliography{aaai27refs}
+
+% Reproducibility checklist (pages beyond the 7-page technical limit
+% are permitted for references and the checklist).
+\def\isChecklistMainFile{}
+\input{ReproducibilityChecklist_qrmc_aaai27.tex}
+
+\end{document}

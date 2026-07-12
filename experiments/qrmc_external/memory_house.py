@@ -45,14 +45,56 @@ FILLER = ["old magazines", "a broken umbrella", "spare buttons",
 VARIANTS = ["control", "r_starved", "m_ambiguous", "c_budget"]
 BUDGETS = {"control": 6, "r_starved": 6, "m_ambiguous": 6, "c_budget": 2}
 
+# ── fault taxonomy for the blinded localization meta-evaluation ──────
+# Each fault is injected into exactly one stage-owning component; the
+# injected stage is the ground-truth label the blinded decision rule
+# must recover from the Q/R/M/C profile alone.
+#
+#   q_no_tool     Q  the recall tool is not offered to the agent;
+#   q_misleading  Q  prompt-level: the task text tells the agent its
+#                    memory is from previous tenants (query formation
+#                    is discouraged, memory itself is intact);
+#   r_starved     R  (existing) the fact was never consolidated;
+#   r_corrupted   R  silent corruption: the true record omits the item
+#                    and a confident record names it at a wrong place;
+#   r_flaky       R  recall fails with p=0.7 per call ("memory
+#                    temporarily unavailable");
+#   m_ambiguous   M  (existing) stale distractor listed first;
+#   m_duplicate   M  two equally fresh records name the item at two
+#                    places (wrong one first), no staleness marker;
+#   c_budget      C  (existing) budget of 2 tool calls;
+#   c_flaky_goto  C  goto fails to move with p=0.5 ("door is stuck");
+#                    the commitment is logged, arrival fails;
+#   c_take_broken C  take always fails ("your hands are full").
+FAULT_VARIANTS = [
+    "q_no_tool", "q_misleading", "r_corrupted", "r_flaky",
+    "m_duplicate", "c_flaky_goto", "c_take_broken",
+]
+ALL_VARIANTS = VARIANTS + FAULT_VARIANTS
+BUDGETS.update({v: 6 for v in FAULT_VARIANTS})
+
+# ground-truth stage per variant (None = no fault injected)
+FAULT_STAGE = {
+    "control": "none",
+    "q_no_tool": "Q", "q_misleading": "Q",
+    "r_starved": "R", "r_corrupted": "R", "r_flaky": "R",
+    "m_ambiguous": "M", "m_duplicate": "M",
+    "c_budget": "C", "c_flaky_goto": "C", "c_take_broken": "C",
+}
+P_RECALL_FAIL = 0.7   # r_flaky
+P_GOTO_STUCK = 0.5    # c_flaky_goto
+
 
 class MemoryHouse:
     def __init__(self, variant: str, seed: int):
-        assert variant in VARIANTS
+        assert variant in ALL_VARIANTS
         rng = np.random.default_rng(7000 + seed)
         self.variant = variant
         self.budget = BUDGETS[variant]
         self.item = ITEMS[int(rng.integers(0, len(ITEMS)))]
+        # separate stream for runtime fault coin flips, deterministic
+        # per seed and independent of layout generation
+        self._frng = np.random.default_rng(9000 + seed)
 
         rooms = list(rng.permutation(ROOMS))
         self.places: Dict[str, Dict[str, Any]] = {}
@@ -69,7 +111,7 @@ class MemoryHouse:
         self.records: List[Dict[str, str]] = []
         for pid, pl in self.places.items():
             note = f"{pl['room']} ({pid}): {', '.join(pl['contents'])}"
-            if variant == "r_starved" and pid == true_pid:
+            if variant in ("r_starved", "r_corrupted") and pid == true_pid:
                 # the fact was never consolidated: record omits the item
                 note = (f"{pl['room']} ({pid}): "
                         f"{', '.join(c for c in pl['contents'] if c != self.item)}")
@@ -83,6 +125,23 @@ class MemoryHouse:
                                    f"({self.stale_place}): {self.item} "
                                    f"(old note, may be outdated)")}
             self.records.insert(0, stale_note)
+        if variant == "r_corrupted":
+            # silent corruption: a confident record names the item at a
+            # wrong place; no staleness marker, the true record omits it
+            wrong = [p for p in self.places if p != true_pid]
+            self.decoy_place = wrong[int(rng.integers(0, len(wrong)))]
+            self.records.insert(0, {
+                "place_id": self.decoy_place,
+                "note": (f"{self.places[self.decoy_place]['room']} "
+                         f"({self.decoy_place}): {self.item}")})
+        if variant == "m_duplicate":
+            # two equally fresh records name the item; wrong one FIRST
+            wrong = [p for p in self.places if p != true_pid]
+            self.decoy_place = wrong[int(rng.integers(0, len(wrong)))]
+            self.records.insert(0, {
+                "place_id": self.decoy_place,
+                "note": (f"{self.places[self.decoy_place]['room']} "
+                         f"({self.decoy_place}): {self.item}")})
 
         # runtime state
         self.at: Optional[str] = None
@@ -106,6 +165,11 @@ class MemoryHouse:
         stop = self._spend("recall", query)
         if stop:
             return stop
+        if (self.variant == "r_flaky"
+                and self._frng.random() < P_RECALL_FAIL):
+            self.log[-1]["hits"] = []
+            self.log[-1]["attributed_hits"] = []
+            return "Memory is temporarily unavailable. Try again later."
         q = (query or "").lower()
         hits = [r for r in self.records
                 if any(tok and tok in r["note"].lower()
@@ -134,6 +198,13 @@ class MemoryHouse:
         if pid is None:
             return ("Unknown place. Valid ids: "
                     + ", ".join(sorted(self.places)) + ".")
+        if (self.variant == "c_flaky_goto"
+                and self._frng.random() < P_GOTO_STUCK):
+            # the commitment is made (resolved is logged above); the
+            # move itself fails, so arrival --- not the lock --- breaks
+            pl = self.places[pid]
+            return (f"The door to {pl['room']} ({pid}) is stuck; "
+                    f"you could not enter.")
         self.at = pid
         pl = self.places[pid]
         return (f"You are now at {pl['room']} ({pid}). "
@@ -143,6 +214,9 @@ class MemoryHouse:
         stop = self._spend("take", item)
         if stop:
             return stop
+        if self.variant == "c_take_broken":
+            return ("You cannot pick that up right now "
+                    "(your hands are full).")
         it = (item or "").strip().lower()
         if (self.at == self.true_place and self.item in it):
             self.done = True
@@ -176,16 +250,35 @@ class MemoryHouse:
         stale_first = int(bool(gotos) and self.variant == "m_ambiguous"
                           and gotos[0]["resolved"] == self.stale_place)
         c = int(any(e.get("success") for e in self.log))
+        exhausted = int(self.tool_calls >= self.budget and not c)
         return {"Q": q, "R": r, "M": m, "C": c, "M1": m1,
-                "stale_first": stale_first,
+                "stale_first": stale_first, "exhausted": exhausted,
                 "n_tool_calls": self.tool_calls}
 
     @property
     def task_text(self) -> str:
+        if self.variant == "q_no_tool":
+            # no recall tool is offered, so the instruction to use it
+            # is dropped; everything else is identical
+            return (f"Find and take the {self.item}. You have a budget "
+                    f"of {self.budget} tool calls. Goto places to look "
+                    f"around, then take the item.")
+        if self.variant == "q_misleading":
+            return (f"Find and take the {self.item}. You have a budget "
+                    f"of {self.budget} tool calls. Note: your episodic "
+                    f"memory is from the previous tenants of a different "
+                    f"house and is probably unreliable. Goto places to "
+                    f"look around, then take the item.")
         return (f"Find and take the {self.item}. You have a budget of "
                 f"{self.budget} tool calls. First search your memory of "
                 f"the house with recall, then goto the right place, then "
                 f"take the item.")
+
+    @property
+    def available_tools(self) -> List[str]:
+        if self.variant == "q_no_tool":
+            return ["goto", "take", "finish"]
+        return ["recall", "goto", "take", "finish"]
 
     def tool_specs(self) -> List[Dict[str, Any]]:
         def spec(name, desc, pname, pdesc):
@@ -194,7 +287,7 @@ class MemoryHouse:
                 "parameters": {"type": "object", "properties": {
                     pname: {"type": "string", "description": pdesc}},
                     "required": [pname]}}}
-        return [
+        specs = [
             spec("recall", "Search your episodic memory of the house.",
                  "query", "what to search for"),
             spec("goto", "Move to a place by its id (e.g. p2).",
@@ -205,6 +298,8 @@ class MemoryHouse:
                 "name": "finish", "description": "End the episode.",
                 "parameters": {"type": "object", "properties": {}}}},
         ]
+        avail = set(self.available_tools)
+        return [s for s in specs if s["function"]["name"] in avail]
 
     def call(self, name: str, args: Dict[str, Any]) -> str:
         if name == "recall":

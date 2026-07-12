@@ -38,7 +38,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-FIG_DIR = "docs/Formatting_Instructions_For_NeurIPS_2026/figures"
+FIG_DIR = "papers/figures"
 STRATA_CACHE = "tmp/warp/w1_gain/strata_byK.json"
 KS = [1, 2, 4, 8, 16]
 NM_CELLS = [(3, 2), (5, 3), (8, 5)]

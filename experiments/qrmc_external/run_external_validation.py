@@ -122,8 +122,10 @@ def run_langgraph(house: MemoryHouse) -> None:
 
     llm = ChatOllama(model=MODEL, temperature=0, base_url=OLLAMA,
                      reasoning=(False if _thinking_off() else None))
-    agent = create_react_agent(llm, [recall, goto, take, finish],
-                               prompt=SYSTEM)
+    avail = set(getattr(house, "available_tools",
+                        ["recall", "goto", "take", "finish"]))
+    tools = [t for t in [recall, goto, take, finish] if t.name in avail]
+    agent = create_react_agent(llm, tools, prompt=SYSTEM)
     try:
         agent.invoke({"messages": [("user", house.task_text)]},
                      {"recursion_limit": 2 * MAX_TURNS + 5})
@@ -164,9 +166,12 @@ def run_autogen(house: MemoryHouse) -> None:
     def finish() -> str:
         return house.finish()
 
-    autogen.register_function(
-        recall, caller=assistant, executor=user, name="recall",
-        description="Search your episodic memory of the house.")
+    avail = set(getattr(house, "available_tools",
+                        ["recall", "goto", "take", "finish"]))
+    if "recall" in avail:
+        autogen.register_function(
+            recall, caller=assistant, executor=user, name="recall",
+            description="Search your episodic memory of the house.")
     autogen.register_function(
         goto, caller=assistant, executor=user, name="goto",
         description="Move to a place by its id (e.g. p2).")

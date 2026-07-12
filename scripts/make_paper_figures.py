@@ -44,10 +44,7 @@ COLORS = {
 }
 
 REPO = "/Users/taniyashuba/PycharmProjects/Songlines"
-FIG_DIR = os.path.join(
-    REPO, "docs", "Formatting_Instructions_For_NeurIPS_2026",
-    "songlines_symbolic_memory_figures",
-)
+FIG_DIR = os.path.join(REPO, "papers", "figures")
 
 
 def _load_peer_sweep() -> pd.DataFrame:

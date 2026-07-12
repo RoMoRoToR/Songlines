@@ -10,6 +10,7 @@ Same style guide as v2 (DejaVu Sans, 4-color palette, no top/right spines).
 
 from __future__ import annotations
 
+import json
 import os
 
 import matplotlib.pyplot as plt
@@ -51,10 +52,7 @@ STAGE_COLORS = {
 }
 
 REPO = "/Users/taniyashuba/PycharmProjects/Songlines"
-FIG_DIR = os.path.join(
-    REPO, "docs", "Formatting_Instructions_For_NeurIPS_2026",
-    "songlines_symbolic_memory_figures",
-)
+FIG_DIR = os.path.join(REPO, "papers", "figures")
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -346,12 +344,23 @@ def fig2_architectures():
 # Fig 3 — Per-architecture conditional rates (replaces Table 1 visual)
 # ────────────────────────────────────────────────────────────────────────
 def fig3_conditional_rates():
+    # aggregates + cluster-bootstrap CIs precomputed from the raw
+    # 35,640-run sweep by experiments/big_experiment/analyze_fig_cis.py
+    agg = json.load(open("tmp/paper1_clean_experiments_full/"
+                         "fig_aggregates.json"))["arms"]
+    arm_keys = ["indep", "shared", "central"] + \
+               [f"peer_K{k}" for k in [1, 2, 4, 8, 16, 32, 48, 64]]
     archs = ["indep", "shared\nbus", "central\nagg",
              "peer\nK=1", "peer\nK=2", "peer\nK=4", "peer\nK=8",
              "peer\nK=16", "peer\nK=32", "peer\nK=48", "peer\nK=64"]
-    p_MR = [0.68, 1.00, 0.97, 0.97, 0.97, 0.92, 0.69, 0.67, 0.67, 0.68, 0.68]
-    p_CM = [0.88, 0.60, 0.61, 0.60, 0.62, 0.66, 0.87, 0.89, 0.89, 0.88, 0.88]
-    t_succ = [8.02, 8.33, 7.64, 7.80, 7.59, 8.00, 7.47, 7.87, 8.28, 8.79, 9.19]
+    p_MR = [agg[a]["p_MR"][0] for a in arm_keys]
+    p_CM = [agg[a]["p_CM"][0] for a in arm_keys]
+    t_succ = [agg[a]["t_succ"][0] for a in arm_keys]
+
+    def err(key, vals):
+        lo = [v - agg[a][key][1] for a, v in zip(arm_keys, vals)]
+        hi = [agg[a][key][2] - v for a, v in zip(arm_keys, vals)]
+        return np.array([lo, hi])
 
     fig, (ax1, ax2) = plt.subplots(
         2, 1, figsize=(12, 5.8), sharex=True,
@@ -363,15 +372,19 @@ def fig3_conditional_rates():
 
     ax1.bar(x - w / 2, p_MR, w, color=STAGE_COLORS["M"],
             label=r"$P(M^\star|R^\star)$", edgecolor="black",
-            linewidth=0.5, alpha=0.88)
+            linewidth=0.5, alpha=0.88,
+            yerr=err("p_MR", p_MR),
+            error_kw=dict(lw=0.9, capsize=2, ecolor="#333"))
     ax1.bar(x + w / 2, p_CM, w, color=STAGE_COLORS["C"],
             label=r"$P(C^\star|M^\star)$", edgecolor="black",
-            linewidth=0.5, alpha=0.88)
+            linewidth=0.5, alpha=0.88,
+            yerr=err("p_CM", p_CM),
+            error_kw=dict(lw=0.9, capsize=2, ecolor="#333"))
     for xi, (m, c) in enumerate(zip(p_MR, p_CM)):
-        ax1.text(xi - w / 2, m + 0.015, f"{m:.2f}", ha="center", va="bottom",
-                 fontsize=7.5, color=STAGE_COLORS["M"])
-        ax1.text(xi + w / 2, c + 0.015, f"{c:.2f}", ha="center", va="bottom",
-                 fontsize=7.5, color=STAGE_COLORS["C"])
+        ax1.text(xi - w / 2, min(m + 0.06, 1.08), f"{m:.2f}", ha="center",
+                 va="bottom", fontsize=7.5, color=STAGE_COLORS["M"])
+        ax1.text(xi + w / 2, min(c + 0.06, 1.08), f"{c:.2f}", ha="center",
+                 va="bottom", fontsize=7.5, color=STAGE_COLORS["C"])
 
     # Annotate the M/C trade-off regimes
     ax1.axhline(y=1.0, color="#bbb", linewidth=0.5, linestyle=":")
@@ -395,29 +408,34 @@ def fig3_conditional_rates():
              ha="center", va="top", fontsize=9.5,
              color=STAGE_COLORS["C"], fontweight="bold")
 
-    # Bottom: mean time-to-success
+    # Bottom: mean time-to-success among successes, with cluster CIs
+    t_lo = [agg[a]["t_succ"][1] for a in arm_keys]
+    t_hi = [agg[a]["t_succ"][2] for a in arm_keys]
+    ax2.fill_between(x, t_lo, t_hi, color=COLORS["accent"], alpha=0.15,
+                     linewidth=0)
     ax2.plot(x, t_succ, marker="o", color=COLORS["accent"],
              linewidth=1.8, markersize=7,
              markeredgecolor="black", markeredgewidth=0.4)
-    # Highlight K=8 minimum
+    # Highlight K=8 minimum (conditional-time metric)
     k8_idx = archs.index("peer\nK=8")
     ax2.scatter([k8_idx], [t_succ[k8_idx]], s=180, facecolor="none",
                 edgecolor=COLORS["accent"], linewidth=2.0, zorder=5)
     ax2.annotate(
-        "interior optimum",
+        "interior optimum (conditional on success)",
         xy=(k8_idx, t_succ[k8_idx]),
-        xytext=(k8_idx + 1.3, t_succ[k8_idx] - 0.4),
+        xytext=(k8_idx + 0.6, t_succ[k8_idx] - 0.8),
         fontsize=9.5, color=COLORS["accent"], fontweight="bold",
         arrowprops=dict(arrowstyle="->", color=COLORS["accent"], lw=1.2),
     )
     ax2.axhline(t_succ[0], color="#888", linewidth=1.0,
                 linestyle="--", alpha=0.7,
                 label=f"independent baseline ({t_succ[0]:.2f})")
-    ax2.set_ylabel("Mean $t_{\\text{succ}}$ (ticks)", fontsize=11)
+    ax2.set_ylabel("Mean $t_{\\text{succ}}$ (ticks,\n95% cluster CI)",
+                   fontsize=10)
     ax2.set_xticks(x)
     ax2.set_xticklabels(archs, fontsize=9)
     ax2.legend(loc="upper left", fontsize=9, frameon=True)
-    ax2.set_ylim(7.2, 9.5)
+    ax2.set_ylim(6.4, 10.7)
 
     plt.tight_layout()
     out = os.path.join(FIG_DIR, "fig_conditional_rates.pdf")

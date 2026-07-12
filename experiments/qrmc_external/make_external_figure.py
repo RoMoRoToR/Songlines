@@ -2,7 +2,7 @@
 third-party agent frameworks on the four engineered task variants.
 
 Reads tmp/qrmc_external/summary_llama20.json; writes
-docs/Formatting_Instructions_For_NeurIPS_2026/figures/fig_external_stages.{pdf,png}
+papers/figures/fig_external_stages.{pdf,png}
 
 Usage::
 
@@ -23,7 +23,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-FIG_DIR = "docs/Formatting_Instructions_For_NeurIPS_2026/figures"
+FIG_DIR = "papers/figures"
 FRAMEWORKS = [("openai_sdk", "OpenAI SDK", "#2c7fb8"),
               ("langgraph", "LangGraph", "#1b9e77"),
               ("autogen", "AutoGen", "#d95f0e")]
@@ -39,6 +39,14 @@ plt.rcParams.update({
 })
 
 
+def wilson(p: float, n: int, z: float = 1.96):
+    """Wilson 95% interval; returns (lo, hi)."""
+    denom = 1 + z * z / n
+    centre = (p + z * z / (2 * n)) / denom
+    half = z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
+    return max(0.0, centre - half), min(1.0, centre + half)
+
+
 def main() -> None:
     s = json.load(open("tmp/qrmc_external/summary_llama20.json"))["summary"]
     fig, axes = plt.subplots(1, 4, figsize=(10.2, 2.6), sharey=True)
@@ -46,8 +54,15 @@ def main() -> None:
     for ax, (variant, title) in zip(axes, VARIANTS):
         x = np.arange(len(STAGES))
         for i, (fw, label, color) in enumerate(FRAMEWORKS):
-            vals = [s[f"{fw}|{variant}"][st] for st in STAGES]
+            cell = s[f"{fw}|{variant}"]
+            n = int(cell.get("n", 20))
+            vals = [cell[st] for st in STAGES]
+            cis = [wilson(v, n) for v in vals]
+            yerr = np.array([[v - lo for v, (lo, _) in zip(vals, cis)],
+                             [hi - v for v, (_, hi) in zip(vals, cis)]])
             ax.bar(x + (i - 1) * 0.27, vals, width=0.25, color=color,
+                   yerr=yerr, error_kw=dict(lw=0.8, capsize=1.5,
+                                            ecolor="#444"),
                    label=label if variant == "control" else None)
         ax.set_xticks(x)
         ax.set_xticklabels([f"${st}^\\star$" for st in STAGES])
@@ -63,7 +78,7 @@ def main() -> None:
                         xytext=(2.7, 0.45), ha="center", fontsize=8,
                         color="#a33",
                         arrowprops=dict(arrowstyle="->", color="#a33"))
-    axes[0].set_ylabel("stage rate (n = 20)")
+    axes[0].set_ylabel("stage rate (n = 20, Wilson 95% CI)")
     axes[0].legend(frameon=False, loc="lower left")
     fig.tight_layout()
     for ext in ("pdf", "png"):
