@@ -22,7 +22,7 @@ DEFAULT_OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 DEFAULT_MODEL = os.environ.get("LLM_COLLECTIVE_MODEL", "llama3.1:latest")
 DEFAULT_CACHE_DIR = os.environ.get(
     "LLM_COLLECTIVE_CACHE",
-    "/Users/taniyashuba/PycharmProjects/Songlines/tmp/llm_bridge_minimal/.cache_llm",
+    os.path.join(os.getcwd(), "tmp", "llm_bridge_minimal", ".cache_llm"),
 )
 
 

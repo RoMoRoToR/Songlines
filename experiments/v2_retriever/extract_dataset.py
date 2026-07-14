@@ -27,7 +27,7 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 
-ROOT = "/Users/taniyashuba/PycharmProjects/Songlines/tmp/article_revision_10seeds_20260501/hazard_recovery"
+ROOT = "tmp/article_revision_10seeds_20260501/hazard_recovery"  # run from repo root
 METHOD = "milestone_state_conditioned_hazard_recovery_v7"
 
 INTENT_KEYS = [

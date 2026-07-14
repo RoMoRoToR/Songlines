@@ -51,7 +51,7 @@ STAGE_COLORS = {
     "C": "#8172B2",
 }
 
-REPO = "/Users/taniyashuba/PycharmProjects/Songlines"
+REPO = os.getcwd()  # run from repo root
 FIG_DIR = os.path.join(REPO, "papers", "figures")
 
 

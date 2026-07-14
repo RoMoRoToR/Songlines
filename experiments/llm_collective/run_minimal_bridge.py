@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from experiments.llm_collective.qrmc_llm_runner import run_one_episode
 
 
-OUT_DIR = "/Users/taniyashuba/PycharmProjects/Songlines/tmp/llm_bridge_minimal"
+OUT_DIR = "tmp/llm_bridge_minimal"  # run from repo root
 N_EPISODES = 10
 STEP_LIMIT = 25
 
