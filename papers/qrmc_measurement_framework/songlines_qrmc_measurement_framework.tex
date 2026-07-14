@@ -209,7 +209,7 @@ Symbolic single agent & MiniGrid, BabyAI & ranking near-optimal ($96.9\%$) while
 Symbolic collective (4 architectures $\times$ cadence $K$) & grid, 35{,}640 runs & M$\leftrightarrow$C bottleneck shift; interior $t_{\mathrm{succ}}$ optimum at $K{=}8$; provenance mechanism (\S\ref{sec:multi}) \\
 Learned policies (BC; CommNet-PPO) & grid & competitive success with structurally collapsed stage observability (\S\ref{sec:single},~\S\ref{sec:multi}) \\
 LLM agents (2 models; $N{=}3$ collective) & TextNav & an opaque $1.00\!\to\!0.00$ collapse resolved to pure C-budget failure; sharing lowers success $2/3\!\to\!1/3$ (\S\ref{sec:multi}) \\
-Third-party stacks (OpenAI SDK, LangGraph, AutoGen) $\times$ 2 models & tool traces & structural failures localize identically ($20/20$); first-commitment discipline separates models; frameworks reshape it (\S\ref{sec:external}) \\
+Third-party stacks (OpenAI SDK, LangGraph, AutoGen) $\times$ 2 models & tool traces & structural failures localize identically ($20/20$); first-commitment accuracy separates models; frameworks reshape it (\S\ref{sec:external}) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -618,7 +618,7 @@ Figure~\ref{fig:conditional-rates} shows per-architecture conditional Q/R/M/C ra
 
 
 \subsubsection{Bottleneck shift and interior efficiency optimum.}
-Across all peer runs, Spearman of $P(M^\star|R^\star)$ vs $K$ is $-0.53$ (95\% cluster-robust CI $[-0.59,-0.47]$) and of $P(C^\star|M^\star)$ vs $K$ is $+0.43$ (CI $[+0.37,+0.50]$); both are moderate effect sizes whose CIs exclude zero under resampling of the 81 configuration cells (Appendix~\ref{app:effect-sizes}), matching the slope conditions of Empirical Claim~1. We report these rather than $p$-values, which are uninformative at this correlated sample size. The stronger empirical signature is at the per-configuration level: Pearson of $P(M^\star|R^\star)$ vs $P(C^\star|M^\star)$ \emph{within} a fixed $K$ is $-0.43, -0.54, -0.61, -0.19, -0.05, -0.04, -0.02, -0.02$ at $K{=}1,2,4,8,16,32,48,64$, peaking at $K{=}4$ and decaying to noise by $K{=}64$ (Figure~\ref{fig:jensen-scatter}, Appendix~\ref{app:phi-detail}). Configurations where M is high systematically have low C: the bottleneck migrates between the two stages within the same $(N,T,\text{layout},\text{hazard},\text{seed})$ cell as $K$ varies. On the efficiency metric, mean $t_{\mathrm{succ}}$ has a U-shape with interior minimum at $K{=}8$ (7.47 ticks vs 8.02 for the independent baseline); the minimum's location is robust but shallow --- its margin over the adjacent fast cadences ($K{=}1,4$) is not resolved under cell-level resampling (paired-bootstrap CIs in Appendices~\ref{app:phi-detail} and \ref{app:effect-sizes}). Both statements condition on success. Under a censoring-aware expected time that charges failed runs the full step limit, the fast flank reverses and the independent baseline is marginally best (cell-paired $\Delta(K{=}8-\text{independent}) = +0.32$, CI $[+0.05,+0.63]$; Appendix~\ref{app:effect-sizes}): at fast cadence the completion collapse costs more successes than the materialization gain buys back, so the interior optimum is a statement about conditional speed, not unconditional efficiency --- and closing the unconditional gap is what the reservation protocol of open problem~(3) achieves (Appendix~\ref{app:open-problems}). Scaling to $N{=}12$ \emph{sharpens} the signature: the peak Pearson rises to $-0.70$ and
+Across all peer runs, Spearman of $P(M^\star|R^\star)$ vs $K$ is $-0.53$ (95\% cluster-robust CI $[-0.59,-0.47]$) and of $P(C^\star|M^\star)$ vs $K$ is $+0.43$ (CI $[+0.37,+0.50]$); both are moderate effect sizes whose CIs exclude zero under resampling of the 81 configuration cells (Appendix~\ref{app:effect-sizes}), matching the slope conditions of Empirical Claim~1. We report these rather than $p$-values, which are uninformative at this correlated sample size. Both slope signs are also robust to the two free thresholds of the logger --- candidacy $\theta$ and lock tolerance $\epsilon$ (Appendix~\ref{app:theta-robustness}). The stronger empirical signature is at the per-configuration level: Pearson of $P(M^\star|R^\star)$ vs $P(C^\star|M^\star)$ \emph{within} a fixed $K$ is $-0.43, -0.54, -0.61, -0.19, -0.05, -0.04, -0.02, -0.02$ at $K{=}1,2,4,8,16,32,48,64$, peaking at $K{=}4$ and decaying to noise by $K{=}64$ (Figure~\ref{fig:jensen-scatter}, Appendix~\ref{app:phi-detail}). Configurations where M is high systematically have low C: the bottleneck migrates between the two stages within the same $(N,T,\text{layout},\text{hazard},\text{seed})$ cell as $K$ varies. On the efficiency metric, mean $t_{\mathrm{succ}}$ has a U-shape with interior minimum at $K{=}8$ (7.47 ticks vs 8.02 for the independent baseline); the minimum's location is robust but shallow --- its margin over the adjacent fast cadences ($K{=}1,4$) is not resolved under cell-level resampling (paired-bootstrap CIs in Appendices~\ref{app:phi-detail} and \ref{app:effect-sizes}). Both statements condition on success. Under a censoring-aware expected time that charges failed runs the full step limit, the fast flank reverses and the independent baseline is marginally best (cell-paired $\Delta(K{=}8-\text{independent}) = +0.32$, CI $[+0.05,+0.63]$; Appendix~\ref{app:effect-sizes}): at fast cadence the completion decline reduces the success rate by more than the materialization gain increases it, so the interior optimum is a statement about conditional speed, not unconditional efficiency --- and closing the unconditional gap is what the reservation protocol of open problem~(3) achieves (Appendix~\ref{app:open-problems}). Scaling to $N{=}12$ \emph{sharpens} the signature: the peak Pearson rises to $-0.70$ and
 migrates outward to $K\!=\!8$, consistent with stronger occupancy
 coupling at higher $N$ delaying the cost-regime transition
 (Appendix~\ref{app:babyai}, Figure~\ref{fig:scale-n12}).
@@ -639,7 +639,7 @@ stratum completes below $0.05$ throughout: \emph{the C-collapse of
 fast sharing is concentrated in the warp stratum}. What cadence
 controls, mechanically, is how much of the collective's
 materialisation runs on foreign evidence --- and that is precisely
-the stratum that loses the occupancy race. The stratification is not
+the stratum whose completions are lost to occupancy contention. The stratification is not
 an artefact of the $0.8$ cutoff: recomputed from the raw per-lock
 $\varphi$ values ($23{,}237$ locks) at thresholds
 $\varphi{\in}\{0.5,0.6,0.7,0.8,0.9,0.95\}$, the foreign stratum
@@ -732,9 +732,8 @@ collective it is a tunable, measurable design axis.
 \label{sec:external}
 
 This section instantiates the last row of
-Table~\ref{tab:portability}. The strongest external-validity test of
-an evaluation protocol is its application to systems built by others.
-The contract has two layers: an \emph{invariant core} --- four event
+Table~\ref{tab:portability}. We further evaluate the protocol on
+systems built by others. The contract has two layers: an \emph{invariant core} --- four event
 roles (a memory query is issued; returned evidence satisfies the
 task; the agent commits to a target; the task completes) --- and a
 \emph{system-specific adapter} that maps logged actions to those
@@ -747,13 +746,14 @@ through \method{recall}/\method{goto}/\method{take} tools, and
 $Q^\star$ fires on querying memory, $R^\star$ on \emph{attribution}
 (a returned record names the item at its true place), $M^\star$ on a
 commitment (a \method{goto} to the true place; first-commitment
-discipline $M_1$ is logged as an auxiliary lock-quality diagnostic),
+accuracy $M_1$ is logged as an auxiliary lock-quality diagnostic),
 and $C^\star$ on task completion within a tool budget. A tool trace
 exposes no lock chain, so these are \emph{marginal event frequencies}
-in the sense of Appendix~\ref{app:estimators}: an agent
+$f(\cdot)$ in the sense of Appendix~\ref{app:estimators}: an agent
 can commit to the true place without a supporting retrieval, the
 events are not nested, and no factorisation is claimed --- the four
-rates serve as separate diagnostics. What varies across system
+frequencies serve as separate diagnostics and are never substituted
+into the chain-rule product. What varies across system
 classes is the adapter, not the event roles. Three variants engineer
 one failure each --- a consolidation gap (the location fact was never
 written to memory), a stale-distractor ambiguity, a tool budget below
@@ -763,20 +763,31 @@ attribution leak; an over-tightened $M^\star$) are recorded in the
 registration file.
 
 \begin{table}[h]
-\caption{Q/R/M/C on three third-party agent frameworks (llama3.1,
-20 episodes per cell, identical episodes/tools/budgets). Structural
-failures localize identically everywhere: the consolidation gap is
-$R{=}0.00$ and the budget failure is $C{=}0.00$ at $Q{=}R{=}1$, for
-all three stacks. On the \emph{clean} control the frameworks spread
-from $0.50$ to $0.75$ end-to-end --- and the decomposition attributes
-the spread (see text). $M_1$: first \method{goto} targets the true
-place; stale$_1$: first \method{goto} targets the stale distractor.}
+\caption{Marginal Q/R/M/C event frequencies on three third-party
+agent frameworks (llama3.1, 20 episodes per cell, identical
+episodes/tools/budgets). Each entry is the fraction of episodes in
+which the event occurred: $Q^\star$ --- the agent queried memory at
+least once; $R^\star$ --- a returned record named the item at its
+true place; $M^\star$ --- the agent committed (\method{goto}) to the
+true place, with or without retrieval support; $C^\star$ ---
+\method{take} succeeded within the tool budget; $M_1$: first
+\method{goto} targets the true place; stale$_1$: first \method{goto}
+targets the stale distractor. The events are not nested and no
+product is claimed (Appendix~\ref{app:estimators}): under the
+consolidation gap, budgeted blind search over the four places
+sometimes commits to and reaches the true place, hence
+$M^\star, C^\star > 0$ at $R^\star{=}0$. Structural failures localize
+identically everywhere: the consolidation gap is $R^\star{=}0.00$ and
+the budget failure is $C^\star{=}0.00$ at $Q^\star{=}R^\star{=}1$,
+for all three stacks. On the \emph{clean} control the frameworks
+spread from $0.50$ to $0.75$ end-to-end --- and the decomposition
+attributes the spread (see text).}
 \label{tab:external}
 \centering
 \small
 \begin{tabular}{llcccccc}
 \toprule
-Framework & Variant & $Q^\star$ & $R^\star$ & $M^\star$ & $C^\star$ & $M_1$ & stale$_1$ \\
+Framework & Variant & $f(Q^\star)$ & $f(R^\star)$ & $f(M^\star)$ & $f(C^\star)$ & $f(M_1)$ & $f(\text{stale}_1)$ \\
 \midrule
 OpenAI SDK & control     & 1.00 & 1.00 & 0.85 & 0.75 & 0.25 & --- \\
            & consolidation gap & 1.00 & \textbf{0.00} & 0.50 & 0.40 & 0.25 & --- \\
@@ -818,9 +829,9 @@ every stack ($20/20$ episodes each). The contract needs no
 per-framework adaptation. \textbf{(2) The clean control separates the
 frameworks, and the decomposition says how.} End-to-end success on the
 SAME clean episodes ranges $0.50$ (LangGraph) to $0.75$ (OpenAI SDK).
-A leaderboard would report ``different quality''; the stages show a
-shared pathology plus different loop economics: first-commitment
-discipline is weak everywhere ($M_1{=}0.25$--$0.50$ --- the agent's
+The stage profiles attribute the spread to a failure mode common to
+all three stacks combined with framework-specific recovery:
+first-commitment accuracy is low everywhere ($M_1{=}0.25$--$0.50$ --- the agent's
 first \method{goto} frequently ignores its own just-retrieved
 evidence), episode-level materialization recovers to $0.70$--$0.85$
 through re-query loops, and the frameworks then differ in how much of
@@ -851,28 +862,89 @@ consolidation gap and $C^\star{=}0.00$ under the tight budget, $20/20$
 on every stack, for both models. The behavioural contrast is itself a
 diagnostic result: qwen3:4b completes every clean episode
 ($C^\star{=}1.00$ across stacks, vs.\ $0.50$--$0.75$ for llama3.1)
-because its \emph{first-commitment discipline} is high
+because its \emph{first-commitment accuracy} is high
 ($M_1{=}0.90$--$0.95$ vs.\ $0.25$--$0.50$) and its susceptibility to
 the stale distractor low ($0.05$--$0.30$) --- except under AutoGen,
 where qwen's $M_1$ collapses to $0.40$ while remaining $\ge 0.90$ on
 the other stacks. The stage decomposition thus separates three
 influences a leaderboard conflates: the task's structural limits
 (model- and framework-independent), the model's commitment quality,
-and the framework's prompt/loop shaping that can destroy it.
+and the framework's prompt/loop shaping that can degrade it.
+
+\paragraph{Blinded fault-localization meta-evaluation (registered).}
+The engineered variants verify localization of failures whose stage
+is known by construction; the reviewer-grade test treats the protocol
+as a \emph{classifier}. We injected ten fault types --- two to three
+per stage, structural and behavioural (Table~\ref{tab:meta-eval}) ---
+and fixed a first-failing-link decision rule, with all thresholds,
+\emph{before} any run (\texttt{tmp/qrmc\_external/registered\_meta.json};
+rule and thresholds in
+\texttt{experiments/qrmc\_external/run\_meta\_evaluation.py}). The
+rule receives only anonymised marginal profiles plus a labelled
+control cell for calibration; a held-out control (seeds 20--39)
+enters the blind set with ground truth ``none'', measuring the
+false-positive rate; a manipulation check excludes faults that do not
+bind (the prompt-only fault moved qwen but not llama). Stage-level
+accuracy: $26/30$ scored cells for llama3.1 ($8/10$, $8/10$, $10/10$
+per stack) and $29/33$ for qwen3:4b ($9/11$, $10/11$, $10/11$); the
+five structural faults localize $30/30$ across both models and all
+stacks; held-out controls read ``none'' in $5/6$ cells (one false
+positive at $n{=}20$); cross-framework label agreement is $7/11$
+(llama) and $10/11$ (qwen). The registered model-contrast prediction
+was confirmed in its named direction: M-family faults hide behind
+llama's weak baseline commitment ($M_1{=}0.25$--$0.50$) and become
+visible on qwen's clean baseline --- the unmarked duplicate drops
+$M_1$ by $0.90/0.80/0.20$ across stacks --- while its accuracy clause
+held on two of three stacks (AutoGen: $10/11$ vs.\ llama's $10/10$,
+a one-cell difference). One registered risk materialised
+instructively: the \emph{marked} stale distractor changes llama3.1's behaviour but
+reads ``none'' on qwen3:4b, which takes the staleness marker into
+account --- the protocol measures the behavioural effect of a fault,
+not its presence, and a fault a model neutralizes is reported as no
+failure.
+
+\begin{table}[h]
+\caption{Blinded fault localization: injected fault, ground-truth
+stage, and correct-localization count over the three stacks, per
+model. ``Neutralized'': the fault does not change qwen's behaviour
+(the staleness marker is heeded), so the blind rule reads ``none''.}
+\label{tab:meta-eval}
+\centering
+\small
+\begin{tabular}{llcc}
+\toprule
+Injected fault & Stage & llama3.1 & qwen3:4b \\
+\midrule
+recall tool absent        & Q & 3/3 & 3/3 \\
+prompt: memory unreliable & Q & non-binding & 3/3 \\
+fact never consolidated   & R & 3/3 & 3/3 \\
+silent corruption         & R & 3/3 & 3/3 \\
+flaky recall ($p{=}0.7$)  & R & 3/3 & 3/3 \\
+stale distractor (marked) & M & 1/3 & 0/3 (neutralized) \\
+duplicate (unmarked)      & M & 2/3 & 3/3 \\
+budget below requirement  & C & 3/3 & 3/3 \\
+flaky goto ($p{=}0.5$)    & C & 2/3 & 3/3 \\
+take always fails         & C & 3/3 & 3/3 \\
+\midrule
+held-out control          & none & 3/3 & 2/3 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{table}[h]
 \caption{Second-model replication (qwen3:4b, 20 episodes per cell,
 identical episodes/tools/budgets; thinking disabled request-level for
-budget parity, recorded in the registration). Structural zeros
-transfer exactly; behavioural rates differ from llama3.1
-(Table~\ref{tab:external}) in the direction the $M_1$ diagnostic
-explains.}
+budget parity, recorded in the registration). Entries are marginal
+event frequencies $f(E)$ as in Table~\ref{tab:external} --- not
+chain-rule links. Structural zeros transfer exactly; behavioural
+rates differ from llama3.1 (Table~\ref{tab:external}) in the
+direction the $M_1$ diagnostic explains.}
 \label{tab:external-qwen}
 \centering
 \small
 \begin{tabular}{llcccccc}
 \toprule
-Framework & Variant & $Q^\star$ & $R^\star$ & $M^\star$ & $C^\star$ & $M_1$ & stale$_1$ \\
+Framework & Variant & $f(Q^\star)$ & $f(R^\star)$ & $f(M^\star)$ & $f(C^\star)$ & $f(M_1)$ & $f(\text{stale}_1)$ \\
 \midrule
 OpenAI SDK & control     & 1.00 & 1.00 & 1.00 & 1.00 & 0.95 & --- \\
            & consolidation gap & 1.00 & \textbf{0.00} & 0.45 & 0.45 & 0.20 & --- \\

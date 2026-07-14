@@ -78,7 +78,7 @@ def main() -> None:
                         xytext=(2.7, 0.45), ha="center", fontsize=8,
                         color="#a33",
                         arrowprops=dict(arrowstyle="->", color="#a33"))
-    axes[0].set_ylabel("stage rate (n = 20, Wilson 95% CI)")
+    axes[0].set_ylabel("event frequency $f(E)$\n(n = 20, Wilson 95% CI)")
     axes[0].legend(frameon=False, loc="lower left")
     fig.tight_layout()
     for ext in ("pdf", "png"):
