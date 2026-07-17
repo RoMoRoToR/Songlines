@@ -1,0 +1,236 @@
+\documentclass[letterpaper]{article}
+\usepackage[submission]{aaai2027}
+\usepackage[hyphens]{url}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\frenchspacing
+\setlength{\pdfpagewidth}{8.5in}
+\setlength{\pdfpageheight}{11in}
+
+\newcommand{\method}[1]{\texttt{#1}}
+
+\pdfinfo{
+/TemplateVersion (2027.1)
+}
+
+\title{Supplementary Material for\\Q/R/M/C: A Stage-Decomposition Evaluation Protocol for Memory-Based Agents}
+\author{Anonymous submission}
+\affiliations{Anonymous submission}
+
+\begin{document}
+\maketitle
+
+\section{Supplementary Material}
+
+This supplement is organized to support the claims of the main paper without introducing additional headline contributions. It contains the full event definitions and estimability argument, assumption stress tests, complete experimental protocols, extended tables and uncertainty estimates, scale-up results, threshold sensitivity, continuous and language-agent checks, fault-injection specifications, and reproducibility details.
+
+\subsection{Formal event definitions and estimability}
+
+% TODO: Insert the complete formal definitions of Q*, R*, M*, and C*
+% for each experimental regime. Keep the distinction between nested episode
+% events and marginal third-party event frequencies explicit.
+
+For the nested regime, include the complete proof that
+\begin{equation}
+P(C^\star)=P(Q^\star)P(R^\star\mid Q^\star)
+P(M^\star\mid R^\star)P(C^\star\mid M^\star),
+\end{equation}
+and state separately which interpretation requires the conditional stage-Markov assumption. The proof should remain short because the novelty lies in the event contract rather than in the chain rule.
+
+\subsection{Assumption stress test}
+
+% TODO: Insert the simulation design for the hidden-confounder stress test,
+% parameter ranges, number of replications, bias and coverage plots, and the
+% numerical result that m remains stable while c inflates.
+
+Report the simulation as a sensitivity analysis of subsystem attribution. The section should identify the first diagnostic contrast that becomes unreliable as hidden between-stage state increases.
+
+\subsection{Single-agent protocol and full results}
+
+% TODO: Insert complete task definitions for water, rest, FourRooms rejoin,
+% LavaGapS7 hazard recovery, BabyAI portability, all baselines, all stage-rate
+% tables, and per-seed oracle results.
+
+This section should contain:
+\begin{itemize}
+    \item environment and task definitions;
+    \item memory, query, candidate, and lock semantics;
+    \item oracle-R, oracle-M, and oracle-C implementation details;
+    \item confidence-interval and paired-test procedures;
+    \item pooled, seed-weighted, and episode-weighted empty-retrieval estimates;
+    \item behavior-cloning observability results;
+    \item BabyAI portability results.
+\end{itemize}
+
+\subsection{Multi-agent architecture sweep}
+
+% TODO: Insert the full factorial design, exact K values, layout and hazard
+% generators, target scarcity conditions, per-architecture stage tables,
+% cluster-bootstrap procedure, and the 8,640-run N=12 scale-up.
+
+Include separate tables for conditional rates, raw success, semantic-path completion, conditional time-to-success, and the censoring-aware metric. The text should distinguish the verified slope claim from the metric-specific $K=8$ time optimum.
+
+\subsection{Provenance, reservation, and mechanism tests}
+
+% TODO: Insert the foreign-evidence mass formula, merge weights, threshold
+% sensitivity, reservation-and-rollback pseudocode, number of runs, confidence
+% intervals, communication overhead, and paired comparisons.
+
+The mechanism section should preserve the logical order used in the main paper:
+\begin{enumerate}
+    \item provenance identifies the stratum in which completion is lost;
+    \item threshold sensitivity tests whether the stratum depends on $\varphi=0.8$;
+    \item reservation retains peer evidence while changing occupancy coordination;
+    \item the intervention tests contention against the evidence-quality explanation.
+\end{enumerate}
+
+\subsection{Learned, continuous, and LLM collective checks}
+
+% TODO: Insert CommNet-PPO training details, VMAS task and provenance mapping,
+% LLM collective prompts, layouts, model versions, step-budget sweep, raw
+% sharing and reservation results, uncertainty estimates, and failure traces.
+
+These experiments should be described as robustness and observability checks rather than as leaderboard comparisons.
+
+\subsection{Third-party adapter and fault-injection protocol}
+
+% TODO: Insert prompts, tool schemas, adapter revisions, model/runtime versions,
+% all 240-episode tables for both models, the ten injected fault definitions,
+% the pre-specified first-failing-stage rule, thresholds, held-out control design,
+% and per-cell predictions and outcomes.
+
+Report both structural and behavioral faults. Structural faults test whether the event semantics are implemented correctly. Behavioral faults test whether the aggregate stage profile contains enough signal relative to the clean control.
+
+\begin{figure*}[h]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figures/fig_external_stages.pdf}
+  \caption{Marginal stage profiles for three tool-based agent stacks under a clean control, a consolidation gap, stale ambiguity, and a tight tool budget (llama3.1, $n=20$ per cell). Structural faults produce the predicted zero-valued R or C event across all three stacks; behavioral differences are concentrated in commitment and completion.}
+  \label{fig:external-stages}
+\end{figure*}
+
+
+
+\begin{table}[h]
+\caption{Marginal Q/R/M/C frequencies for third-party stacks. The events are behavioral descriptors rather than links in the chain-rule product. $M_1$ denotes whether the first commitment targets the correct place.}
+\label{tab:external}
+\centering
+\small
+\setlength{\tabcolsep}{3.4pt}
+\begin{tabular}{llccccc}
+\toprule
+Stack & Variant & $f(Q^\star)$ & $f(R^\star)$ & $f(M^\star)$ & $f(C^\star)$ & $f(M_1)$ \\
+\midrule
+OpenAI & control      & 1.00 & 1.00 & .85 & .75 & .25 \\
+SDK    & consol.\ gap & 1.00 & \textbf{.00} & .50 & .40 & .25 \\
+       & stale ambig. & 1.00 & 1.00 & .90 & .30 & .25 \\
+       & tight budget & 1.00 & 1.00 & .25 & \textbf{.00} & .25 \\
+\midrule
+Lang-  & control      & 1.00 & 1.00 & .70 & .50 & .50 \\
+Graph  & consol.\ gap & 1.00 & \textbf{.00} & .20 & .15 & .10 \\
+       & stale ambig. & 1.00 & 1.00 & .65 & .60 & .50 \\
+       & tight budget & 1.00 & 1.00 & .10 & \textbf{.00} & .10 \\
+\midrule
+Auto-  & control      & 1.00 & 1.00 & .85 & .55 & .45 \\
+Gen    & consol.\ gap & 1.00 & \textbf{.00} & .30 & .20 & .15 \\
+       & stale ambig. & 1.00 & 1.00 & .50 & .45 & .35 \\
+       & tight budget & 1.00 & 1.00 & .15 & \textbf{.00} & .15 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+\subsection{Comparison with diagnostic baselines}
+
+% Classification comparison: COMPLETED 2026-07-17 on the existing
+% blinded benchmark (no new runs; diagnostic_baselines.py;
+% specification fixed before scoring in baselines_spec.json).
+% Repair experiment: RUNNING (run_repair_experiment.py, llama3.1,
+% 2,640 episodes; pre-specified predictions in repair_spec.json);
+% insert RepairGain/RepairRegret when repair_verdict.json lands.
+
+Five alternative diagnostics were evaluated on the blinded fault
+benchmark (63 scored cells: ten faults and a held-out control, three
+stacks, two models). Every method received the identical anonymized
+cell aggregates and the same labeled calibration control; all
+decision rules were fixed before scoring, with thresholds matched to
+the Q/R/M/C rule.
+
+\begin{itemize}
+    \item end-to-end success summaries: accuracy $0.095$, macro-F1
+      $0.077$ (no stage can be named);
+    \item AgentBoard-style progress milestones (first marginal-rate
+      drop): $0.730$, macro-F1 $0.698$;
+    \item two-stage retrieval/execution decomposition: $0.651$ at
+      stage granularity, $0.873$ at side level, macro-F1 $0.450$ ---
+      the deficit is concentrated where commitment must be separated
+      from execution;
+    \item first-deviation process conformance (order-sensitive via
+      $M_1$): $0.778$, macro-F1 $0.755$ --- the deficit relative to
+      Q/R/M/C is the budget-exhaustion branch of the conditional
+      reading;
+    \item supervised multinomial logistic regression on the same
+      aggregates: $0.444$ under leave-one-fault-type-out with a
+      control false-positive rate of $1.00$; $0.825$
+      leave-one-framework-out; $0.794$ leave-one-model-out; requires
+      fault labels.
+\end{itemize}
+
+Q/R/M/C attains accuracy $0.873$ (bootstrap CI over fault types
+$[0.71, 0.98]$), macro-F1 $0.835$, and control FPR $1/6$; it
+outperforms all exact-stage alternatives under paired McNemar tests,
+and all comparisons remain significant after Holm correction
+(adjusted $p$: two-stage $0.0016$, progress $0.0234$, conformance
+$0.0312$, success-only and learned $<0.0001$; discordant cells from
+$6{:}0$ to $50{:}1$). The learned baseline's macro-F1 under
+leave-one-fault-type-out is $0.435$. Scored cells: $66-3=63$; the
+three llama3.1 cells of the prompt-only fault failed the
+pre-specified manipulation check (query-rate drop $<0.20$) and are
+excluded for every method alike. Bootstrap resampling operates over
+fault types, not episodes, to avoid pseudoreplication. Sensitivity to
+the exclusion: scoring the three excluded llama3.1 cells as
+ground-truth ``none'' lowers all methods uniformly (Q/R/M/C $0.833$,
+conformance $0.742$, progress $0.697$, two-stage $0.621$,
+success-only $0.091$) and leaves the ranking unchanged.
+
+The repair study (completed 2026-07-18; llama3.1, 2{,}640
+episodes; pre-specified in \texttt{repair\_spec.json}) applies a
+fixed menu of stage-level repairs selected by each diagnostic.
+Completion gain / regret vs.\ the best available arm: Q/R/M/C
+$0.293$/$0.061$; two-stage $0.280$/$0.074$; conformance
+$0.250$/$0.104$; progress $0.219$/$0.135$; random $0.113$/$0.240$;
+success-only $0.000$/$0.354$; oracle best $0.354$/$0$. Two
+pre-specified expectations failed: the matched repair
+for silent corruption recovers only $0.22$--$0.44$ of the control gap
+(consolidating the true record without removing the corrupted one
+converts a retrieval fault into an ambiguity fault), and the budget
+repair applied to the clean OpenAI SDK control lowered completion by
+$0.15$ (the budget stated in the prompt directly affects behavior).
+Paired bootstrap over the 27 fault--framework cells:
+$\Delta G$ (Q/R/M/C $-$ two-stage) $=+0.013$ $[-0.009,+0.039]$
+(unresolved), vs.\ conformance $+0.043$ $[0.000,+0.102]$, vs.\
+progress $+0.074$ $[+0.007,+0.157]$ (resolved). Best-arm selection
+share: two-stage $0.704$, Q/R/M/C $0.630$, conformance $0.556$,
+progress $0.519$ --- coarse diagnoses are partially rescued by
+repair-arm overlap. Full arms matrix in
+\texttt{tmp/qrmc\_external/repair\_verdict.json}.
+
+\subsection{Threshold sensitivity and ablations}
+
+% TODO: Insert sensitivity to semantic thresholds theta and epsilon, provenance
+% threshold phi, event aggregation rules, query/lock definitions, and adapter
+% variants. Include negative results.
+
+\subsection{Reproducibility details}
+
+% TODO: Insert hardware, operating system, library and framework versions,
+% random seeds, exact commands, data-generation procedures, hyperparameters,
+% run manifests, pre-run specification timestamps, and artifact layout.
+
+\bibliography{aaai27refs}
+
+\end{document}

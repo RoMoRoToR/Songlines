@@ -1,4 +1,4 @@
-\begin{thebibliography}{18}
+\begin{thebibliography}{20}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{Andrychowicz et~al.(2017)Andrychowicz, Wolski, Ray, Schneider, Fong,
@@ -37,12 +37,25 @@ Gupta, S.; Davidson, J.; Levine, S.; Sukthankar, R.; and Malik, J. 2017.
 \newblock Cognitive Mapping and Planning for Visual Navigation.
 \newblock In \emph{CVPR}.
 
+\bibitem[{Leucker and Schallhart(2009)}]{leucker2009runtime}
+Leucker, M.; and Schallhart, C. 2009.
+\newblock A Brief Account of Runtime Verification.
+\newblock \emph{Journal of Logic and Algebraic Programming}, 78(5): 293--303.
+
 \bibitem[{Lightman et~al.(2024)Lightman, Kosaraju, Burda, Edwards, Baker, Lee,
   Leike, Schulman, Sutskever, and Cobbe}]{lightman2024verify}
 Lightman, H.; Kosaraju, V.; Burda, Y.; Edwards, H.; Baker, B.; Lee, T.; Leike,
   J.; Schulman, J.; Sutskever, I.; and Cobbe, K. 2024.
 \newblock Let's Verify Step by Step.
 \newblock In \emph{ICLR}.
+
+\bibitem[{Lin et~al.(2026)Lin, Wang, Kwok, Guo, Nale, Fleming, and
+  Cheng}]{lin2026reflect}
+Lin, X.; Wang, Y.; Kwok, T. S.~T.; Guo, D.; Nale, S.~A.; Fleming, C.; and
+  Cheng, G. 2026.
+\newblock {REFLECT}: Intervention-Supported Error Attribution for Silent
+  Failures in {LLM} Agent Traces.
+\newblock \emph{arXiv preprint arXiv:2606.09071}.
 
 \bibitem[{Ma et~al.(2024)Ma, Zhang, Zhu, Yang, Yang, Jin, Lan, Kong, and
   He}]{ma2024agentboard}

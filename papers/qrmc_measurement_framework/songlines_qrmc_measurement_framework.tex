@@ -39,7 +39,7 @@
 \textbf{Single-agent measurement.} On a 10-seed MiniGrid benchmark (FourRooms, LavaGapS7) and a BabyAI portability check, the framework localises bottlenecks: hazard recovery is retrieval-limited (oracle retrieval lifts success $0.39\to0.60$), goal-region rejoin is downstream-limited. Log inspection refines the attribution: candidate ranking is near-optimal ($96.9\%$) while candidate generation fails at 91\% of decision points --- a memory-accumulation, not a ranking, limit.
 \textbf{Multi-agent measurement.} On a 35{,}640-run multi-agent sweep over four communication architectures (independent, shared-bus, central-aggregator, peer-broadcast at eight cadences $K{\in}\{1,2,4,8,16,32,48,64\}$, 40 seeds), the bottleneck-shift between the M and C links appears directly as a negative within-cadence correlation peaking at $K{=}4$ (Pearson $-0.61$); mean time-to-success has an interior minimum at $K{=}8$ (robust in location but shallow in margin --- not resolved from the adjacent fast cadences). Both slope signs (Empirical Claim~1) hold as moderate, cluster-robust effect sizes (Spearman $-0.53$ and $+0.43$ vs.\ $K$, 95\% CIs $[-0.59,-0.47]$ and $[+0.37,+0.50]$ over 81 configuration cells; Appendix~\ref{app:effect-sizes}). Non-claims (notably on the conditional product $\Phi$) are consolidated in one place (\S1, Scope and non-claims).
 \textbf{Diagnostic use.} The same four rates also expose why learned policies with implicit communication can be competitive on success while collapsing Q/R/M/C observability: their communication vectors are never informatively empty and they lack an explicit target-lock interface. We scope this claim explicitly: Q/R/M/C is separately observable only for systems with an explicit query/lock (materialization) interface; for opaque learned policies the stages are not individually recoverable, so the framework is \emph{complementary to}, not a replacement for, probing, causal-mediation, and message-ablation diagnostics. On two local LLM agents (qwen3:4b, llama3.1 on TextNav), the same logger localizes a completion-limited failure: under a tight step budget both agents form the query, retrieve, and lock the target ($Q^\star{=}R^\star{=}M^\star{=}1$) yet none complete ($C^\star{=}0$), so an otherwise opaque success collapse is resolved into a specific failing stage rather than a leaderboard number. Thus the contribution is a measurement protocol for making memory failures comparable across single- and multi-agent symbolic and LLM systems wherever a query/lock interface is exposed, and for measuring stage observability itself on opaque learned policies.
-\textbf{Scope.} The primary experiments are in grid-world substrates (MiniGrid, BabyAI, a custom $12{\times}10$ grid). The contribution is the diagnostic framework and its validation; a preliminary continuous-state check on VMAS reproduces both slope signs directionally (Appendix~\ref{app:vmas}), and a full continuous/3D validation with cluster-robust CIs (Habitat, ProcTHOR) is future work.
+\textbf{Scope.} The primary experiments are in grid-world substrates (MiniGrid, BabyAI, a custom $12{\times}10$ grid). The contribution is the diagnostic framework and its validation; a continuous-state validation on VMAS (three scarcity cells $\times$ 40 seeds) reproduces both slope signs with block-bootstrap CIs excluding zero (Spearman $-0.999$ and $+0.995$; Appendix~\ref{app:vmas}); visually rich 3D substrates (Habitat, ProcTHOR) remain future work.
 \end{abstract}
 
 \section{Introduction}
@@ -184,7 +184,7 @@ unified diagnostic vocabulary. Our framework supplies one.
 
 \item \textbf{Diagnostic comparison across architectures.} The same logging contract separates symbolic memory systems from learned policies with implicit communication: the latter can be competitive on success while collapsing Q/R/M/C stage observability. This is an evaluation result, not a claim that one architecture class should always dominate.
 
-\item \textbf{Scope and honesty.} The primary experiments are in grid-world substrates. We treat that as a methodology-paper choice and state it explicitly (\S\ref{sec:limitations}); a preliminary VMAS check on a continuous substrate is included (Appendix~\ref{app:vmas}), and full continuous/3D validation (Habitat, ProcTHOR, MineDojo) is future work.
+\item \textbf{Scope and honesty.} The primary experiments are in grid-world substrates. We treat that as a methodology-paper choice and state it explicitly (\S\ref{sec:limitations}); a continuous-substrate validation on VMAS with cluster-robust CIs is included (Appendix~\ref{app:vmas}); visually rich 3D substrates (Habitat, ProcTHOR, MineDojo) are future work.
 \end{enumerate}
 
 \paragraph{Portability overview.} The central claim is not any single
@@ -357,6 +357,23 @@ The four starred events anchor at concrete logged triggers. We state the trigger
 \item[$M^\star$ (target lock).] The planner materializes one candidate into a concrete actionable cell. Candidacy itself is threshold-gated (a place enters the candidate set only if its score clears the planner's gate, Appendix~\ref{app:schemas}), and the lock commits to a single candidate once per query rather than re-optimizing against the full memory at every tick. The event fires on lock acquisition (within $\epsilon$ of a true target in the multi-agent logger). Resource bound: deliberation.
 \item[$C^\star$ (closed-loop completion).] The local controller executes until the locked cell is reached or the episode times out; the event fires on arrival. $C$ is the only stage whose failure modes are extra-semantic: controller competence and, in the multi-agent regime, occupancy $\mathcal{O}_{-i}$. Resource bound: control, and in a collective, shared targets.
 \end{description}
+
+\paragraph{Observable-interaction reading.} The four events admit a
+uniform reading as semantically distinct acts in the externally
+observable interaction, with no reference to internal computational
+state: $Q^\star$ is an informational commitment (a query stating what
+evidence is needed); $R^\star$ is the memory's answer to that
+commitment; $M^\star$ is a public commitment to act on specific
+evidence, existing exactly from the moment the lock is written ---
+and, in a collective, visible to peers and occupying a target;
+$C^\star$ is the environment's confirmation that the commitment was
+realized. This grounds Materialization independently of any cognitive
+interpretation (the appearance of a public commitment is an objective
+log event), and such commitments are the source of the
+occupancy contention of \S\ref{sec:multi-agent-results}. The stance
+mirrors runtime verification and distributed-system observability,
+where specifications constrain externally visible events rather than
+internal state \citep{leucker2009runtime}.
 
 \paragraph{Interpretive readings (all deferred).} The stages admit
 three readings, none of which is a contribution and all of which now
@@ -583,7 +600,7 @@ testable on logs through $\hat{P}$.
 Empirical Claim~1 is a \emph{slope-level statement on conditional rates}: each of the two slopes is testable and is confirmed on the 35{,}640-run sweep (\S\ref{sec:multi-agent-results}) and independently on a 100-run standard-MiniGrid portability sweep (\S\ref{sec:limitations}). We report the slopes as \emph{effect sizes with cluster-robust confidence intervals} (resampled over the 81 independent configuration cells rather than the correlated run count) in Appendix~\ref{app:effect-sizes}. The claim's boundary with respect to the conditional product $\Phi$ is stated once, in the Scope-and-non-claims box (\S1) and in \S\ref{sec:multi-agent-results}. The shift is a signature of scarce-target contention, not of the grid design: under abundance ($T{>}N$) both slopes flatten and the M$\leftrightarrow$C anticorrelation attenuates (Appendix~\ref{app:cadence-robustness}), i.e.\ the prediction breaks exactly where the contention mechanism is removed.
 
 \paragraph{Chronology.}
-Empirical Claim~1 is post-hoc. It was formulated \emph{after} an initial 12{,}960-run sweep conducted under four stage-agnostic hypotheses (Appendix~\ref{app:diagnostics}); the two slope conditions were then confirmed on the full 35{,}640-run sweep, on the $N\!=\!12$ scale-up (Appendix~\ref{app:babyai}), and on the MiniGrid portability wrapper (\S\ref{sec:limitations}). We state this explicitly: the verified slope signs are predictions on enlarged data, not a pre-registered
+Empirical Claim~1 is post-hoc. It was formulated \emph{after} an initial 12{,}960-run sweep conducted under four stage-agnostic hypotheses (Appendix~\ref{app:diagnostics}); the two slope conditions were then confirmed on the full 35{,}640-run sweep, on the $N\!=\!12$ scale-up (Appendix~\ref{app:babyai}), and on the MiniGrid portability wrapper (\S\ref{sec:limitations}). We state this explicitly: the verified slope signs are predictions on enlarged data, not a pre-registered (externally timestamped)
 prediction. A fully formal version is left for future work.
 
 \subsection{Sweep protocol}
@@ -638,7 +655,7 @@ own-evidence stratum completes at a flat $0.26$--$0.34$ and the warp
 stratum completes below $0.05$ throughout: \emph{the C-collapse of
 fast sharing is concentrated in the warp stratum}. What cadence
 controls, mechanically, is how much of the collective's
-materialisation runs on foreign evidence --- and that is precisely
+materialisation runs on foreign evidence --- and that is
 the stratum whose completions are lost to occupancy contention. The stratification is not
 an artefact of the $0.8$ cutoff: recomputed from the raw per-lock
 $\varphi$ values ($23{,}237$ locks) at thresholds
@@ -651,13 +668,15 @@ target contention in place, and the reservation protocol of open
 problem~(3) (Appendix~\ref{app:open-problems}) keeps peer evidence
 while managing contention --- under it, unconditional success at fast
 cadence exceeds the $K{=}8$ baseline ($0.614$--$0.620$ vs.\
-$0.583$), identifying occupancy racing rather than evidence quality
-as the cost channel of fast sharing. The same stratification
+$0.583$; paired improvement over the same cells without the mechanism
+$\Delta=+0.037$, cluster-bootstrap 95\% CI $[+0.018,+0.058]$ over 18
+matched design cells), identifying occupancy contention rather than
+evidence quality as the cost channel of fast sharing. The same stratification
 reproduces on the continuous VMAS bridge ($0.72\to0.00$ over
 $K{=}1/4/16$) and on an LLM text substrate ($0.42\to0.08$ over
 $K{=}2/8$), with the curves nearly coinciding across substrates. A
 full provenance-conditioned analysis (counterfactual attribution by
-masked replay, a closed-form staleness horizon with a registered
+masked replay, a closed-form staleness horizon with a pre-specified
 $6/6$-exact hold-out, and a decentralized repair protocol) appears in
 a companion manuscript; here the stratification serves as the
 mechanistic reading of Empirical Claim~1.
@@ -668,14 +687,14 @@ mechanistic reading of Empirical Claim~1.
 A CommNet-style policy \citep{sukhbaatar2016commnet} trained with PPO~\citep{schulman2017proximal} on the same scenario ($N{=}3$, $T{=}2$) reaches $0.667$ held-out success ($n{=}100$ seeds) --- matching the symbolic peer architecture at $K{=}8$ ($0.65$). Despite this, the Q/R/M/C profile remains structurally degenerate: $Q^\star{=}1.00$ saturated by construction; $R^\star{=}0.997$, $M^\star{=}0.997$ collapsed together ($P(M^\star|R^\star){=}1.00$). This is the verified structural claim: a real-valued comm vector is never informatively empty (Q saturates) and lacks an explicit target-lock interface (R/M merge), regardless of training budget. The multi-agent counterpart of the single-agent learned-BC analysis (\S\ref{sec:single-results}). Full architecture, PPO hyperparameters, and side-by-side REINFORCE vs PPO comparison in Appendix~\ref{app:learned-baselines}.
 
 \paragraph{LLM model sweep: the logger localizes a real failure in language agents.}
-Table~\ref{tab:llm-smoke} runs the same Q/R/M/C event contract on two local LLM agents (qwen3:4b and llama3.1 via Ollama) on TextNav, sweeping the step budget over $\{6,12,25\}$ ($8$ episodes each; the task needs $\sim$10 low-level steps). At a generous budget ($12$, $25$) both agents succeed and all four stages fire. At a budget below the requirement ($6$), success drops to $0/8$ for \emph{both} models --- and the decomposition shows \emph{where}: $Q^\star{=}R^\star{=}M^\star{=}1.00$ (the agents form the query, retrieve, and lock the correct target every episode) while $C^\star{=}0.00$ (none complete in time). The framework localizes the failure precisely to a budget-limited completion ($C$) rather than to query formation, retrieval, or materialization; that both models fail identically shows the failure is structural, not a model artifact. This is the diagnostic property the framework claims, now exhibited on \emph{real language agents}: an otherwise opaque success collapse ($1.00\to0.00$) is resolved into a specific failing stage. (Instrumentation note: a naive qwen3:4b/Ollama chat-template call initially returned empty \texttt{response} strings because the model spent the short structured-output budget in a separate thinking field; we use raw structured completion for qwen3:4b and a first-line parser, recorded for reproducibility.)
+Table~\ref{tab:llm-smoke} runs the same Q/R/M/C event contract on two local LLM agents (qwen3:4b and llama3.1 via Ollama) on TextNav, sweeping the step budget over $\{6,12,25\}$ ($8$ episodes each; the task needs $\sim$10 low-level steps). At a generous budget ($12$, $25$) both agents succeed and all four stages fire. At a budget below the requirement ($6$), success drops to $0/8$ for \emph{both} models --- and the decomposition shows \emph{where}: $Q^\star{=}R^\star{=}M^\star{=}1.00$ (the agents form the query, retrieve, and lock the correct target every episode) while $C^\star{=}0.00$ (none complete in time). The framework localizes the failure to a budget-limited completion ($C$) rather than to query formation, retrieval, or materialization; that both models fail identically shows the failure is structural, not a model artifact. This is the diagnostic property the framework claims, now exhibited on \emph{real language agents}: an otherwise opaque success collapse ($1.00\to0.00$) is resolved into a specific failing stage. (Instrumentation note: a naive qwen3:4b/Ollama chat-template call initially returned empty \texttt{response} strings because the model spent the short structured-output budget in a separate thinking field; we use raw structured completion for qwen3:4b and a first-line parser, recorded for reproducibility.)
 
 \paragraph{The multi-agent phenomenology reproduces on a live LLM collective.}
 Beyond the single-agent budget study, the same event contract
 instruments a collective of $N{=}3$ LLM agents (llama3.1) sharing
 symbolic place memory by peer broadcast under scarcity ($M{=}2$
 takeable targets, four layouts, $K\in\{2,8\}$), with all predictions
-registered before the runs. The cadence phenomenology of
+specified before the runs. The cadence phenomenology of
 \S\ref{sec:multi-agent-results} carries over to the language
 substrate: a paired comparison against the no-communication baseline
 on identical layouts shows raw sharing \emph{lowering} success from
@@ -758,7 +777,7 @@ classes is the adapter, not the event roles. Three variants engineer
 one failure each --- a consolidation gap (the location fact was never
 written to memory), a stale-distractor ambiguity, a tool budget below
 the task's requirement --- plus a clean control; all predictions were
-registered before the runs, and the two revisions of the adapter (an
+specified before the runs, and the two revisions of the adapter (an
 attribution leak; an over-tightened $M^\star$) are recorded in the
 registration file.
 
@@ -849,17 +868,17 @@ that assumed a clean control (all stages $\ge 0.75$; a uniform
 ambiguity-induced completion drop) broke \emph{because the frameworks
 themselves fail a clean memory task 25--50\% of the time and pay for
 ambiguity in different places} --- which is finding (2)--(3), not
-noise; all revisions are recorded as registered failures with
+noise; all revisions are recorded as failed pre-specifications with
 mechanisms.
 
 \paragraph{Model robustness: the structure transfers, the behaviour is
-legible.} A prediction registered before the runs --- the structural
+legible.} A prediction specified before the runs --- the structural
 localizations transfer to a second model on all frameworks, while
 behavioural rates are model-dependent and only reported --- was
 confirmed exactly by repeating all 240 episodes with qwen3:4b
 (Table~\ref{tab:external-qwen}): $R^\star{=}0.00$ under the
 consolidation gap and $C^\star{=}0.00$ under the tight budget, $20/20$
-on every stack, for both models. The behavioural contrast is itself a
+on every stack, for both models. The behavioral contrast is a
 diagnostic result: qwen3:4b completes every clean episode
 ($C^\star{=}1.00$ across stacks, vs.\ $0.50$--$0.75$ for llama3.1)
 because its \emph{first-commitment accuracy} is high
@@ -871,7 +890,56 @@ influences a leaderboard conflates: the task's structural limits
 (model- and framework-independent), the model's commitment quality,
 and the framework's prompt/loop shaping that can degrade it.
 
-\paragraph{Blinded fault-localization meta-evaluation (registered).}
+\paragraph{Comparison with diagnostic baselines.} On the blinded
+benchmark below we additionally evaluate four alternative diagnostics
+of the same logs, each receiving the identical anonymized cell
+aggregates and calibration control, with decision rules fixed before
+scoring and thresholds matched to the Q/R/M/C rule
+(\texttt{experiments/qrmc\_external/diagnostic\_baselines.py};
+specification in \texttt{tmp/qrmc\_external/baselines\_spec.json}).
+Over 63 scored cells (10 faults + held-out control, three stacks, two
+models): a success-only reading names no stage ($0.095$); an
+AgentBoard-style progress scale (first milestone drop) reaches
+$0.730$ (macro-F1 $0.698$); a RAGChecker-style two-stage
+retrieval/execution split reaches $0.651$ exact / $0.873$ side-level
+(macro-F1 $0.450$), its deficit concentrated where commitment must be
+separated from execution; a process-conformance first-deviation rule
+using the order-sensitive $M_1$ reaches $0.778$ (macro-F1 $0.755$),
+its entire deficit being the budget-exhaustion branch of the
+conditional reading; a multinomial logistic regression on the same
+aggregates reaches $0.444$ on unseen fault types with a
+false-positive rate of $1.00$ on held-out controls (leave-one-model
+-out $0.794$, leave-one-framework-out $0.825$) and requires fault
+labels that the rule-based methods do not. Q/R/M/C attains $0.873$
+(macro-F1 $0.835$; bootstrap CI over fault types $[0.71,0.98]$) and
+outperforms all exact-stage alternatives under paired McNemar
+tests, with all comparisons significant after Holm correction
+(largest adjusted $p=0.031$; discordant cells from $6{:}0$ to
+$50{:}1$). Of the $66$ cells, three (the prompt-only fault under
+llama3.1) failed the pre-specified manipulation check and are
+excluded for every method alike, leaving $63$. A
+follow-up repair study (llama3.1, 2{,}640 episodes; pre-specified
+menu of stage-level repairs, each diagnostic selecting the repair for
+its predicted stage) gives Q/R/M/C the highest completion gain and
+lowest regret against the best available arm ($0.293$/$0.061$ vs.\
+an oracle-best gain of $0.354$; two-stage $0.280$/$0.074$;
+conformance $0.250$/$0.104$; progress $0.219$/$0.135$; random
+$0.113$/$0.240$). Paired bootstrap over fault--framework cells
+resolves the gain advantage over the progress baseline
+($+0.074$ $[+0.007,+0.157]$) but not over the two-stage baseline
+($+0.013$ $[-0.009,+0.039]$), which also selects the single best arm
+slightly more often ($0.704$ vs.\ $0.630$) because its coarse
+diagnoses map to repairs that frequently coincide with the best
+available arm; the four-stage advantage is established at exact
+localization, while on repair utility the protocol at least matches
+the strongest coarse baseline. Two pre-specified expectations failed:
+the matched repair for silent corruption recovers only
+$0.22$--$0.44$ of the control gap (consolidation without decoy
+removal converts a retrieval fault into an ambiguity fault), and the
+budget repair on the clean OpenAI SDK control lowered completion by
+$0.15$.
+
+\paragraph{Blinded fault-localization meta-evaluation (pre-specified).}
 The engineered variants verify localization of failures whose stage
 is known by construction; the reviewer-grade test treats the protocol
 as a \emph{classifier}. We injected ten fault types --- two to three
@@ -890,13 +958,13 @@ per stack) and $29/33$ for qwen3:4b ($9/11$, $10/11$, $10/11$); the
 five structural faults localize $30/30$ across both models and all
 stacks; held-out controls read ``none'' in $5/6$ cells (one false
 positive at $n{=}20$); cross-framework label agreement is $7/11$
-(llama) and $10/11$ (qwen). The registered model-contrast prediction
+(llama) and $10/11$ (qwen). The pre-specified model-contrast prediction
 was confirmed in its named direction: M-family faults hide behind
 llama's weak baseline commitment ($M_1{=}0.25$--$0.50$) and become
 visible on qwen's clean baseline --- the unmarked duplicate drops
 $M_1$ by $0.90/0.80/0.20$ across stacks --- while its accuracy clause
 held on two of three stacks (AutoGen: $10/11$ vs.\ llama's $10/10$,
-a one-cell difference). One registered risk materialised
+a one-cell difference). One pre-specified risk materialised
 instructively: the \emph{marked} stale distractor changes llama3.1's behaviour but
 reads ``none'' on qwen3:4b, which takes the staleness marker into
 account --- the protocol measures the behavioural effect of a fault,
@@ -934,7 +1002,7 @@ held-out control          & none & 3/3 & 2/3 \\
 \begin{table}[h]
 \caption{Second-model replication (qwen3:4b, 20 episodes per cell,
 identical episodes/tools/budgets; thinking disabled request-level for
-budget parity, recorded in the registration). Entries are marginal
+budget parity, recorded in the pre-run specification). Entries are marginal
 event frequencies $f(E)$ as in Table~\ref{tab:external} --- not
 chain-rule links. Structural zeros transfer exactly; behavioural
 rates differ from llama3.1 (Table~\ref{tab:external}) in the
@@ -1003,7 +1071,7 @@ contract). The dependence is graded, which is what makes the protocol
 degrade gracefully rather than break: $Q^\star$ requires no
 correspondence at all (did the agent query its memory), $C^\star$ is
 behaviourally observable (did the task complete), while $R^\star$ and
-$M^\star$ --- precisely the diagnostic payload --- are undefined
+$M^\star$ --- the diagnostic payload --- are undefined
 without it. The severity of the requirement depends on the population
 under evaluation: interchangeable agents (a shared perception
 interface, possibly different weights) situated in a single
@@ -1019,7 +1087,7 @@ not only the agents', and we leave that construction open.
 \textbf{Learned baselines.} The CommNet PPO baseline reaches $0.667$ success on the scarcity scenario --- competitive with symbolic peer at $K{=}8$ ($0.65$) --- and confirms Q-saturation ($Q^\star{=}1.00$) and R/M collapse ($P(M^\star|R^\star){=}1.00$) at competitive success. The structural prediction now holds verified, not asserted; ablating on architectures with explicit symbolic target-lock channels is left for future work.
 
 \textbf{Scale.} Multi-agent sweep bounded at $N{=}12$ (Appendix~\ref{app:babyai}; signature sharpens, peak Pearson $-0.70$ at $K{=}8$, interior $t_{\mathrm{succ}}$ minimum $4.77$). Denser scaling at $N{\ge}16$ is future work.
-\textbf{Continuous substrate.} A preliminary VMAS~\citep{bettini2022vmas} check reproduces \emph{both} slope signs of Empirical Claim~1 in the coupling regime (Spearman $-1.00$ and $+1.00$ over $K{\le}16$, 40 seeds; Appendix~\ref{app:vmas}), reusing the symbolic memory through a discretisation bridge. This is a directional signal only --- a perfect rank correlation over five monotone points, one configuration, discretised memory --- so it indicates the shift is not an artefact of grid cells, but a full continuous-state validation with cluster-robust CIs remains future work.
+\textbf{Continuous substrate.} A VMAS~\citep{bettini2022vmas} validation reproduces \emph{both} slope signs of Empirical Claim~1 across three scarcity cells $\times$ 40 seeds with block-bootstrap CIs excluding zero (Spearman $-0.999$ $[-1.000,-0.975]$ and $+0.995$ $[+0.900,+1.000]$ over $K{\le}16$; Appendix~\ref{app:vmas}), reusing the symbolic memory through a discretisation bridge. The shift is therefore not an artefact of grid cells; what remains open is fully continuous \emph{memory} (the bridge discretises it) and visually rich 3D substrates.
 
 \section{Broader impacts}
 
@@ -1073,10 +1141,20 @@ S.~Es, J.~James, L.~Espinosa-Anke, and S.~Schockaert.
 \newblock {RAGAs}: Automated evaluation of retrieval augmented generation.
 \newblock In \emph{EACL System Demonstrations}, 2024.
 
+\bibitem[Leucker and Schallhart(2009)]{leucker2009runtime}
+M.~Leucker and C.~Schallhart.
+\newblock A brief account of runtime verification.
+\newblock \emph{Journal of Logic and Algebraic Programming}, 78(5):293--303, 2009.
+
 \bibitem[Lightman et~al.(2024)]{lightman2024verify}
 H.~Lightman, V.~Kosaraju, Y.~Burda, H.~Edwards, B.~Baker, T.~Lee, J.~Leike, J.~Schulman, I.~Sutskever, and K.~Cobbe.
 \newblock Let's verify step by step.
 \newblock In \emph{ICLR}, 2024.
+
+\bibitem[Lin et~al.(2026)]{lin2026reflect}
+X.~Lin, Y.~Wang, T.~S.~T. Kwok, D.~Guo, S.~A. Nale, C.~Fleming, and G.~Cheng.
+\newblock {REFLECT}: Intervention-supported error attribution for silent failures in {LLM} agent traces.
+\newblock \emph{arXiv preprint arXiv:2606.09071}, 2026.
 
 \bibitem[Ma et~al.(2024)]{ma2024agentboard}
 C.~Ma, J.~Zhang, Z.~Zhu, C.~Yang, Y.~Yang, Y.~Jin, Z.~Lan, L.~Kong, and J.~He.
@@ -1813,48 +1891,48 @@ $\delta$ (coupling strength) & bias in $\hat P(M^\star|R^\star)$ & bias in $\hat
 
 Two conclusions (Table~\ref{tab:assumption1-stress}). The R$\to$M conditional is unbiased at every $\delta$: the latent re-weights episodes but does not confound that edge. The C$\to$M conditional acquires a one-signed \emph{upward} bias---the latent makes high-M episodes also high-C, so conditioning on M over-counts completion---but the bias is only $+1.5$ percentage points at a mild violation ($\delta\!\le\!0.10$) and reaches $+5.6$ points only under strong unlogged coupling ($\delta{=}0.20$). The framework's exposure to Assumption~1 violations is therefore bounded and its failure direction is known, which is the relevant robustness statement for applying the logger to learned or LLM agents where such couplings are more common.
 
-\subsection{Preliminary continuous-substrate check (VMAS)}
+\subsection{Continuous-substrate validation (VMAS): both slopes with cluster-robust CIs}
 \label{app:vmas}
 
 The most-requested robustness check is whether the M$\leftrightarrow$C
-bottleneck shift is specific to grid substrates. We report a \emph{preliminary}
-positive on a continuous-state substrate (VMAS~\citep{bettini2022vmas}). The
-symbolic peer memory and the operational Q/R/M/C definitions are reused
-unchanged; a thin discretisation bridge maps continuous $(x,y)$ to coarse cells
-so the memory applies, and the controller acts in continuous space toward the
-materialised waypoint (\method{experiments/vmas\_portability/}). Materialisation
-uses the same occupancy-sensitive lock as the grid planner (a candidate whose
-target is already claimed does not lock).
+bottleneck shift is specific to grid substrates. We validate it on a
+continuous-state substrate (VMAS~\citep{bettini2022vmas}) at scale: three
+scarcity cells $(N,T)\in\{(6,2),(8,3),(10,4)\}$ $\times$ five cadences
+$K\in\{1,2,4,8,16\}$ $\times$ $40$ seeds ($4{,}800$ agent-episodes;
+\method{experiments/vmas\_portability/run\_vmas\_full.py}, executed on a SLURM
+CPU cluster). The symbolic peer memory and the operational Q/R/M/C definitions
+are reused unchanged; a thin discretisation bridge maps continuous $(x,y)$ to
+coarse cells so the memory applies, and the controller acts in continuous space
+toward the materialised waypoint. Materialisation uses the same
+occupancy-sensitive lock as the grid planner.
 
 \begin{table}[h]
-\caption{Preliminary VMAS portability: both slope signs of Empirical Claim~1 reproduce on a continuous substrate in the coupling regime ($N{=}8$, $T{=}3$, 40 seeds, horizon $25$). $\mathrm{Spearman}(P(M^\star|R^\star),K){=}-1.00$ and $\mathrm{Spearman}(P(C^\star|M^\star),K){=}+1.00$. Beyond $K\!\approx\!32$ the system enters the independent regime (rare broadcast, no contention) and $P(M^\star|R^\star)$ rebounds, the same regime boundary seen on the grid.}
+\caption{VMAS continuous-substrate validation of Empirical Claim~1: per-cell conditional rates and block-bootstrap effect sizes ($B{=}2{,}000$ resamples over the $120$ (cell, seed) blocks). Both slope signs hold in \emph{every} scarcity cell, and the bootstrap CIs exclude zero decisively: $\mathrm{Spearman}(P(M^\star|R^\star),K) = -0.999$, 95\% CI $[-1.000,-0.975]$; $\mathrm{Spearman}(P(C^\star|M^\star),K) = +0.995$, 95\% CI $[+0.900,+1.000]$. Rates are operational per-event ratios (the $(10,4)$, $K{=}1$ M-ratio marginally exceeds $1$ because a lock can fire without a true-target retrieval event; shown capped).}
 \label{tab:vmas}
 \centering
 \small
-\begin{tabular}{c c c}
+\begin{tabular}{c c c c c c c}
 \toprule
-$K$ & $P(M^\star|R^\star)$ & $P(C^\star|M^\star)$ \\
+$(N,T)$ & \multicolumn{2}{c}{$K{=}1$} & \multicolumn{2}{c}{$K{=}4$} & \multicolumn{2}{c}{$K{=}16$} \\
+ & $P(M^\star|R^\star)$ & $P(C^\star|M^\star)$ & $P(M|R)$ & $P(C|M)$ & $P(M|R)$ & $P(C|M)$ \\
 \midrule
-1  & 1.000 & 0.182 \\
-2  & 0.583 & 0.305 \\
-4  & 0.448 & 0.405 \\
-8  & 0.305 & 0.608 \\
-16 & 0.278 & 0.639 \\
+$(6,2)$  & 1.00 & 0.22 & 0.51 & 0.41 & 0.27 & 0.74 \\
+$(8,3)$  & 1.00 & 0.18 & 0.45 & 0.41 & 0.28 & 0.64 \\
+$(10,4)$ & 1.00 & 0.18 & 0.52 & 0.38 & 0.30 & 0.66 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-We label this preliminary and do not fold it into the headline claims: it is a
-single scenario configuration, the horizon is short, there are no cluster-robust
-CIs yet, the memory is fed through the discretisation bridge (continuous
-\emph{dynamics} with discretised symbolic \emph{memory}, not fully continuous
-memory), and the reported $\pm1.00$ Spearman is a \emph{perfect} rank
-correlation over only five monotone points ($K\le16$) --- weak evidence on its
-own, indicating direction rather than a resolved effect size. What it establishes is that the two slope signs are not an artefact of
-grid cells: the same freshness-vs-contention mechanism operates when positions
-and motion are continuous. Promoting this to a headline result requires scaling
-to several scarcity cells and layouts with the cluster-robust bootstrap of
-Appendix~\ref{app:effect-sizes}.
+The earlier single-configuration check reported here as preliminary is now
+superseded: with three scarcity cells, $40$ seeds, and the same block-bootstrap
+methodology as the main sweep (Appendix~\ref{app:effect-sizes}), both slope
+signs of Empirical Claim~1 transfer to continuous positions and motion with
+resolved effect sizes, in every cell. The freshness-vs-contention mechanism is
+therefore not an artefact of grid cells. Remaining honest limits: the memory is
+fed through the discretisation bridge (continuous \emph{dynamics} with
+discretised symbolic \emph{memory}), the horizon is short ($25$ steps), the
+robots are holonomic points, and the sweep covers the coupling regime
+$K\le16$; visually rich 3D substrates (Habitat, ProcTHOR) remain future work.
 
 \subsection{Cadence-robustness: the shift tracks scarcity, not grid design}
 \label{app:cadence-robustness}
@@ -1910,7 +1988,7 @@ Four concrete questions follow directly from the measurements of \S\ref{sec:refi
 
 Classical cognitive-map perspectives motivate explicit place abstractions \citep{tolman1948cognitive,okeefe1978hippocampus,kuipers2000spatial}; modern embodied AI combines mapping and planning \citep{gupta2017cognitive} or exposes topological memory (SPTM, \citealp{savinov2018semi}); goal-conditioned RL conditions on explicit goals or embeddings \citep{andrychowicz2017hindsight,ghosh2021learning}, with successor-representation work providing predictive structure \citep{dayan1993improving,stachenfeld2017hippocampus,momennejad2017successor}. Our setting differs in that the target is a semantic pattern retrieved from memory rather than a coordinate. In multi-agent RL, CTDE dominates \citep{lowe2017maddpg,foerster2018ctde} and learned communication adds a per-step exchange variable \citep{sukhbaatar2016commnet,foerster2016learning}; gossip and consensus protocols \citep{boyd2006gossip,xiao2007distributed} are the closest network-level analogue of our cadence axis, lifted here to the cognitive-architecture level. LLM-agent systems combine reasoning/acting, reflection, explicit memory, and multi-agent conversation \citep{yao2022react,shinn2023reflexion,wang2023voyager,park2023generative,wu2023autogen,packer2023memgpt,chhikara2025mem0}. Our framework is orthogonal: rather than learning a communication policy end-to-end, it \emph{diagnoses} where in the Q/R/M/C chain a given architecture succeeds or fails, and yields a slope-level prediction about cadence that is testable on logs.
 
-\paragraph{Stage-wise evaluation.} The closest line decomposes retrieval-augmented generation: RAGAS scores retrieval and generation quality separately \citep{es2024ragas}, RAGChecker refines this to claim-level diagnostics meta-evaluated against human judgments \citep{ru2024ragchecker}, and AgentBoard replaces final success with analytic progress rates for multi-turn LLM agents \citep{ma2024agentboard}. Q/R/M/C differs on three axes: its events are logged actions of a task-executing agent, not LLM-judged text quality; it models commitment (M) and the multi-agent coupling channels (shared memory, occupancy) that RAG metrics do not represent; and its diagnoses are validated interventionally (oracle stages; engineered structural faults) rather than by correlation with human ratings. Process mining and conformance checking compare event logs against stage models \citep{vanderaalst2016process,carmona2018conformance}; the protocol shares that log-level discipline and adds agent-specific event semantics with intervention-based validation. Process reward models score intermediate reasoning steps to supervise training \citep{lightman2024verify}; Q/R/M/C is an evaluation-time instrument for memory pipelines.
+\paragraph{Stage-wise evaluation.} The closest line decomposes retrieval-augmented generation: RAGAS scores retrieval and generation quality separately \citep{es2024ragas}, RAGChecker refines this to claim-level diagnostics meta-evaluated against human judgments \citep{ru2024ragchecker}, and AgentBoard replaces final success with analytic progress rates for multi-turn LLM agents \citep{ma2024agentboard}. Q/R/M/C differs on three axes: its events are logged actions of a task-executing agent, not LLM-judged text quality; it models commitment (M) and the multi-agent coupling channels (shared memory, occupancy) that RAG metrics do not represent; and its diagnoses are validated interventionally (oracle stages; engineered structural faults) rather than by correlation with human ratings. Process mining and conformance checking compare event logs against stage models \citep{vanderaalst2016process,carmona2018conformance}; the protocol shares that log-level discipline and adds agent-specific event semantics with intervention-based validation. Process reward models score intermediate reasoning steps to supervise training \citep{lightman2024verify}. The stance of specifying and checking externally observable events rather than internal state is standard in runtime verification and distributed-system observability \citep{leucker2009runtime}; Q/R/M/C applies it to the memory interface of task-executing agents. Closest in mechanism is intervention-supported error attribution: REFLECT localizes a candidate error step in an LLM agent trace and verifies it through controlled replay with a diagnosis-specific patch \citep{lin2026reflect}. Q/R/M/C differs in unit and in cost: it measures recurring pipeline stages and their conditional rates from logs alone, and uses interventions (oracle stages; stage-level repairs) to validate the protocol rather than to produce each individual diagnosis.
 
 \subsection{SOTA baseline and coverage matrix}
 \label{app:sota-coverage}

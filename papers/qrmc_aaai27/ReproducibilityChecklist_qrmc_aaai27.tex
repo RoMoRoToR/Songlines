@@ -115,9 +115,12 @@ yes
 \begin{itemize}
 
 \question{Does this paper make theoretical contributions?}{(yes/no)}
-% DRAFT: лёгкий теорвклад = Definition 1/2 + identifiability;
-% математическая новизна явно НЕ заявляется (non-claims box).
-yes
+% DRAFT (обновлено 2026-07-16 по отзыву): вклад методологический и
+% эмпирический; статья сама подчёркивает, что factorization — это
+% стандартный chain rule без математической новизны. "no" снимает
+% вопрос «где теоретический вклад и почему proofs partial».
+% Подпункты ниже — NA.
+no
 
 	\ifyespoints{\vspace{1.2em}If yes, please address the following points:}
         \begin{itemize}
@@ -129,36 +132,36 @@ yes
 % Supplement, Appendix "Operational vs. nested stage estimators"
 % (нотация C*=>M*=>R*=>Q*, оценимость) + Assumption 1. Ответ
 % покрывает submission = paper + supplement.
-yes
+NA
 
 	\question{All novel claims are stated formally (e.g., in theorem statements)}{(yes/partial/no)}
 	% DRAFT: Definition 1/2 формальны; Empirical Claim 1 намеренно
 % заявлен как эмпирическое slope-level утверждение, не теорема.
-partial
+NA
 
 	\question{Proofs of all novel claims are included}{(yes/partial/no)}
 	% DRAFT: аргументы оценимости в supplement названы arguments,
 % не proofs — сознательно.
-partial
+NA
 
 	\question{Proof sketches or intuitions are given for complex and/or novel results}{(yes/partial/no)}
 	% DRAFT: качественное обоснование обеих slope-условий дано.
-yes
+NA
 
 	\question{Appropriate citations to theoretical tools used are given}{(yes/partial/no)}
 	% DRAFT: chain rule, frequency estimation, options/Galois
 % (в supplement) с цитатами.
-yes
+NA
 
 	\question{All theoretical claims are demonstrated empirically to hold}{(yes/partial/no/NA)}
 	% DRAFT: стресс-тест Assumption 1 (скрытый конфаундер) +
 % верификация обоих наклонов на 35,640 прогонов.
-yes
+NA
 
 	\question{All experimental code used to eliminate or disprove claims is included}{(yes/no/NA)}
-	% DRAFT: assumption1_stress_test.py, theta_ablation.py,
-% analyze_effect_sizes.py в code supplement.
-yes
+	% DRAFT: NA — теорвклад не заявляется (2.1 = no); сами скрипты
+% (assumption1_stress_test.py и др.) всё равно в code supplement.
+NA
 	
 	\end{itemize}
 \end{itemize}

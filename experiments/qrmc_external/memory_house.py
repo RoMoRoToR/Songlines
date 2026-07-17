@@ -86,11 +86,18 @@ P_GOTO_STUCK = 0.5    # c_flaky_goto
 
 
 class MemoryHouse:
-    def __init__(self, variant: str, seed: int):
+    def __init__(self, variant: str, seed: int,
+                 repair: "Optional[str]" = None):
+        # repair in {None, "Q", "R", "M", "C"}: a stage-level repair
+        # from the fixed menu (fix query channel / consolidate memory /
+        # remove untrue item records / relax execution), applied
+        # without knowledge of which fault was injected.
         assert variant in ALL_VARIANTS
+        assert repair in (None, "Q", "R", "M", "C")
         rng = np.random.default_rng(7000 + seed)
         self.variant = variant
-        self.budget = BUDGETS[variant]
+        self.repair = repair
+        self.budget = BUDGETS[variant] + (4 if repair == "C" else 0)
         self.item = ITEMS[int(rng.integers(0, len(ITEMS)))]
         # separate stream for runtime fault coin flips, deterministic
         # per seed and independent of layout generation
@@ -143,6 +150,19 @@ class MemoryHouse:
                 "note": (f"{self.places[self.decoy_place]['room']} "
                          f"({self.decoy_place}): {self.item}")})
 
+        if repair == "R":
+            # consolidate: the true record names the item
+            for r in self.records:
+                if r["place_id"] == true_pid and self.item not in r["note"].lower():
+                    r["note"] = (f"{self.places[true_pid]['room']} "
+                                 f"({true_pid}): "
+                                 f"{', '.join(self.places[true_pid]['contents'])}")
+        if repair == "M":
+            # remove records that name the item at a non-true place
+            self.records = [r for r in self.records
+                            if not (self.item in r["note"].lower()
+                                    and r["place_id"] != true_pid)]
+
         # runtime state
         self.at: Optional[str] = None
         self.tool_calls = 0
@@ -165,7 +185,7 @@ class MemoryHouse:
         stop = self._spend("recall", query)
         if stop:
             return stop
-        if (self.variant == "r_flaky"
+        if (self.variant == "r_flaky" and self.repair != "R"
                 and self._frng.random() < P_RECALL_FAIL):
             self.log[-1]["hits"] = []
             self.log[-1]["attributed_hits"] = []
@@ -198,7 +218,7 @@ class MemoryHouse:
         if pid is None:
             return ("Unknown place. Valid ids: "
                     + ", ".join(sorted(self.places)) + ".")
-        if (self.variant == "c_flaky_goto"
+        if (self.variant == "c_flaky_goto" and self.repair != "C"
                 and self._frng.random() < P_GOTO_STUCK):
             # the commitment is made (resolved is logged above); the
             # move itself fails, so arrival --- not the lock --- breaks
@@ -214,7 +234,7 @@ class MemoryHouse:
         stop = self._spend("take", item)
         if stop:
             return stop
-        if self.variant == "c_take_broken":
+        if self.variant == "c_take_broken" and self.repair != "C":
             return ("You cannot pick that up right now "
                     "(your hands are full).")
         it = (item or "").strip().lower()
@@ -257,6 +277,11 @@ class MemoryHouse:
 
     @property
     def task_text(self) -> str:
+        if self.repair == "Q":
+            return (f"Find and take the {self.item}. You have a budget of "
+                    f"{self.budget} tool calls. First search your memory "
+                    f"of the house with recall, then goto the right "
+                    f"place, then take the item.")
         if self.variant == "q_no_tool":
             # no recall tool is offered, so the instruction to use it
             # is dropped; everything else is identical
@@ -276,7 +301,7 @@ class MemoryHouse:
 
     @property
     def available_tools(self) -> List[str]:
-        if self.variant == "q_no_tool":
+        if self.variant == "q_no_tool" and self.repair != "Q":
             return ["goto", "take", "finish"]
         return ["recall", "goto", "take", "finish"]
 

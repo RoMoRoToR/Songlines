@@ -47,12 +47,20 @@ def run_model(model: str, args: argparse.Namespace) -> Dict[str, Any]:
     os.makedirs(model_out_dir, exist_ok=True)
     runs_path = os.path.join(model_out_dir, "runs.csv")
     cache_dir = os.path.join(model_out_dir, ".cache_llm")
-    backend = OllamaBackend(
-        model=model,
-        cache_dir=cache_dir,
-        temperature=args.temperature,
-        timeout_s=args.timeout_s,
-    )
+    if getattr(args, "backend", "ollama") == "hf":
+        from experiments.llm_collective.hf_backend import HFBackend
+        backend = HFBackend(
+            model=model,
+            cache_dir=cache_dir,
+            temperature=args.temperature,
+        )
+    else:
+        backend = OllamaBackend(
+            model=model,
+            cache_dir=cache_dir,
+            temperature=args.temperature,
+            timeout_s=args.timeout_s,
+        )
 
     rows: List[Dict[str, Any]] = []
     for seed in range(args.seed_start, args.seed_start + args.episodes):
@@ -135,6 +143,7 @@ def main() -> None:
     parser.add_argument("--step_limit", type=int, default=25)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--timeout_s", type=float, default=120.0)
+    parser.add_argument("--backend", choices=["ollama", "hf"], default="ollama")
     parser.add_argument("--out_dir", type=str, default="tmp/paper1_llm_model_sweep")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()

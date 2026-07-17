@@ -103,3 +103,22 @@ non-binding на llama, binding и Q-локализован 3/3 на qwen. Accur
 Артефакты: rows_meta_{llama,qwen}.json, meta_verdict_meta_{llama,qwen}.json,
 meta_run.log. Вставлено в обе статьи (AAAI параграф + таблица per-fault
 в supplement) 2026-07-14.
+
+## Diagnostic baselines + repair study — 2026-07-17/18
+
+**Классификация** (существующие данные, 63 ячейки, правила фиксированы до
+скоринга — baselines_spec.json): success-only 0.095; AgentBoard-style
+progress 0.730; two-stage R/E 0.651 exact / 0.873 side; conformance-lite
+0.778; learned LR 0.444 на unseen faults (FPR=1.0 на контролях; LOFramO
+0.825, LOModO 0.794); **Q/R/M/C 0.873** [0.71,0.98], macro-F1 0.835,
+McNemar p≤0.031 против всех. Дефицит two-stage = разделение M от C;
+дефицит conformance = budget-ветка.
+
+**Repair** (2640 эпизодов llama, repair_spec.json до прогонов): gain/regret
+qrmc 0.293/0.061 (oracle 0.354/0) > two_stage 0.280/0.074 > conformance
+0.250/0.104 > progress 0.219/0.135 > random 0.113/0.240. P-REP-2 PASS.
+Честные FAIL: P-REP-1 — matched R-ремонт на r_corrupted лишь 0.22–0.44
+разрыва (консолидация без удаления порченой записи превращает R-фолт в
+ambiguity); P-REP-3 — C-ремонт (+4 бюджета) на чистом openai-контроле
+−0.15 (видимый бюджет = поведенческая переменная). Артефакты:
+rows_repair_llama.json, repair_verdict.json, baselines_verdict.json.

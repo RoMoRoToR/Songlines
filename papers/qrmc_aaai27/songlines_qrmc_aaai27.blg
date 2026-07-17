@@ -3,44 +3,44 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: songlines_qrmc_aaai27.aux
 The style file: aaai2027.bst
 Database file #1: aaai27refs.bib
-You've used 18 entries,
+You've used 20 entries,
             2840 wiz_defined-function locations,
-            662 strings with 7963 characters,
-and the built_in function-call counts, 13418 in all, are:
-= -- 908
-> -- 1001
+            675 strings with 8391 characters,
+and the built_in function-call counts, 14799 in all, are:
+= -- 1012
+> -- 1092
 < -- 0
-+ -- 369
-- -- 352
-* -- 1036
-:= -- 2299
-add.period$ -- 72
-call.type$ -- 18
-change.case$ -- 199
-chr.to.int$ -- 19
-cite$ -- 18
-duplicate$ -- 857
-empty$ -- 793
-format.name$ -- 399
-if$ -- 2489
++ -- 404
+- -- 383
+* -- 1145
+:= -- 2532
+add.period$ -- 80
+call.type$ -- 20
+change.case$ -- 216
+chr.to.int$ -- 21
+cite$ -- 20
+duplicate$ -- 944
+empty$ -- 873
+format.name$ -- 436
+if$ -- 2744
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 214
-newline$ -- 94
-num.names$ -- 72
-pop$ -- 515
+missing$ -- 235
+newline$ -- 104
+num.names$ -- 80
+pop$ -- 559
 preamble$ -- 1
-purify$ -- 177
+purify$ -- 194
 quote$ -- 0
-skip$ -- 377
+skip$ -- 414
 stack$ -- 0
-substring$ -- 254
-swap$ -- 430
+substring$ -- 303
+swap$ -- 479
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 156
+type$ -- 174
 warning$ -- 0
-while$ -- 76
+while$ -- 86
 width$ -- 0
-write$ -- 221
+write$ -- 246
