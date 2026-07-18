@@ -97,10 +97,10 @@ The final event is semantic-path completion rather than raw task success, becaus
 
 When the chain is observable, we estimate
 \begin{equation}
-q=P(Q^\star),\quad
-r=P(R^\star\mid Q^\star),\quad
-m=P(M^\star\mid R^\star),\quad
-c=P(C^\star\mid M^\star).
+\begin{aligned}
+q&=P(Q^\star), & r&=P(R^\star\mid Q^\star),\\
+m&=P(M^\star\mid R^\star), & c&=P(C^\star\mid M^\star).
+\end{aligned}
 \end{equation}
 The nesting gives the exact identity
 \begin{equation}
@@ -174,8 +174,10 @@ $S_{c,a}$ the completion rate of arm $a$ in fault cell $c$ and
 $a_d(c)$ the repair selected by diagnostic $d$ (``none'' for a
 no-fault diagnosis),
 \begin{equation}
-G_d=\tfrac{1}{|\mathcal{C}|}\textstyle\sum_{c}\bigl(S_{c,a_d(c)}-S_{c,\mathrm{none}}\bigr),\quad
-R_d=\tfrac{1}{|\mathcal{C}|}\textstyle\sum_{c}\bigl(\max_a S_{c,a}-S_{c,a_d(c)}\bigr).
+\begin{aligned}
+G_d&=\tfrac{1}{|\mathcal{C}|}\textstyle\sum_{c}\bigl(S_{c,a_d(c)}-S_{c,\mathrm{none}}\bigr),\\
+R_d&=\tfrac{1}{|\mathcal{C}|}\textstyle\sum_{c}\bigl(\max_a S_{c,a}-S_{c,a_d(c)}\bigr).
+\end{aligned}
 \end{equation}
 Every repair arm is run for every condition on all three stacks with
 llama3.1 ($11$ conditions $\times$ $4$ arms $\times$ $3$ stacks

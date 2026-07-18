@@ -1093,6 +1093,93 @@ Final coinductive core / society & $\nu\mathbf{B}$; greatest bisimulation $\appr
 \end{table}
 
 
+\section{Context is not memory: raw context vs.\ the Songlines graph under one model}
+\label{app:ctx-vs-structure}
+
+Modern LLMs \emph{accept} long context; the question this appendix measures is
+whether they turn it into a stable, globally coherent state --- and whether the
+Songlines graph supplies that state instead. In every arm the \emph{same} model
+answers; only the memory substrate differs: \textbf{raw} (the full observation
+transcript in the prompt --- typical usage) vs.\ \textbf{graph} (the same
+evidence consolidated by the Songlines rule: latest state per place, staleness
+explicit, $O(\text{salient places})$ prompt). Three axes
+(\method{experiments/context\_vs\_structure/}; HF backend on SLURM GPU nodes
+and local Ollama as an independent second backend).
+
+\paragraph{Axis 1: volume and integration (one witness log).}
+A witness log over a $30{\times}24$ grid contains a freshness conflict (water
+seen repeatedly at site $A$, later dried; one fresher sighting at $B$).
+Questions: \emph{fact} (where is water now), \emph{count} (how many waters
+now), \emph{hop} (nearest hazard to current water).
+
+\begin{table}[h]
+\caption{Accuracy by question, arm, and log volume $L$ (lines). Qwen2.5-7B (cluster, $20$ seeds/cell) on cells within its compute envelope; Llama-3.1-8B (local, $10$ seeds/cell) at large $L$ with \emph{verified full ingestion} (\texttt{prompt\_eval\_count}${=}25{,}030$ tokens at $L{=}2000$; no truncation). Graph prompts stay $\approx$350 bytes at every $L$.}
+\label{tab:ctx-axis1}
+\centering
+\small
+\begin{tabular}{l l c c c c}
+\toprule
+Question & Arm & $L{=}50$ & $L{=}200$ & $L{=}800$ & $L{=}2000$ \\
+\midrule
+fact  & raw   & 1.00\,/\,--   & 1.00\,/\,--   & --\,/\,0.00 & --\,/\,0.00 \\
+fact  & graph & 1.00\,/\,--   & 1.00\,/\,--   & 1.00\,/\,1.00 & 1.00\,/\,1.00 \\
+count & raw   & \textbf{0.00}\,/\,-- & \textbf{0.00}\,/\,-- & --\,/\,\textbf{0.00} & --\,/\,\textbf{0.00} \\
+count & graph & 1.00\,/\,--   & 1.00\,/\,--   & 1.00\,/\,1.00 & 1.00\,/\,1.00 \\
+hop   & raw   & 0.00\,/\,--   & 0.05\,/\,--   & --\,/\,0.00 & --\,/\,0.00 \\
+hop   & graph & 0.00\,/\,--   & 0.15\,/\,--   & 0.40\,/\,0.50 & 0.30\,/\,0.60 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two failure layers, both with identified mechanisms. \emph{Cognitive:} the raw
+arm loses global state at \textbf{any} volume --- on \emph{count} it answers
+``2'' ($17/20$) or ``3'' ($3/20$) when the truth is $1$: it adds up historical
+mentions instead of resolving freshness, i.e.\ no consolidation. At large $L$
+even single-fact retrieval collapses despite verified full ingestion (a probe
+with the answer at the very end of a $25$k-token prompt is also missed).
+\emph{Systemic:} on the cluster's 24\,GB sm75 GPUs, raw-arm inference at
+$5$--$10$k tokens exhausts memory through the quadratic attention matrix
+(marked as compute-envelope cells, ``--'', never reported as cognition), while
+the graph arm runs at constant cost at every volume. Raw context loses twice
+--- as cognition and as systems cost; \emph{hop} shows the honest boundary:
+structure repairs retrieval, not arithmetic reasoning.
+
+\paragraph{Axis 2: time (sessions).}
+A persistent world drifts (water relocates, $p{=}0.35$/session); after each of
+$8$ sessions the model is asked where the water is now, from \textbf{raw
+replay} (all past transcripts re-injected, the typical chat pattern) vs.\ the
+persisted \textbf{graph}. Qwen2.5-7B: the graph arm holds $0.62$--$1.00$
+across all eight sessions at a flat $\approx$0.3\,kB prompt; the replay arm's
+valid cells are already at $0.00$--$0.67$ in the earliest sessions and its
+prompt grows to $25$\,kB by session $8$ (later cells envelope-limited on the
+cluster; on the local backend, where no envelope exists, replay degrades to
+$0.00$--$0.50$ by $19$\,kB --- the same pattern).
+
+\paragraph{Axis 3: system size (multi-agent, private frames).}
+Three agents accumulate observations over $G$ sessions, each logging in its
+\emph{own} secret coordinate frame. Question: ``how many DISTINCT water sources
+exist?'' --- the same physical water seen by two agents at different private
+coordinates must be counted once. The raw arm gets all three logs (and is told
+the frames differ); the graph arm gets the Songlines machinery's merged map
+(fingerprint frame recovery, \S\ref{sec:semantic-identity}, plus dedup).
+Qwen2.5-7B: graph accuracy \emph{rises} with growth --- $0.40, 0.90, 1.00,
+1.00$ at $G{=}1,2,4,8$ ($\approx$330 bytes) --- because frame alignment locks
+as fingerprints accumulate (the exact\% curve of the growth study); the raw arm
+($13$k--$105$k chars) does not produce a single correct answer on any
+envelope-valid cell. Cross-frame identity is precisely what a context window
+cannot represent and the gluing structure can.
+
+\paragraph{Summary.}
+The same model, given the same evidence, preserves long, drifting, multi-agent
+context when --- and only when --- the evidence reaches it as the consolidated
+Songlines structure: flat-cost prompts, freshness resolved, frames glued.
+Given the raw stream instead, it fails on integration at $1.3$\,kB, on
+freshness at $19$\,kB with full ingestion, and on cross-frame identity at every
+tested size. Scope: two model families, one task family per axis, and the
+compute-envelope cells are reported as such; the graph arm's consolidation
+here is the deterministic Songlines rule --- LLM-driven consolidation is the
+roadmap's next stage.
+
 \section{Reproducibility commands}
 \label{app:repro}
 
@@ -1109,6 +1196,7 @@ Final coinductive core / society & $\nu\mathbf{B}$; greatest bisimulation $\appr
 \path{python -m experiments.minigrid_multiagent_wrapper.run_portability_sweep --out_dir tmp/minigrid_portability}
 \item Adjunction round-trip defect of frame recovery (Section~\ref{sec:semantic-identity}):
 \path{python experiments/warp/alignment_defect.py}
+\item Context-vs-structure suite (Appendix~\ref{app:ctx-vs-structure}): \path{experiments/context_vs_structure/run_ctx_vs_struct.py}, \path{run_persistence_llm.py}, \path{run_growth_llm.py} (HF backend on GPU or --backend ollama locally)
 \item Trust$\times$cadence structural phase diagram (Section~\ref{sec:phase-diagram}, Figure~\ref{fig:phase-diagram}):
 \path{python experiments/collective_semantic_memory/phase_diagram_trust_cadence.py --fig figures/fig_phase_diagram.pdf}
 \end{itemize}

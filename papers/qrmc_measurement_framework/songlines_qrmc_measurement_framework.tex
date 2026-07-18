@@ -687,7 +687,7 @@ mechanistic reading of Empirical Claim~1.
 A CommNet-style policy \citep{sukhbaatar2016commnet} trained with PPO~\citep{schulman2017proximal} on the same scenario ($N{=}3$, $T{=}2$) reaches $0.667$ held-out success ($n{=}100$ seeds) --- matching the symbolic peer architecture at $K{=}8$ ($0.65$). Despite this, the Q/R/M/C profile remains structurally degenerate: $Q^\star{=}1.00$ saturated by construction; $R^\star{=}0.997$, $M^\star{=}0.997$ collapsed together ($P(M^\star|R^\star){=}1.00$). This is the verified structural claim: a real-valued comm vector is never informatively empty (Q saturates) and lacks an explicit target-lock interface (R/M merge), regardless of training budget. The multi-agent counterpart of the single-agent learned-BC analysis (\S\ref{sec:single-results}). Full architecture, PPO hyperparameters, and side-by-side REINFORCE vs PPO comparison in Appendix~\ref{app:learned-baselines}.
 
 \paragraph{LLM model sweep: the logger localizes a real failure in language agents.}
-Table~\ref{tab:llm-smoke} runs the same Q/R/M/C event contract on two local LLM agents (qwen3:4b and llama3.1 via Ollama) on TextNav, sweeping the step budget over $\{6,12,25\}$ ($8$ episodes each; the task needs $\sim$10 low-level steps). At a generous budget ($12$, $25$) both agents succeed and all four stages fire. At a budget below the requirement ($6$), success drops to $0/8$ for \emph{both} models --- and the decomposition shows \emph{where}: $Q^\star{=}R^\star{=}M^\star{=}1.00$ (the agents form the query, retrieve, and lock the correct target every episode) while $C^\star{=}0.00$ (none complete in time). The framework localizes the failure to a budget-limited completion ($C$) rather than to query formation, retrieval, or materialization; that both models fail identically shows the failure is structural, not a model artifact. This is the diagnostic property the framework claims, now exhibited on \emph{real language agents}: an otherwise opaque success collapse ($1.00\to0.00$) is resolved into a specific failing stage. (Instrumentation note: a naive qwen3:4b/Ollama chat-template call initially returned empty \texttt{response} strings because the model spent the short structured-output budget in a separate thinking field; we use raw structured completion for qwen3:4b and a first-line parser, recorded for reproducibility.)
+Table~\ref{tab:llm-smoke} runs the same Q/R/M/C event contract on four LLM agents over two independent backends: qwen3:4b and llama3.1 via local Ollama ($8$ episodes/cell), and Qwen2.5-3B/7B-Instruct via HuggingFace transformers on SLURM GPU nodes ($25$ episodes/cell). The decomposition separates \emph{two different failure modes on two different stages}. \textbf{Budget $\to$ C:} below the task's step requirement, three models (qwen3:4b, llama3.1, Qwen2.5-7B) show the identical signature $Q^\star{=}R^\star{=}M^\star{=}1.00$, $C^\star{=}0.00$ --- a completion-limited failure that replicates across backends, model families, and hardware. \textbf{Capability $\to$ R:} Qwen2.5-3B fails at \emph{every} budget with $Q^\star{=}1.00$ but $R^\star{=}0.00$: it declares the target, emits well-formed actions (verified against the response cache, so not a parsing artifact), yet wanders without ever storing the evidence retrieval needs --- an exploration/grounding failure surfacing at the R stage, exactly the ``absence of evidence'' regime of \S\ref{sec:refined-attribution}. An opaque scalar would report both models as $0.00$; the stage view shows they fail for different reasons at different stages. (Instrumentation note: a naive qwen3:4b/Ollama chat-template call initially returned empty \texttt{response} strings because the model spent the short structured-output budget in a separate thinking field; we use raw structured completion for qwen3:4b and a first-line parser, recorded for reproducibility.)
 
 \paragraph{The multi-agent phenomenology reproduces on a live LLM collective.}
 Beyond the single-agent budget study, the same event contract
@@ -716,21 +716,23 @@ in the companion manuscript.
 Scope: these are controlled studies on local models; scaling the same contract to full Voyager/MemGPT-style agents on richer tasks with multiple failure modes is developed next (external-framework validation) and in Appendix~\ref{app:sota-coverage}.
 
 \begin{table}[h]
-  \caption{LLM TextNav step-budget sweep: Q/R/M/C localizes a completion-limited failure in two local Ollama agents. Eight episodes per (model, step limit), temperature 0.0; the task needs $\sim$10 low-level steps. At a budget below that requirement (step limit 6) success drops to $0.00$ for both models, yet $Q^\star{=}R^\star{=}M^\star{=}1.00$ (the agents form the query, retrieve, and lock the correct target every episode) while $C^\star{=}0.00$: the framework localizes the failure to the C stage, not to Q/R/M. Both models behave identically, so the failure is structural (budget), not model-specific. Artifacts: \texttt{tmp/llm\_steplimit\_\{6,12,25\}}.}
+  \caption{LLM TextNav step-budget sweep across four models and two independent backends (local Ollama, $n{=}8$/cell; HuggingFace transformers on a SLURM GPU cluster, $n{=}25$/cell; temperature 0.0; the task needs $\sim$10 low-level steps). Two distinct failure modes are localized to two different stages. \textbf{Budget $\to$ C:} at step limit 6, qwen3:4b, llama3.1 and Qwen2.5-7B all show $Q^\star{=}R^\star{=}M^\star{=}1.00$ with $C^\star{=}0.00$ --- the completion-limited failure replicates across backends, models, and hardware. \textbf{Capability $\to$ R:} Qwen2.5-3B fails at \emph{every} budget ($\{6,8,12,25\}$) with $Q^\star{=}1.00$ but $R^\star{=}0.00$: it declares the target yet never accumulates the evidence to retrieve it (its outputs are well-formed action strings --- verified in the response cache --- so this is an exploration/grounding failure feeding retrieval, not a parsing artifact). Artifacts: \texttt{tmp/llm\_steplimit\_*}, \texttt{tmp/cluster/textnav*}.}
   \label{tab:llm-smoke}
   \centering
   \small
-  \begin{tabular}{l c c c c c c}
+  \begin{tabular}{l l c c c c c c}
     \toprule
-    Model & Step limit & Success & $Q^\star$ & $R^\star$ & $M^\star$ & $C^\star$ \\
+    Model & Backend & Step limit & Success & $Q^\star$ & $R^\star$ & $M^\star$ & $C^\star$ \\
     \midrule
-    qwen3:4b & 6  & 0.00 & 1.00 & 1.00 & 1.00 & \textbf{0.00} \\
-    llama3.1 & 6  & 0.00 & 1.00 & 1.00 & 1.00 & \textbf{0.00} \\
+    qwen3:4b        & ollama & 6  & 0.00 & 1.00 & 1.00 & 1.00 & \textbf{0.00} \\
+    llama3.1        & ollama & 6  & 0.00 & 1.00 & 1.00 & 1.00 & \textbf{0.00} \\
+    Qwen2.5-7B      & hf     & 6  & 0.00 & 1.00 & 1.00 & 1.00 & \textbf{0.00} \\
     \midrule
-    qwen3:4b & 12 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
-    llama3.1 & 12 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
-    qwen3:4b & 25 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
-    llama3.1 & 25 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+    qwen3:4b        & ollama & 12 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+    llama3.1        & ollama & 12 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+    Qwen2.5-7B      & hf     & 12 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+    \midrule
+    Qwen2.5-3B      & hf     & 6--25 & 0.00 & 1.00 & \textbf{0.00} & 0.00 & 0.00 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1318,6 +1320,11 @@ J.~Schulman, F.~Wolski, P.~Dhariwal, A.~Radford, and O.~Klimov.
 \newblock Proximal policy optimization algorithms.
 \newblock \emph{arXiv:1707.06347}, 2017.
 
+\bibitem[Shridhar et~al.(2021)]{shridhar2021alfworld}
+M.~Shridhar, X.~Yuan, M.-A. C\^ot\'e, Y.~Bisk, A.~Trischler, and M.~Hausknecht.
+\newblock ALFWorld: Aligning text and embodied environments for interactive learning.
+\newblock In \emph{ICLR}, 2021.
+
 \bibitem[Shinn et~al.(2023)]{shinn2023reflexion}
 N.~Shinn, F.~Cassano, A.~Berman, and A.~G. Labash.
 \newblock Reflexion: Language agents with verbal reinforcement learning.
@@ -1619,9 +1626,12 @@ over required, preferred, and penalty tags. The four task families are defined b
 
 \paragraph{Seed robustness (30 seeds).}
 The single-agent benchmark of \S\ref{sec:single} uses 10 seeds. To check the
-diagnosis is not a small-sample artefact, we reran the two diagnostic task
-families at 30 seeds (\method{--num\_seeds 30}; $n{=}240$ hazard-recovery and
-$480$ goal-region agent-episodes). The \emph{qualitative} attribution is
+diagnosis is not a small-sample artefact, we reran all four task families at
+30 seeds, both assist modes, on an independent SLURM cluster
+(\method{--num\_seeds 30}; e.g. $n{=}240$ hazard-recovery and $480$
+goal-region agent-episodes per mode). Success (assist off): water $0.90$, rest
+$0.84$, goal-region $0.61$, hazard recovery $0.18$; empty-candidate-set rates
+$0.03$, $0.00$, $0.37$, $0.65$ respectively. The \emph{qualitative} attribution is
 unchanged: hazard recovery stays retrieval-starved (empty-candidate-set rate
 $\approx0.62$--$0.65$, low success) while goal-region is far less
 retrieval-limited (empty-set $\approx0.37$, success $\approx0.61$) --- the same
@@ -1934,6 +1944,37 @@ discretised symbolic \emph{memory}), the horizon is short ($25$ steps), the
 robots are holonomic points, and the sweep covers the coupling regime
 $K\le16$; visually rich 3D substrates (Habitat, ProcTHOR) remain future work.
 
+\subsection{External language-agent substrate: ALFWorld}
+\label{app:alfworld}
+
+To take the contract beyond our own substrates, we instrument standard
+ALFWorld~\citep{shridhar2021alfworld} text games (ALFRED household tasks,
+\texttt{eval\_out\_of\_distribution} split) with an LLM policy and the same
+four-stage contract: $Q^\star$ fires when the LLM declares the task's target
+object; an episodic object$\to$receptacle memory is built from observations;
+$R^\star$ fires when that memory holds a candidate location for the declared
+target; $M^\star$ when the agent commits (\texttt{go to}) to the retrieved
+candidate; $C^\star$ on environment success
+(\method{experiments/alfworld\_qrmc/run\_alfworld\_qrmc.py}; HF backend, greedy,
+$25$ episodes, step limit $40$, executed on a SLURM GPU node).
+
+On Qwen2.5-3B-Instruct the stage taxonomy is sharply informative even at zero
+end-to-end success: $Q^\star{=}1.00$ (the model always extracts a target),
+$R^\star{=}0.16$, $M^\star{=}0.00$, $C^\star{=}0.00$, with first-missing-stage
+counts $21\times$\,R\_fail and $4\times$\,M\_fail over $25$ episodes. A success-only
+evaluation would report ``$0.00$'' and stop; the decomposition reports
+\emph{where} the 3B agent loses the task: predominantly it never grounds the
+declared object to a location (R), and when it does, it fails to commit to the
+retrieved candidate (M). This matches the near-zero ALFWorld scores reported
+for small models in the literature while adding the stage attribution they
+lack. (Instrumentation honesty: a first 7B run landed on an 11\,GB GPU and
+out-of-memoried on every call; it is excluded and rerun on a 24\,GB node ---
+the cached error strings made the failure trivially auditable.) Scaling this
+external validation to larger models and more episodes is mechanical; the
+point established here is that the identical event contract instruments an
+external, community-standard language-agent benchmark and yields non-trivial
+stage attributions on real failures.
+
 \subsection{Cadence-robustness: the shift tracks scarcity, not grid design}
 \label{app:cadence-robustness}
 
@@ -2027,7 +2068,7 @@ Family & Representative method & Status in this paper & Q/R/M/C comparison point
 Topological navigation memory & SPTM-like graph baseline \citep{savinov2018semi} & Direct MiniGrid baseline & Tests whether topological memory without semantic query/lock exposes non-trivial stage events. \\
 Behavior cloning & Learned grid-observation BC & Direct MiniGrid baseline & Strong success on easy tasks but no explicit query/lock interface, so diagnostics are structurally limited. \\
 Learned communication & CommNet PPO \citep{sukhbaatar2016commnet,schulman2017proximal} & Direct multi-agent baseline & Competitive success; $Q^\star$ saturates and R/M collapse, verifying observability loss. \\
-Cooperative MARL (CTDE / value decomposition) & QMIX, MAPPO, MADDPG \citep{rashid2018qmix,yu2022mappo,lowe2017maddpg} & Primary-source reference & Stronger end-to-end baselines than CommNet; they optimise a joint policy/message channel without an explicit query/lock interface, so the same observability-collapse argument applies --- the framework quantifies the diagnostic cost of implicit coordination rather than competing on reward. \\
+Cooperative MARL (CTDE / value decomposition) & MAPPO \citep{yu2022mappo} (trained); QMIX, MADDPG \citep{rashid2018qmix,lowe2017maddpg} (references) & \textbf{Direct multi-agent baseline} & A trained MAPPO (centralized critic) reaches $0.667$ held-out success on the scarcity scenario and shows the same structural signature as CommNet: $Q^\star$ saturated at $1.00$ and $P(M^\star|R^\star){=}1.00$ (R/M collapsed) --- observability loss is not an artifact of a weak baseline (Appendix~\ref{app:learned-baselines}). \\
 Reasoning/acting LLM agents & ReAct \citep{yao2022react} & Primary-source reference & Q/R/M/C can instrument the resulting action traces if queries, retrieved evidence, target locks, and completions are logged. \\
 Reflective LLM agents & Reflexion \citep{shinn2023reflexion} & Primary-source reference & Reflection can be treated as upstream Q/R revision; the framework asks whether it improves R, M, or C. \\
 Embodied LLM agents & Voyager \citep{wang2023voyager} & Primary-source reference & Skill/memory retrieval maps naturally onto R and M, but full reproduction is outside this paper. \\
@@ -2215,6 +2256,25 @@ R/M separated?                & no     & \textbf{no}    & \textbf{yes} \\
 \end{table}
 
 The PPO result converts the structural argument from an assertion (``training budget would not change this'') to a measurement: $Q^\star$ remains saturated at 1.00, $P(M^\star|R^\star)$ remains 1.00 (R/M collapse), even at competitive success. The Q stage is degenerate by construction in any policy whose communication channel is a real-valued vector with a learned linear projection --- the channel is never informatively empty, regardless of training budget --- and without an explicit symbolic target-lock interface the M event cannot separate from R. Only architectures with an explicit \emph{query/lock} interface (the symbolic stack of \S\ref{sec:archs}) expose stage-separable Q/R/M/C events.
+
+
+\paragraph{MAPPO: the collapse persists on a stronger CTDE baseline.}
+To rule out that the observability collapse is an artifact of CommNet's
+capacity, we train MAPPO \citep{yu2022mappo} --- PPO with decentralized actors
+and a \emph{centralized critic} $V(s)$ over the concatenation of all agents'
+observations (CTDE) --- on the same scarcity scenario
+(\method{experiments/mappo\_baseline/train\_mappo.py}; $300$ updates
+$\times$ $64$ rollouts, $\approx8.5$\,h on a cluster CPU node) and evaluate with
+the identical Q/R/M/C logger on $50$ held-out seeds. MAPPO reaches $0.667$
+success --- competitive with the symbolic peer architecture at this cell ---
+yet its stage profile is structurally degenerate in exactly the CommNet way:
+$Q^\star$ saturated at $1.00$, $P(R^\star|Q^\star){=}0.98$,
+$P(M^\star|R^\star){=}1.00$ (R and M collapse into one event),
+$P(C^\star|M^\star){=}0.69$. The centralized critic changes the training
+signal, not the interface: without an explicit query/lock boundary there is
+nothing for the M event to separate from R. This upgrades the claim from
+``CommNet collapses'' to ``a modern CTDE baseline at competitive success
+collapses,'' which is the structural point.
 
 \section{Reproducibility commands}
 \label{app:repro}

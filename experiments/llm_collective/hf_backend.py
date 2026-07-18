@@ -60,12 +60,15 @@ class HFBackend:
         dt = {"float16": torch.float16, "bfloat16": torch.bfloat16,
               "float32": torch.float32}[self._dtype]
         self._tok = AutoTokenizer.from_pretrained(self.model_name)
+        # sdpa is essential at long contexts: eager attention materialises the
+        # full L x L matrix (~10 GB at 13k tokens) and OOMs the 24 GB cards.
+        kw_common = dict(device_map=dev, attn_implementation="sdpa")
         try:  # transformers >=4.56 / v5 use dtype=; older use torch_dtype=
             self._lm = AutoModelForCausalLM.from_pretrained(
-                self.model_name, dtype=dt, device_map=dev)
+                self.model_name, dtype=dt, **kw_common)
         except TypeError:
             self._lm = AutoModelForCausalLM.from_pretrained(
-                self.model_name, torch_dtype=dt, device_map=dev)
+                self.model_name, torch_dtype=dt, **kw_common)
         self._lm.eval()
         self._device = dev
 
@@ -96,17 +99,38 @@ class HFBackend:
             msgs.append({"role": "user", "content": prompt})
             text = self._tok.apply_chat_template(
                 msgs, tokenize=False, add_generation_prompt=True)
-            inputs = self._tok(text, return_tensors="pt").to(self._device)
-            with torch.no_grad():
-                out_ids = self._lm.generate(
-                    **inputs,
-                    max_new_tokens=int(max_tokens),
-                    do_sample=False,
-                    temperature=None,
-                    top_p=None,
-                    top_k=None,
-                    pad_token_id=self._tok.eos_token_id,
-                )
+            inputs = self._tok(text, return_tensors="pt")
+            n_tok = int(inputs["input_ids"].shape[1])
+            if n_tok > int(os.environ.get("HF_CTX_TOKEN_CAP", "24000")):
+                out = f"[LLM_SKIPPED_CTX_LIMIT] tokens={n_tok}"
+                self.stats.cache_misses += 1; self.stats.total_calls += 1
+                self._cache_put(key, out)
+                return out
+            inputs = inputs.to(self._device)
+            gen_kw = dict(max_new_tokens=int(max_tokens), do_sample=False,
+                          temperature=None, top_p=None, top_k=None,
+                          pad_token_id=self._tok.eos_token_id)
+            try:      # force memory-efficient attention kernel (sm75 has no flash;
+                      # the math fallback materialises the L x L matrix and OOMs)
+                from torch.nn.attention import sdpa_kernel, SDPBackend
+                _sdpa_ctx = sdpa_kernel([SDPBackend.EFFICIENT_ATTENTION,
+                                         SDPBackend.MATH])
+            except Exception:
+                import contextlib
+                _sdpa_ctx = contextlib.nullcontext()
+            with torch.no_grad(), _sdpa_ctx:
+                # avoid full-sequence logits on prefill (OOM at long contexts);
+                # kwarg renamed across transformers versions, unused kwargs raise
+                # ValueError -- cascade through both names, then bare.
+                out_ids = None
+                for kw in ({"logits_to_keep": 1}, {"num_logits_to_keep": 1}, {}):
+                    try:
+                        out_ids = self._lm.generate(**inputs, **kw, **gen_kw)
+                        break
+                    except (TypeError, ValueError):
+                        continue
+                if out_ids is None:
+                    out_ids = self._lm.generate(**inputs, **gen_kw)
             out = self._tok.decode(
                 out_ids[0][inputs["input_ids"].shape[1]:],
                 skip_special_tokens=True).strip()
@@ -119,12 +143,28 @@ class HFBackend:
                 out = "[LLM_EMPTY_RESPONSE]"
         except Exception as e:  # mirror OllamaBackend error contract
             out = f"[LLM_ERROR] {type(e).__name__}: {e}"
+            try:      # prevent post-OOM fragmentation from cascading
+                import torch as _t
+                _t.cuda.empty_cache()
+            except Exception:
+                pass
 
         self.stats.cache_misses += 1
         self.stats.total_calls += 1
         self.stats.total_latency_s += time.time() - t0
         self._cache_put(key, out)
         return out
+
+    def close(self) -> None:
+        """Free model weights + CUDA cache (call between models in one process)."""
+        self._lm = None
+        self._tok = None
+        try:
+            import torch, gc
+            gc.collect()
+            torch.cuda.empty_cache()
+        except Exception:
+            pass
 
     def summary(self) -> Dict[str, Any]:
         n = max(1, self.stats.total_calls)
