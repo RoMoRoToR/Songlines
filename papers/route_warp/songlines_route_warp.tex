@@ -41,9 +41,10 @@
 
 \begin{abstract}
 \textbf{Problem.} The companion warp paper measures whether an agent can reach a target known only from a peer's memory. Two assumptions remain hidden in that construction --- and in essentially all shared-memory multi-agent systems. First, what transfers is a \emph{point}: broadcast snapshots carry place summaries but no edges, so the traveler learns WHERE and must re-derive HOW. Second, place identity is a \emph{shared coordinate frame}: `the same place' means `close $(x,y)$ in a grid the environment hands to every agent'; semantics only breaks ties inside a spatial radius. In the source culture a songline is neither: the song IS the route, and its places are identified by what they look like, not by coordinates nobody shares.
-\textbf{Approach.} We remove both assumptions and measure what each was hiding. (i) \emph{Route warp}: broadcasts carry traversed edges with provenance; $\phiroute$ is the foreign share of edge mass along the committed path, and a strict $\rwstar$ is a connected foreign sub-path the traveler has never walked. (ii) \emph{Semantic place identity}: places are matched by local semantic constellations (translation-invariant fingerprints); the inter-agent frame --- translation in one step, full $SE(2)$ with rotations in the next --- is recovered from mutually-unique matches of co-visited landmarks, and foreign evidence, including never-seen targets, is transported through it.
-\textbf{Findings.} What route knowledge buys is a step function, not a slope: place-only transfer collapses at the FIRST wall (success $1.0$ at detour $D{=}1.00$ vs.\ $0.0$ at $D{=}1.38$, and worse than blind exploration), while route transfer completes everywhere. Aging breaks the transferred route at a point predictable to the exact edge ($110/110$ regimes; all $40$ mid-route ruptures across two world classes at the predicted index, error $0$), and safety travels with the route: $0$ hazard hits over the witness's path vs.\ $3.25$ $[2.45,4.10]$ for the place-only traveler, with the risk RESUMING at the predicted rupture point. Meaning-based identity recovers secret frames exactly ($100\%$ translation; $80/80$ under $SE(2)$), restores $88\%$ of the shared-frame performance in the full peer stack, and fails \emph{closed} under perceptual aliasing where the coordinate assumption fails \emph{open} --- and the companion distance law re-emerges tick-exactly (breakpoints $20/14/9$) with no shared origin and no shared north.
-\textbf{Thesis.} A shared map is not what makes collective navigation work. What transfers is the song --- a sequence with meaning-anchored places --- and each impoverishment of the song (point instead of route, coordinates instead of meaning) fails in a specific, measurable, and now predicted way.
+\textbf{Approach.} We remove both assumptions and measure what each was hiding. (i) \emph{Route warp}: broadcasts carry traversed edges with provenance; $\phiroute$ is the foreign share of edge mass along the committed path, and a strict $\rwstar$ is a connected foreign sub-path the traveler has never walked. (ii) \emph{Semantic place identity}: places are matched by local semantic constellations (translation-invariant fingerprints); the inter-agent frame --- translation in one step, the discrete subgroup $\mathbb{Z}^2\rtimes C_4$ of $SE(2)$ (translations and quarter-turn rotations) in the next --- is recovered from mutually-unique matches of co-visited landmarks, and foreign evidence, including never-seen targets, is transported through it.
+\textbf{Findings.} What route knowledge buys is a step function, not a slope: place-only transfer collapses at the FIRST wall (success $1.0$ at detour $D{=}1.00$ vs.\ $0.0$ at $D{=}1.38$, and worse than blind exploration), while route transfer completes everywhere. Aging breaks the transferred route at a point predictable to the exact edge ($110/110$ regimes; all $40$ mid-route ruptures across two world classes at the predicted index, error $0$), and safety travels with the route: $0$ hazard hits over the witness's path vs.\ $3.25$ $[2.45,4.10]$ for the place-only traveler, with the risk RESUMING at the predicted rupture point. Meaning-based identity recovers secret frames exactly ($100\%$ translation; $80/80$ under $SE(2)$), restores $88\%$ of the shared-frame performance in the full peer stack, and fails \emph{closed} under perceptual aliasing where the coordinate assumption fails \emph{open} --- and the companion distance law re-emerges tick-exactly (breakpoints $20/14/9$) with no shared origin and no shared north. An ablation of the landmark vocabulary shows the identity machinery is \emph{fail-safe in its feature alphabet}: impoverishing the vocabulary down to a single tag class costs coverage (exact recovery $1.00 \to 0.83$), never correctness (zero fail-open transports in $252$ cells). Finally, a song-anatomy experiment separates the roles inside the song itself: a purely relational song (landmark signatures $+$ beat vectors, \emph{no global coordinates at all}) transports a never-seen target exactly at $6.4\%$ of the snapshot bit cost, while beats alone fail \emph{open} ($11/11$ wrong locks under anchor disagreement) and signatures alone cannot transport the unseen at all.
+\textbf{Claim.} We claim that the transferable unit of navigation memory is not a destination coordinate or an isolated place record but a provenance-bearing relational route: landmarks establish identity, edges provide transport, and their composition lets an agent execute another agent's experience without sharing a coordinate frame.
+\textbf{Thesis.} A route description without identity is unsafe, and a place identity without transport is inert; executable memory requires their composition. A shared map is not what makes collective navigation work --- what transfers is the song, and each impoverishment of it (point instead of route, coordinates instead of meaning) fails in a specific, measurable, and now predicted way.
 \textbf{Scope.} Grid worlds; translation and $90^\circ$ rotations; measurement and minimal mechanisms, not a general theory.
 \end{abstract}
 
@@ -70,10 +71,15 @@ construction inherited the two impoverishments silently:
   receiver learns WHERE the water is; the route is re-derived from
   scratch. In open grids this is invisible: the manhattan path is the
   route. The moment paths are expensive, it is everything.
-\item \textbf{Coordinates, not meaning.} `Same place' is operationalised
-  as coordinate proximity, with semantics as a tie-breaker inside a
-  radius. The cross-agent place-correspondence problem --- the reason
-  map merging is hard in robotics --- is bracketed by fiat.
+\item \textbf{Coordinates, not meaning.} `Same place' conflates two
+  questions the series never separated. The \emph{semantic predicate}
+  --- is this the same KIND of desired object (water, GOOD)? ---
+  travels in every snapshot and is what task satisfaction is defined
+  over. \emph{Entity correspondence} --- is this the same world
+  referent? --- is operationalised as coordinate proximity, with
+  semantics as a tie-breaker inside a radius. The cross-agent
+  place-correspondence problem --- the reason map merging is hard in
+  robotics --- is bracketed by fiat.
 \end{enumerate}
 
 This paper removes both assumptions, one at a time, with the
@@ -81,6 +87,28 @@ measurement discipline of the series: every claim is registered before
 the runs, failures against registration are reported with their
 mechanisms, and the strongest results are exact-match validations of
 closed-form predictions.
+
+\paragraph{What we claim.} We claim that transferring only WHERE a
+target is located is insufficient whenever success depends on HOW it
+was reached, and that shared coordinates are unnecessary when places
+re-identify through mutually-unique semantic constellations. The
+paper supports five empirical claims. \textbf{(EC1)} The benefit of
+route over place-only transfer is a cliff: place-only transfer
+collapses at the first obstructing wall and can be worse than blind
+exploration, while route transfer stays executable across detour
+regimes. \textbf{(EC2)} The rupture law predicts the exact edge at
+which a transferred route loses validity --- all $110$ regimes, all
+$21$ mid-route ruptures, zero edge-index error. \textbf{(EC3)} Route
+transfer preserves the witness's measured risk profile only over the
+validated route prefix; after rupture the risk returns at the
+predicted edge. \textbf{(EC4)} Meaning-based landmark correspondence
+recovers private frames under translations and quarter-turn
+rotations, while ambiguous cases degrade through refusal rather than
+incorrect materialisation. \textbf{(EC5)} Landmarks and edges
+implement distinct functions --- signatures without edges cannot
+reach an unseen target, edges without a valid anchor fail open ---
+and their composition matches full-snapshot transport at $6.4\%$ of
+the encoded bit cost.
 
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
@@ -114,7 +142,16 @@ closed-form predictions.
   under aliasing and under in-principle-unrecoverable $180^\circ$
   symmetry; coordinate identity fails \emph{open}); and the companion
   distance law reproduced tick-exactly ($20/14/9$) with no shared
-  frame at all (\S\ref{sec:stack}).
+  frame at all (\S\ref{sec:stack}). A registered landmark-vocabulary
+  ablation shows the machinery is \emph{fail-safe in its feature
+  alphabet}: down to a single content class, impoverishment converts
+  recovery into refusal --- never into a wrong lock ($0$ fail-open
+  transports in $252$ cells; \S\ref{sec:ablation}). A song-anatomy
+  experiment then separates the roles within the song: \emph{nodes
+  carry identity, edges carry transport} --- beats alone fail open,
+  signatures alone cannot reach the unseen, and their composition
+  matches full-snapshot transport at $6.4\%$ of the bits
+  (\S\ref{sec:anatomy}).
 \end{enumerate}
 
 \section{Setting}
@@ -267,7 +304,7 @@ blind & 28.7 & --- & --- \\
 \centering
 \includegraphics[width=0.92\linewidth]{figures/fig_route_hazard}
 \caption{The song protects. \textbf{(a)} Hazard hits per episode: the
-traveler on the witness's route inherits its safety outright ($0$ in
+traveler on the witness's route preserves the witness's measured risk profile within the validated route prefix ($0$ in
 all 20 worlds); the place-only traveler pays $3.25$ hits for the same
 completion; blind exploration pays $28.7$. \textbf{(b)} Composition
 with the rupture law: in the rupture regime the traveler takes zero
@@ -276,8 +313,8 @@ which occurs at the R2-predicted edge index in all $19/19$ cells.}
 \label{fig:hazard}
 \end{figure}
 
-The traveler following the witness's path inherits its safety
-outright, at a time premium of $+0.7$ ticks
+The traveler following the witness's path preserves the witness's
+measured risk profile within the validated route prefix, at a time premium of $+0.7$ ticks
 (Figure~\ref{fig:hazard}a). Composing with \S\ref{sec:rupture}: in the rupture regime (19/20 worlds) the
 traveler takes \textbf{0 hits before the rupture} and $0.58$
 $[0.11,1.32]$ after it, when it falls back on place knowledge and
@@ -296,6 +333,23 @@ frame is the true grid under a secret translation (later: plus a
 secret $90^\circ$-multiple rotation), and broadcasts carry private
 coordinates that are meaningless to the receiver until it decides
 what the sender's places MEAN.
+
+\paragraph{Two levels of `the same', and what a landmark is.}
+Cross-agent place identity has two levels that must not be conflated.
+The \emph{semantic predicate} says two cells belong to the same
+desired class (\texttt{water\_source}, GOOD): it travels in every
+snapshot, and it is what task satisfaction is defined over. But no
+predicate can decide \emph{entity correspondence} --- that two memory
+entries denote the same world referent --- because a predicate is
+exactly what aliases: all water looks like water. Route-relative
+description (`$n$ steps past the last GOOD') does not decide it
+either: it is provenance of a path, not identity of its endpoints
+(\S\ref{sec:route}--\S\ref{sec:rupture} measure what it buys and
+where it breaks). What decides correspondence in this series is a
+\emph{landmark}: a place whose local semantic constellation supports
+a mutually-unique match across agents. Landmark is a \emph{role}, not
+a cell type --- which tag classes can play it is itself measured
+below (\S\ref{sec:ablation}).
 
 \paragraph{Fingerprints and the handshake.} A place fingerprint is the
 local semantic constellation around a visited cell --- which content
@@ -389,6 +443,108 @@ coordinates}, with alignment onset in $100\%$ of episodes and clean
 regressions on all earlier experiments
 (Figure~\ref{fig:identity}).
 
+\subsection{What makes a landmark: the vocabulary ablation}
+\label{sec:ablation}
+
+The identity machinery rides on a fixed landmark vocabulary $\Sigma =
+\{\texttt{wall}, \texttt{hazard}, \texttt{water}, \texttt{void}\}$:
+the tag classes allowed into a fingerprint. Every claim above is
+therefore conditional on a hand-chosen alphabet. The last experiment
+makes the alphabet the treatment: witness--traveler frame recovery
+(worlds carrying both scattered walls and scattered hazards; $3$
+offsets $\times$ $12$ seeds per arm) under seven vocabularies, from
+full $\Sigma$ down to single classes.
+
+\begin{table}[h]
+\centering
+\caption{Landmark-vocabulary ablation ($36$ cells per arm, $252$
+total; registered predictions A1--A4, all PASS). Impoverishing the
+alphabet costs \emph{coverage} --- recovery converts into refusal ---
+but never \emph{correctness}: every transported lock, under every
+vocabulary, goes through the exactly-recovered frame. Attribution =
+share of consensus-pair key mass under full $\Sigma$.}
+\label{tab:ablation}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Vocabulary & exact recovery & mean pairs & lock precision & fail-open \\
+\midrule
+full $\Sigma$ & $1.00$ & $33.2$ & $1.00$ & $0$ \\
+$-$ void & $1.00$ & $32.0$ & $1.00$ & $0$ \\
+$-$ hazards & $0.92$ & $11.8$ & $1.00$ & $0$ \\
+$-$ walls & $1.00$ & $15.5$ & $1.00$ & $0$ \\
+hazards only & $1.00$ & $13.7$ & $1.00$ & $0$ \\
+walls only & $0.83$ & $10.8$ & $1.00$ & $0$ \\
+void only & $0.00$ & $0.0$ & --- & $0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Four registered predictions, four passes (Table~\ref{tab:ablation}).
+\textbf{(A1) The ablation is fail-safe:} in $252$ cells there is not
+one fail-open transport --- the fail-closed asymmetry of
+\S\ref{sec:identity} holds not just against ambiguous \emph{worlds}
+but against impoverished \emph{alphabets}. \textbf{(A2) Void is
+scaffolding, not identity:} border patterns carry $0.000$ of the
+consensus key mass, and dropping them changes nothing --- consistent
+with the corner trap, where they actively poisoned rotation
+hypotheses. \textbf{(A3) One content class suffices:} hazards alone
+recover every frame; walls alone recover $0.83$ and refuse the rest.
+Correspondence needs only $\ge 3$ mutually-unique constellations over
+\emph{some} content class --- a bounded-rationality budget, not a rich
+ontology. \textbf{(A4) Attribution is measurable:} hazard
+constellations carry $0.56$ of the consensus mass, walls $0.44$.
+Which features function as landmarks is thus not a modelling
+assumption that happened to work --- it is a measurable property of
+the world$\times$vocabulary pair, and the machinery degrades along
+the safe axis whenever the vocabulary is wrong.
+
+\subsection{Song anatomy: nodes carry identity, edges carry transport}
+\label{sec:anatomy}
+
+\S\ref{sec:identity} opened with a claim we have so far only argued:
+route-relative description (`$n$ steps past the last GOOD') is
+provenance of a path, not identity of its endpoints. The last
+experiment measures it. A witness compresses its route to the water
+into a purely \emph{relational} song --- a sequence of couplets
+$(\sigma, e)$, where $\sigma$ is the landmark constellation signature
+and $e$ the exact beat vector from the previous couplet --- carrying
+\emph{no global coordinates whatsoever}. A band-limited traveler who
+has never seen the water receives it. Four registered arms (bit codec
+fixed before the runs; $12$ paired worlds):
+
+\begin{itemize}[leftmargin=16pt,itemsep=2pt,topsep=2pt]
+\item \textbf{Beats only} (the pure `$n$ steps from the last GOOD'):
+  usable only by \emph{assuming} the anchor. With a shared anchor it
+  is exact ($11/11$, the negative control); with anchor disagreement
+  it locks every time and is right \emph{never} ($11/11$ fail-open
+  mislocks, displaced by exactly the anchor offset). Beats do not
+  carry identity --- they parasitise on the identity of the anchor.
+\item \textbf{Signatures only}: re-identifies co-visited places but
+  has no edges to walk --- \emph{zero} transports of the never-seen
+  target. Nodes alone cannot reach the unseen.
+\item \textbf{Signatures $+$ beats}: couplets matched mutually-uniquely,
+  the beat chain checked for metric consistency between matched
+  couplets (a loop-closure test), the target dead-reckoned from the
+  last matched landmark. Coverage $1.0$, every transport exact, zero
+  fail-open --- at $366$ bits per song.
+\item \textbf{Full snapshots} (the machinery of
+  \S\ref{sec:identity}): the information upper bound --- same
+  correctness at $5{,}690$ bits.
+\end{itemize}
+
+All four registered predictions passed. The song is not a lighter
+snapshot; it is a different \emph{kind} of object: identity lives in
+the nodes (landmarks), transport lives in the edges (beats), and
+their composition delivers full-snapshot transport at $6.4\%$ of the
+bit cost while inheriting the fail-safe property of
+\S\ref{sec:ablation} --- everything that goes wrong goes wrong as a
+refusal. (This $6.4\%$ is the \emph{pure song codec}: nodes and
+edges only. A deployed collective-memory protocol adds provenance,
+timestamps, world versions, and a utility certificate; the
+full-protocol payload ratio, measured in the companion formation
+paper, is correspondingly larger.)
+
 \section{Related work}
 \label{sec:related}
 
@@ -433,7 +589,14 @@ this consumer. (4) Hazard safety transfers by construction when the
 witness's route is safe; the measured content is that place transfer
 CANNOT carry it and that the protection ends at the predicted
 rupture. (5) Scarcity-level completion of warp locks remains governed
-by the collision phenomenology of the companion paper.
+by the collision phenomenology of the companion paper. (6) The
+landmark vocabulary $\Sigma$ is hand-fixed; \S\ref{sec:ablation}
+measures its ablation but no mechanism \emph{selects} it. What earns a
+feature landmark status here is our choice of alphabet plus the
+world's cooperation; a mechanism in which features earn that status by
+participating in successful alignments --- the vocabulary itself
+shaped by coordination, not designed --- is the natural next step of
+the series and is not attempted here.
 
 \section{Conclusion}
 
@@ -447,8 +610,13 @@ transfer completion and safety and break only where the aging law
 says; meaning recovers frames exactly, refuses honestly when the
 world is ambiguous, and carries the entire measurement stack ---
 $\varphi$, gates, distance law --- unchanged into a world where
-agents share no coordinates at all. The pin was never the memory.
-The song is.
+agents share no coordinates at all. Even the alphabet the song is
+written in turned out to be measurable rather than sacred: identity
+survives vocabulary impoverishment fail-safe, losing coverage but
+never truth. The pin was never the memory. The song is --- and the
+open question the ablation sharpens is not which features ARE
+landmarks, but which features a collective's own coordination will
+MAKE into landmarks.
 
 \appendix
 
@@ -460,7 +628,11 @@ Revisions: R1 negative control re-measured in path length; R1 gain
 monotonicity re-formulated as cliff detection; W9 full-stack
 discriminator changed from success to warp-lock precision; W8
 strict-$\wstar$ functioning extended to include warp-assisted own
-completions (taxi chains). % TODO: inline the registration JSONs.
+completions (taxi chains). The vocabulary ablation (A1--A4,
+\S\ref{sec:ablation}) and the song-anatomy experiment (S0.1--S0.4,
+\S\ref{sec:anatomy}, bit codec registered with the predictions)
+passed as registered, with no revisions.
+% TODO: inline the registration JSONs.
 
 \section{Reproducibility}
 \label{app:repro}
@@ -472,6 +644,8 @@ PYTHONPATH=. python experiments/warp/exp_route_warp_r3.py --seeds 20
 PYTHONPATH=. python experiments/warp/exp_warp_semantic_identity.py
 PYTHONPATH=. python experiments/warp/exp_warp_semantic_stack.py --seeds 20
 PYTHONPATH=. python experiments/warp/exp_warp_rotation.py --seeds 10
+PYTHONPATH=. python experiments/warp/exp_warp_landmark_ablation.py
+PYTHONPATH=. python experiments/song_grammar/exp_s0_song_smoke.py
 \end{verbatim}
 
 \begin{thebibliography}{9}

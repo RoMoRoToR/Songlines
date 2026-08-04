@@ -383,6 +383,23 @@ referents (see the companion measurement paper's limitations), and
 grounding \emph{that} correspondence by the mechanisms of
 Section~\ref{sec:semantic-identity} is future work.
 
+Parameter (i) has, in addition, a measurable \emph{interior}: within a
+fixed $\Sigma$, which tag classes actually carry place correspondence
+is an empirical property, not a modelling choice. A registered
+vocabulary ablation in the companion route-transfer paper makes the
+alphabet itself the treatment and finds the identity machinery
+\emph{fail-safe in $\Sigma$}: impoverishing the vocabulary down to a
+single content class converts frame recovery into refusal, never into
+a wrong alignment (zero fail-open transports across $252$ cells), and
+the consensus mass is attributable per class (hazards $0.56$, walls
+$0.44$, world borders $0.00$). What no mechanism yet does is
+\emph{select} $\Sigma$: here features receive landmark status from
+design plus the world's cooperation. A rule by which features
+\emph{earn} that status through participation in successful alignments
+--- the alphabet shaped by coordination rather than assumed --- is the
+sharpest open end of parameter (i), and the natural meeting point with
+the symbol-alignment programme of \S\ref{sec:symbol-alignment}.
+
 At time $t$, agent $i$ maintains a local semantic context
 $\mathcal{K}_t^i=(G_t^i,\Sigma,I_t^i)$, where $G_t^i$ is the set of
 place records stored in the agent's private memory, and
@@ -648,9 +665,12 @@ which is beyond the present recovery and is the honest next frontier.
 The reading so far models the \emph{memory} (objects are semantic contexts,
 merge is their colimit) under a shared frame and full exchange. Its
 predictive use comes from turning the lens on the \emph{communication
-structure} and asking \emph{when the colimit exists} as a function of the two
-protocol parameters --- so that the category computes a structural fact rather
-than re-describing an algorithm. Two parameters play two structural roles:
+structure} and asking \emph{what shape the colimit takes} as a function of
+the two protocol parameters --- so that the category computes a structural
+fact rather than re-describing an algorithm. (In $\mathbf{Pos}$ the colimit
+of the diagram always \emph{exists} by cocompleteness, disconnected or not;
+the structural question is whether it is a single consensus component or a
+coproduct of sub-consensuses, exactly the dichotomy of \S\ref{sec:gluing}.) Two parameters play two structural roles:
 \begin{description}[leftmargin=12pt,topsep=2pt,itemsep=1pt]
 \item[Trust $\tau$ gates morphisms.] An edge $i\!\to\!j$ (agent $i$
 incorporates $j$'s evidence) exists only where $i$'s trust in $j$ is at least
@@ -660,9 +680,10 @@ $R=\lfloor H/K\rfloor$ broadcast rounds, so a composed chain
 $i\!\to\!k\!\to\!\cdots\!\to\!j$ can be at most $R$ morphisms long. Low $K$
 (many rounds) allows deep composition; high $K$ allows only short paths.
 \end{description}
-A colimit over all $N$ agents --- a consensus object that fuses and serves
-every agent's evidence --- exists iff the $R$-round reachability of the
-$\tau$-thinned trust graph is all-to-all.
+A \emph{consensus-spanning} colimit --- a single connected consensus
+component that fuses and serves every agent's evidence --- obtains iff the
+$R$-round reachability of the $\tau$-thinned trust graph is all-to-all;
+otherwise the colimit degenerates into a coproduct of sub-consensuses.
 
 Figure~\ref{fig:phase-diagram} sweeps $\tau\times K$ for $N{=}8$ agents whose
 pairwise trust is produced by the system's own EMA rule
@@ -671,11 +692,12 @@ topology (neighbours co-observe often and earn high trust; distant agents do
 not), averaged over $12$ seeds
 (\method{experiments/collective\_semantic\_memory/phase\_diagram\_trust\_cadence.py}).
 The result is a genuine phase transition with a diagonal boundary. At low
-$\tau$ the trust graph is dense and the colimit exists at every cadence.
-Raising $\tau$ prunes the long-range morphisms down to a near-neighbour ring;
-the collective then keeps a colimit \emph{only if} cadence is low enough for
-multi-hop composition through still-trusted intermediaries to reconnect it ---
-$\tau{=}0.55$ holds the colimit down to $R{=}2$, $\tau{=}0.80$ needs $R\ge4$
+$\tau$ the trust graph is dense and the colimit spans all agents at every
+cadence. Raising $\tau$ prunes the long-range morphisms down to a
+near-neighbour ring; the collective then keeps a spanning colimit \emph{only
+if} cadence is low enough for multi-hop composition through still-trusted
+intermediaries to reconnect it ---
+$\tau{=}0.55$ holds the spanning colimit down to $R{=}2$, $\tau{=}0.80$ needs $R\ge4$
 (the ring diameter), and $\tau{=}0.90$ fragments throughout. Cadence and trust
 are therefore not opaque knobs: together they determine a categorical
 structural invariant, and the phase boundary is exactly where the collective
@@ -688,7 +710,7 @@ transitions from a single consensus object to fragmented sub-consensuses.
   (rows) and cadence $K$ (columns; $R=\lfloor H/K\rfloor$ broadcast rounds),
   $N{=}8$ agents on an interaction ring, $12$ seeds. \textbf{Left:} reachability
   density (fraction of ordered agent pairs whose evidence can compose within
-  $R$ rounds). \textbf{Right:} $P(\text{a colimit over all }N\text{ exists})$,
+  $R$ rounds). \textbf{Right:} $P(\text{the colimit spans all }N)$,
   i.e.\ all-to-all reachability. The diagonal boundary is a structural
   transition: the collective admits a single consensus object in the
   low-$\tau$/low-$K$ region and fragments in the high-$\tau$/high-$K$ corner,
@@ -698,10 +720,11 @@ transitions from a single consensus object to fragmented sub-consensuses.
 
 This is the sense in which the categorical model is operational rather than
 descriptive: each protocol parameter maps to a concrete change in the
-communication diagram, and the diagram's structural invariant (existence of a
-colimit) predicts a qualitative regime of the collective. \emph{Scope.} The
+communication diagram, and the diagram's structural invariant (whether the
+colimit spans all agents or splits into a coproduct) predicts a qualitative
+regime of the collective. \emph{Scope.} The
 trust matrix is produced by the real EMA rule under a modelled ring
-co-observation topology, and ``colimit exists'' is operationalised as
+co-observation topology, and ``consensus-spanning'' is operationalised as
 all-to-all $R$-round reachability; establishing quantitatively that crossing
 this structural boundary predicts the drop in observed Q/R/M/C performance is
 the natural next experiment.
@@ -786,8 +809,17 @@ recovered as an infomorphism); genuine incommensurability and vocabulary drift
 remain open.
 
 \textbf{Minimal CSM.} The CSM rules are deliberately simple. Adaptive
-cadence $K_t$, intent-conditioned trust, and selective consolidation of
-under-represented tags are the next architecture variants.
+cadence $K_t$ and intent-conditioned trust are the next architecture
+variants. Selective consolidation of under-represented tags now has a
+measured pilot: in the companion route-transfer paper, a purely
+relational \emph{song} (landmark signatures $+$ beat vectors, no
+global coordinates) carries the same never-seen-target transport as a
+full snapshot at $6.4\%$ of the bit cost, fail-safe --- beats alone
+fail open, signatures alone cannot reach the unseen. Replacing
+snapshot exchange with budgeted songs, merged under the same three
+CSM rules, is therefore no longer speculative; making the song
+grammar (what triggers a couplet, what enters a signature) subject to
+selection rather than design is the open half.
 
 \textbf{Learned baselines.} CommNet-style learned communication is a
 useful comparison, but the more relevant future baseline is an explicit

@@ -43,7 +43,8 @@
 \textbf{Problem.} In collective memory for multi-agent navigation, an agent can commit to --- and reach --- a target it has never observed: all supporting evidence arrived from peers. Folk culture calls this navigating by someone else's song; we call it a \emph{semantic warp}. Success-only and even stage-level metrics cannot see it, because no existing evaluation conditions completion on the \emph{provenance} of the evidence behind the commitment.
 \textbf{Approach.} We define the warp event $\wstar_\theta := \mstar \wedge (\varphi \ge \theta)$, where foreignness $\varphi$ is the peer share of the evidence mass \emph{in the same weights the merge used to select the candidate}, frozen at lock time. Warp is not a fifth Q/R/M/C stage but an annotation that splits $P(\cstar|\mstar)$ into provenance strata. Because symbolic merges decompose by source, we obtain (i) a counterfactual attribution of warp value via deterministic replay with foreign evidence masked, (ii) a closed-form \emph{warp distance law} from trust$\times$staleness rules, and (iii) a decentralised \emph{Warp Drive} protocol (optimistic lock + reservation + anti-$\mstar$ rollback) for the warp-collision pathology.
 \textbf{Findings.} On a 2{,}400-episode scarcity sweep, raw warp locks almost never complete directly ($P(\cstar|\wstar)=0.004$--$0.020$ vs.\ $0.22$--$0.41$ for own locks; CIs disjoint), yet foreign evidence still carries value as transport: up to $51\%$ of own-lock completions are warp-assisted chains. The distance law predicts intention-formation horizons tick-exactly, including a $6/6$-exact hold-out with predictions registered before execution. Warp Drive turns the trade-off around: success rate rises at every cadence (disjoint CIs), and fast sharing with the protocol beats the best fixed-cadence baseline ($0.614$--$0.620$ vs.\ $0.583$). A cross-session, cross-agent strict warp is replicated on an LLM substrate ($10/10$ layouts vs.\ $0/10$ without foreign memory).
-\textbf{Thesis.} The value of collective memory lies less in the information itself than in the \emph{coordination contract attached to the information}.
+\textbf{Claim.} We claim that collective memory must be evaluated not only by what information an agent retrieves, but by \emph{whose evidence caused its commitment} and \emph{under what temporal and coordination contract} that evidence remains actionable.
+\textbf{Thesis.} The value of collective memory lies not in shared information alone, but in the \emph{provenance, validity horizon, and coordination contract} attached to that information.
 \textbf{Scope.} Grid-world substrates and one small text-world LLM demo; the contribution is a measurement layer, a falsifiable law, and a minimal protocol, not a general theory.
 \end{abstract}
 
@@ -100,6 +101,26 @@ sharing becomes the best-performing regime on unconditional success
 rate (\S\ref{sec:drive}). Hence the thesis in one sentence:
 \textbf{the value of collective memory is not the information; it is
 the coordination contract attached to the information.}
+
+\paragraph{What we claim.} We claim that provenance is a necessary
+evaluation \emph{and} control dimension for collective memory. An
+agent may commit to a target it has never observed using evidence
+obtained entirely from peers, yet this dependency is invisible both
+to success metrics and to stage-level evaluation without source
+attribution; we make it observable and counterfactually testable.
+The paper supports four empirical claims. \textbf{(EC1)} Raw foreign
+locks have substantially lower direct completion than own-evidence
+locks, but foreign evidence produces positive downstream value
+through mixed-provenance lock chains. \textbf{(EC2)} Under the tested
+exponential trust--staleness gate, the latest tick at which foreign
+evidence can form an intention is predicted exactly by the
+closed-form warp distance law, including the pre-registered $6/6$
+hold-out. \textbf{(EC3)} The completion loss caused by fast sharing
+is concentrated in foreign-evidence commitments and is attributable
+to target contention rather than to inaccurate evidence.
+\textbf{(EC4)} A decentralised reservation-and-rollback contract
+increases success at every tested fast cadence and outperforms the
+best fixed-cadence baseline.
 
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
@@ -655,6 +676,24 @@ mostly fails its recipient at completion and pays off as transport,
 while a two-line coordination contract --- reserve on lock, roll back
 on domination --- makes the fastest sharing regime also the best one.
 Provenance, not volume, is the control surface that matters.
+
+\paragraph{Outlook: the contract as one function among several.}
+The contract perspective suggests a reading we state as a
+falsifiable programme rather than a conclusion: memory is not one
+mechanism but several functions with distinct failure signatures.
+The trust$\times$staleness gate studied here implements
+\emph{memory-for-trust} (ablate it and completion collapses through
+stale and poisoned commits --- the trust-flip and the raw-exchange
+negative are exactly that signature); it is distinct from
+\emph{memory-for-return} (own consolidation; its ablation starves
+candidate generation) and from \emph{memory-for-telling} (what is
+worth broadcasting at all; its ablation leaves receivers'
+retrieval unimproved on tags they undersample). Under this reading
+the right validity criterion for shared memory is not direct
+verification of content but \emph{ecological viability}: whether a
+commitment formed on foreign evidence can still be carried to
+completion under the contract --- which is precisely the quantity
+$P(\cstar \mid \wstar)$ and its law make measurable.
 
 \appendix
 

@@ -1,8 +1,8 @@
-# warp — программа «Семантический варп» (W0–W9) и route-warp (R0–R3)
+# warp — программа «Семантический варп» (W0–W10) и route-warp (R0–R3)
 
 Экспериментальная база для двух статей:
 [`papers/semantic_warp/`](../../papers/semantic_warp/) (W0–W6) и
-[`papers/route_warp/`](../../papers/route_warp/) (R0–R3 + W7–W9).
+[`papers/route_warp/`](../../papers/route_warp/) (R0–R3 + W7–W10).
 Полный отчёт с числами — [`RESULTS.md`](RESULTS.md). Все ключевые
 эксперименты регистрируют предсказания до прогонов; провалы
 регистраций публикуются с механизмами.
@@ -22,6 +22,7 @@
 | W7 | Тождество мест: отпечатки-созвездия + mutual-unique матчинг | `semantic_identity.py`, `exp_semantic_identity.py` |
 | W8 | Семантика в полном peer/CSM-стеке, закон без общего кадра | `semantic_peer_memory.py`, `exp_semantic_stack.py` |
 | W9 | SE(2)-инвариантность (4 гипотезы поворота, corner-trap) | `align_frames_se2` в `semantic_identity.py`, `exp_se2_*.py` |
+| W10 | Абляция словаря ориентиров Σ (fail-safe + атрибуция) | `exp_warp_landmark_ablation.py` |
 | — | Порог-чувствительность φ (ответ рецензенту) | `phi_sensitivity.py` |
 | — | Фигуры статей | `make_warp_figures.py`, `make_route_figures.py` → `papers/figures/` |
 

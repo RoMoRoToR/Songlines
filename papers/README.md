@@ -12,9 +12,11 @@
 | [`qrmc_aaai27/`](qrmc_aaai27/) | Q/R/M/C: A Stage-Decomposition **Evaluation Protocol** for Memory-Based Agents | 8 | **Подача на AAAI-27** (abstract 21.07, paper 28.07.2026) |
 | [`qrmc_measurement_framework/`](qrmc_measurement_framework/) | Q/R/M/C: A Stage-Decomposition Measurement Framework for Memory-Based Navigation | 46 | Полная версия = Technical Supplement к AAAI-подаче |
 | [`semantic_warp/`](semantic_warp/) | Semantic Warp: Provenance-Conditioned Completion in Collective Memory | 10 | Companion №1 (волны W0–W6) |
-| [`route_warp/`](route_warp/) | The Song, Not the Pin: Route Transfer and Meaning-Based Place Identity | 7 | Companion №2 (R0–R3 + W7–W9) |
-| [`collective_semantic_memory/`](collective_semantic_memory/) | Collective Semantic Memory: Merge, Trust, and Staleness for Peer Memory | 22 | Companion №3 (CSM-механика + категорная рамка) |
+| [`route_warp/`](route_warp/) | The Song, Not the Pin: Route Transfer and Meaning-Based Place Identity | 9 | Companion №2 (R0–R3 + W7–W10 + S0 анатомия песни) |
+| [`collective_semantic_memory/`](collective_semantic_memory/) | Collective Semantic Memory: Merge, Trust, and Staleness for Peer Memory | 23 | Companion №3 (CSM-механика + категорная рамка + Σ-внутренность) |
 | [`symbolic_memory/`](symbolic_memory/) | Q/R/M/C Framework + Minimal Collective Semantic Memory (ранняя объединённая версия) | 33 | Исторический предшественник qrmc_measurement_framework |
+| [`song_grammar_ucsm/`](song_grammar_ucsm/) | Song Grammar / UCSM: Consolidation as a Two-Axis Decision, Learned and Evolved | 6 | Companion №4 (U1–U3, U7/U7b — онтогенез памяти) |
+| [`unified/`](unified/) | **Songlines: The Unified Series** — монография-омнибус частей I–V | 89 | Рабочий документ программы; генерируется `build_unified.py` из пяти статей |
 
 В каждой папке лежат английская и русская (`*_ru.tex/pdf`) версии и
 свой `README.md` с тезисом, ключевыми результатами и картой

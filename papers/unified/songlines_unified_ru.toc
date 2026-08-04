@@ -1,0 +1,260 @@
+\babel@toc {russian}{}\relax 
+\contentsline {paragraph}{По одному предложению на часть.}{2}{section*.2}%
+\contentsline {paragraph}{Происхождение.}{2}{section*.3}%
+\contentsline {paragraph}{Измерительная дисциплина.}{2}{section*.4}%
+\contentsline {paragraph}{Код и данные.}{2}{section*.5}%
+\contentsline {part}{I\hspace {1em}Измерительный фреймворк Q/R/M/C}{8}{part.1}%
+\contentsline {paragraph}{Аннотация части.}{8}{section*.7}%
+\contentsline {section}{\numberline {1}Введение}{8}{section.1}%
+\contentsline {section}{\numberline {2}Декомпозиция Q/R/M/C}{11}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Постановка задачи и нотация}{11}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Одноагентная факторизация}{11}{subsection.2.2}%
+\contentsline {paragraph}{Предположение 1 (условное постадийно-марковское свойство).}{12}{section*.8}%
+\contentsline {paragraph}{Предположение 2 (положительность).}{12}{section*.9}%
+\contentsline {paragraph}{Определение 1 (одноагентная оцениваемость стадий).}{12}{section*.10}%
+\contentsline {paragraph}{Когда Предположение~1 может нарушаться.}{12}{section*.11}%
+\contentsline {paragraph}{Механизменное прочтение.}{12}{section*.12}%
+\contentsline {paragraph}{Связь с предшествующими работами.}{12}{section*.13}%
+\contentsline {subsection}{\numberline {2.3}Семантика событий, ограниченная рациональность и теоретико-порядковое прочтение}{13}{subsection.2.3}%
+\contentsline {paragraph}{Почему детерминированная стратегия: ограниченная и экологическая рациональность.}{13}{section*.14}%
+\contentsline {paragraph}{Теоретико-порядковое прочтение (вынесено в Приложение~\ref {p1:app:galois}).}{14}{section*.15}%
+\contentsline {paragraph}{Динамическое прочтение (options / H-MDP) (вынесено в Приложение~\ref {p1:app:hmdp}).}{14}{section*.16}%
+\contentsline {section}{\numberline {3}Один агент: постадийная диагностика локализует отказ}{14}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Система, задачи и протокол}{14}{subsection.3.1}%
+\contentsline {paragraph}{Стек памяти.}{14}{section*.17}%
+\contentsline {paragraph}{Задачи, бейзлайны, протокол.}{14}{section*.18}%
+\contentsline {paragraph}{Диагностический блок LLM.}{14}{section*.19}%
+\contentsline {subsection}{\numberline {3.2}Валидация постадийных оценок}{15}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Сводка «только успех» и что она скрывает}{15}{subsection.3.3}%
+\contentsline {paragraph}{Сравнение с бейзлайнами.}{15}{section*.20}%
+\contentsline {subsection}{\numberline {3.4}Оракульные постадийные интервенции локализуют бутылочное горлышко}{15}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Логи уточняют диагноз: предел накопления памяти}{16}{subsection.3.5}%
+\contentsline {section}{\numberline {4}Много агентов: память как разделяемый ресурс}{16}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Четыре архитектуры памяти и ось каденции}{16}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Многоагентная факторизация}{17}{subsection.4.2}%
+\contentsline {paragraph}{Определение 2 (многоагентная оцениваемость стадий).}{17}{section*.21}%
+\contentsline {paragraph}{Когда Определение~2 может нарушаться.}{17}{section*.22}%
+\contentsline {subsection}{\numberline {4.3}Смещение бутылочного горлышка}{17}{subsection.4.3}%
+\contentsline {paragraph}{Эмпирическое утверждение~1 (смещение бутылочного горлышка M$\leftrightarrow $C, на уровне наклонов).}{17}{section*.23}%
+\contentsline {paragraph}{Чем это утверждение является и чем не является.}{18}{section*.24}%
+\contentsline {paragraph}{Хронология.}{18}{section*.25}%
+\contentsline {subsection}{\numberline {4.4}Протокол свипа}{18}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Результаты: постадийная декомпозиция и смещение бутылочного горлышка}{18}{subsection.4.5}%
+\contentsline {subsubsection}{\numberline {4.5.1}Условная декомпозиция показывает, где отказывает каждая архитектура.}{19}{subsubsection.4.5.1}%
+\contentsline {subsubsection}{\numberline {4.5.2}Смещение бутылочного горлышка и внутренний оптимум эффективности.}{19}{subsubsection.4.5.2}%
+\contentsline {paragraph}{Стратификация по провенансу: механизм за смещением.}{19}{section*.26}%
+\contentsline {paragraph}{Чего мы не утверждаем о $\Phi $.}{20}{section*.27}%
+\contentsline {paragraph}{Бейзлайн с обученной коммуникацией: стадийные события структурно вырождены даже при конкурентоспособном успехе.}{20}{section*.28}%
+\contentsline {paragraph}{Свип LLM-моделей: логгер локализует реальный отказ в языковых агентах.}{20}{section*.29}%
+\contentsline {paragraph}{Многоагентная феноменология воспроизводится на живом LLM-коллективе.}{20}{section*.30}%
+\contentsline {paragraph}{Многоагентные оракульные интервенции замыкают цикл диагностика$\to $интервенция$\to $верификация.}{21}{section*.31}%
+\contentsline {section}{\numberline {5}Контракт на сторонних агентных стеках}{21}{section.5}%
+\contentsline {section}{\numberline {6}Ограничения и будущая работа}{23}{section.6}%
+\contentsline {section}{\numberline {7}Более широкое влияние}{24}{section.7}%
+\contentsline {section}{\numberline {8}Заключение}{24}{section.8}%
+\contentsline {section}{\numberline {9}Формальные доказательства}{24}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Аргумент для Определения~1 (одноагентная оцениваемость)}{24}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Аргумент для Определения~2 (многоагентная оцениваемость)}{25}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Аргумент для Эмпирического утверждения~1 (формулировка на уровне наклонов)}{25}{subsection.9.3}%
+\contentsline {subsection}{\numberline {9.4}Связь Галуа запрос--извлечение: формулировка, аргумент, границы}{25}{subsection.9.4}%
+\contentsline {paragraph}{Факт (стандартный).}{25}{section*.33}%
+\contentsline {paragraph}{Аргумент.}{25}{section*.34}%
+\contentsline {paragraph}{Инстанцирование и границы.}{25}{section*.35}%
+\contentsline {section}{\numberline {10}Прочтение стадий через опции / иерархический MDP}{26}{section.10}%
+\contentsline {paragraph}{Q/R/M/C как аудит опции.}{26}{section*.36}%
+\contentsline {paragraph}{Почему оптимум живёт на $t_{\mathrm {succ}}$, а не на $\Phi $: прочтение через полу-MDP.}{26}{section*.37}%
+\contentsline {paragraph}{Смещение бутылочного горлышка как многоагентное столкновение опций.}{26}{section*.38}%
+\contentsline {paragraph}{Глосса belief--desire--intention и границы.}{27}{section*.39}%
+\contentsline {section}{\numberline {11}Операциональные и вложенные постадийные оценки}{27}{section.11}%
+\contentsline {paragraph}{Операциональные диагностические частоты.}{27}{section*.40}%
+\contentsline {paragraph}{Вложенные постадийные оценки для факторизации.}{27}{section*.41}%
+\contentsline {subsection}{\numberline {11.1}Многоагентные операциональные определения}{27}{subsection.11.1}%
+\contentsline {section}{\numberline {12}Схема памяти и задач}{28}{section.12}%
+\contentsline {subsection}{\numberline {12.1}Полная таблица нотации}{28}{subsection.12.1}%
+\contentsline {subsection}{\numberline {12.2}Стек памяти и паттерны задач}{28}{subsection.12.2}%
+\contentsline {subsection}{\numberline {12.3}Одноагентные вспомогательные таблицы и рисунки}{28}{subsection.12.3}%
+\contentsline {section}{\numberline {13}Переносимость и масштабирование}{29}{section.13}%
+\contentsline {subsection}{\numberline {13.1}Перенос переносимости на BabyAI (10 сидов, полный бенчмарк)}{29}{subsection.13.1}%
+\contentsline {subsection}{\numberline {13.2}Многоагентное масштабирование при $N=12$}{30}{subsection.13.2}%
+\contentsline {subsection}{\numberline {13.3}Q/R/M/C при семантическом, безрамочном сопоставлении мест}{30}{subsection.13.3}%
+\contentsline {section}{\numberline {14}Расширенная диагностика}{32}{section.14}%
+\contentsline {subsection}{\numberline {14.1}Детализация условного произведения и разрыв Йенсена}{32}{subsection.14.1}%
+\contentsline {subsection}{\numberline {14.2}Декомпозиция дизайна и сверка числа прогонов}{32}{subsection.14.2}%
+\contentsline {subsection}{\numberline {14.3}Размеры эффекта и кластерно-робастный вывод}{32}{subsection.14.3}%
+\contentsline {subsection}{\numberline {14.4}Конструктная валидность: успех задачи $Y$ против завершения семантического пути $C^\star $}{34}{subsection.14.4}%
+\contentsline {subsection}{\numberline {14.5}Робастность диагноза пустого множества кандидатов к порогу ($\theta $)}{35}{subsection.14.5}%
+\contentsline {subsection}{\numberline {14.6}Робастность к нарушениям Предположения~1}{35}{subsection.14.6}%
+\contentsline {subsection}{\numberline {14.7}Предварительная проверка на непрерывном субстрате (VMAS)}{36}{subsection.14.7}%
+\contentsline {subsection}{\numberline {14.8}Каденционная робастность: сдвиг отслеживает дефицит, а не устройство сетки}{36}{subsection.14.8}%
+\contentsline {subsection}{\numberline {14.9}Открытые проблемы, подсказанные диагностикой}{37}{subsection.14.9}%
+\contentsline {subsection}{\numberline {14.10}Расширенный обзор литературы}{37}{subsection.14.10}%
+\contentsline {subsection}{\numberline {14.11}SOTA-бейзлайн и матрица покрытия}{38}{subsection.14.11}%
+\contentsline {paragraph}{Позиционирование относительно SOTA-дизайнов памяти.}{38}{section*.42}%
+\contentsline {subsection}{\numberline {14.12}Числа многоагентных оракульных интервенций}{39}{subsection.14.12}%
+\contentsline {subsection}{\numberline {14.13}Оракульное C: определение и прочтение}{39}{subsection.14.13}%
+\contentsline {subsection}{\numberline {14.14}Безразличные к стадиям каденционные гипотезы и что меняет фреймворк}{39}{subsection.14.14}%
+\contentsline {section}{\numberline {15}Анализ ассиста вкл/выкл}{40}{section.15}%
+\contentsline {section}{\numberline {16}Переобученный ретривер и бейзлайн CommNet}{40}{section.16}%
+\contentsline {subsection}{\numberline {16.1}Переобученный MLP генерации кандидатов (\S \ref {p1:sec:refined-attribution})}{40}{subsection.16.1}%
+\contentsline {subsection}{\numberline {16.2}Бейзлайн обученной коммуникации в стиле CommNet (\S \ref {p1:sec:multi-agent-results})}{40}{subsection.16.2}%
+\contentsline {paragraph}{Вариант PPO: структурная вырожденность верифицирована при конкурентоспособном успехе.}{41}{section*.43}%
+\contentsline {section}{\numberline {17}Команды воспроизводимости}{42}{section.17}%
+\contentsline {paragraph}{Вычислительная инфраструктура.}{42}{section*.44}%
+\contentsline {section}{\numberline {18}Замечание об ассетах и лицензиях}{43}{section.18}%
+\contentsline {part}{II\hspace {1em}Семантический варп: завершение, обусловленное провенансом}{46}{part.2}%
+\contentsline {paragraph}{Аннотация части.}{46}{section*.49}%
+\contentsline {section}{\numberline {19}Введение}{46}{section.19}%
+\contentsline {paragraph}{Вклад работы.}{47}{section*.50}%
+\contentsline {paragraph}{Связь со статьями-компаньонами.}{47}{section*.51}%
+\contentsline {section}{\numberline {20}Постановка}{47}{section.20}%
+\contentsline {paragraph}{Субстрат и задача.}{47}{section*.52}%
+\contentsline {paragraph}{Инструментирование Q/R/M/C.}{48}{section*.53}%
+\contentsline {section}{\numberline {21}Событие варпа}{48}{section.21}%
+\contentsline {paragraph}{Происхождение и чужеродность.}{48}{section*.54}%
+\contentsline {paragraph}{Правило заморозки.}{48}{section*.55}%
+\contentsline {paragraph}{События варпа и страты.}{48}{section*.56}%
+\contentsline {paragraph}{Регрессионный якорь.}{48}{section*.57}%
+\contentsline {section}{\numberline {22}Сырой варп редко завершается --- но перевозит}{48}{section.22}%
+\contentsline {paragraph}{Дизайн.}{48}{section*.58}%
+\contentsline {subsection}{\numberline {22.1}Варп как транспорт: цепочки локов}{48}{subsection.22.1}%
+\contentsline {subsection}{\numberline {22.2}Контрфактический выигрыш варпа}{49}{subsection.22.2}%
+\contentsline {paragraph}{Разведочный результат: давление коллизий.}{49}{section*.59}%
+\contentsline {section}{\numberline {23}Закон варп-дистанции}{50}{section.23}%
+\contentsline {paragraph}{Протокол «свидетель--путник».}{50}{section*.60}%
+\contentsline {paragraph}{Точка излома завершения.}{50}{section*.61}%
+\contentsline {paragraph}{Переносимость на непрерывную динамику.}{51}{section*.62}%
+\contentsline {section}{\numberline {24}Протокол Warp Drive}{51}{section.24}%
+\contentsline {paragraph}{Проверка децентрализации.}{52}{section*.63}%
+\contentsline {paragraph}{Якорь «введённого в заблуждение A».}{52}{section*.64}%
+\contentsline {section}{\numberline {25}Межсессионный варп на LLM-субстрате}{53}{section.25}%
+\contentsline {paragraph}{Масштабирование до живого коллектива.}{53}{section*.65}%
+\contentsline {section}{\numberline {26}Связанные работы}{54}{section.26}%
+\contentsline {paragraph}{Общая память в коллективах агентов.}{54}{section*.66}%
+\contentsline {paragraph}{Эмерджентная коммуникация.}{54}{section*.67}%
+\contentsline {paragraph}{Стигмергия.}{54}{section*.68}%
+\contentsline {paragraph}{Оптимистичная конкурентность.}{54}{section*.69}%
+\contentsline {section}{\numberline {27}Ограничения и честные негативные результаты}{54}{section.27}%
+\contentsline {section}{\numberline {28}Заключение}{55}{section.28}%
+\contentsline {paragraph}{Взгляд вперёд: контракт как одна функция из нескольких.}{55}{section*.70}%
+\contentsline {section}{\numberline {29}Отклонения от предрегистрированного дизайна}{55}{section.29}%
+\contentsline {section}{\numberline {30}Воспроизводимость}{55}{section.30}%
+\contentsline {section}{\numberline {31}Полная карта знаков контрфактического выигрыша}{56}{section.31}%
+\contentsline {part}{III\hspace {1em}Песня, а не точка: маршруты и смысловая идентичность}{57}{part.3}%
+\contentsline {paragraph}{Аннотация части.}{57}{section*.71}%
+\contentsline {section}{\numberline {32}Введение}{58}{section.32}%
+\contentsline {paragraph}{Вклад.}{58}{section*.72}%
+\contentsline {section}{\numberline {33}Постановка}{59}{section.33}%
+\contentsline {section}{\numberline {34}Маршрутный варп: перенос КАК}{59}{section.34}%
+\contentsline {paragraph}{Провенанс рёбер.}{59}{section*.73}%
+\contentsline {paragraph}{Первый строгий $RW^{\star }$.}{59}{section*.74}%
+\contentsline {subsection}{\numberline {34.1}Обрыв: что даёт знание маршрута}{59}{subsection.34.1}%
+\contentsline {section}{\numberline {35}Закон разрыва: где рвётся песня}{60}{section.35}%
+\contentsline {section}{\numberline {36}Стратификация по опасностям: песня защищает}{60}{section.36}%
+\contentsline {section}{\numberline {37}Смысловая идентичность мест}{61}{section.37}%
+\contentsline {paragraph}{Два уровня <<того же самого>> и что такое ориентир.}{61}{section*.75}%
+\contentsline {paragraph}{Отпечатки и рукопожатие.}{61}{section*.76}%
+\contentsline {paragraph}{Результаты свидетель--путник.}{62}{section*.77}%
+\contentsline {subsection}{\numberline {37.1}Полный стек и снятие последней оси}{62}{subsection.37.1}%
+\contentsline {paragraph}{Онлайн-выравнивание в peer-стеке.}{62}{section*.78}%
+\contentsline {paragraph}{Закон без системы отсчёта.}{62}{section*.79}%
+\contentsline {paragraph}{$SE(2)$: без общего севера.}{62}{section*.80}%
+\contentsline {paragraph}{Угловая ловушка.}{62}{section*.81}%
+\contentsline {subsection}{\numberline {37.2}Что делает ориентир ориентиром: абляция словаря}{62}{subsection.37.2}%
+\contentsline {subsection}{\numberline {37.3}Анатомия песни: узлы несут идентичность, рёбра --- перенос}{64}{subsection.37.3}%
+\contentsline {section}{\numberline {38}Связанные работы}{64}{section.38}%
+\contentsline {paragraph}{Слияние карт и распознавание мест.}{64}{section*.82}%
+\contentsline {paragraph}{Обмен маршрутами.}{64}{section*.83}%
+\contentsline {paragraph}{Сонглайны.}{64}{section*.84}%
+\contentsline {section}{\numberline {39}Ограничения и честные отрицательные результаты}{64}{section.39}%
+\contentsline {section}{\numberline {40}Заключение}{65}{section.40}%
+\contentsline {section}{\numberline {41}Зарегистрированные предсказания и ревизии}{65}{section.41}%
+\contentsline {section}{\numberline {42}Воспроизводимость}{65}{section.42}%
+\contentsline {part}{IV\hspace {1em}Коллективная семантическая память: слияние, доверие, устаревание}{66}{part.4}%
+\contentsline {paragraph}{Аннотация части.}{66}{section*.85}%
+\contentsline {section}{\numberline {43}Введение}{66}{section.43}%
+\contentsline {paragraph}{Связь с сопутствующей статьёй о Q/R/M/C.}{67}{section*.86}%
+\contentsline {section}{\numberline {44}Субстрат памяти и задача}{67}{section.44}%
+\contentsline {section}{\numberline {45}Четыре топологии коллективной памяти}{67}{section.45}%
+\contentsline {section}{\numberline {46}Каденция обнажает механизм отказа}{68}{section.46}%
+\contentsline {section}{\numberline {47}Минимальная коллективная семантическая память}{69}{section.47}%
+\contentsline {subsection}{\numberline {47.1}Результаты}{70}{subsection.47.1}%
+\contentsline {paragraph}{Почему CSM выигрывает: вентиль, а не обмен.}{70}{section*.87}%
+\contentsline {section}{\numberline {48}Тождество мест из смысла: устранение общей системы координат}{70}{section.48}%
+\contentsline {paragraph}{Механизм.}{70}{section*.88}%
+\contentsline {paragraph}{Результаты.}{71}{section*.89}%
+\contentsline {paragraph}{Категорный индикатор: дефект кругового обхода сопряжения.}{71}{section*.90}%
+\contentsline {section}{\numberline {49}Категорное BDI-прочтение коллективной семантической памяти}{71}{section.49}%
+\contentsline {paragraph}{Убеждение.}{72}{section*.91}%
+\contentsline {paragraph}{Желание.}{72}{section*.92}%
+\contentsline {paragraph}{Намерение.}{73}{section*.93}%
+\contentsline {subsection}{\numberline {49.1}Слияние как копредел и его инварианты}{74}{subsection.49.1}%
+\contentsline {subsection}{\numberline {49.2}Коллективная память как когерентная склейка локальных категорий мест}{74}{subsection.49.2}%
+\contentsline {paragraph}{Постановка.}{74}{section*.94}%
+\contentsline {paragraph}{Определение (когерентная система выравнивания).}{75}{section*.95}%
+\contentsline {paragraph}{Предложение (два агента).}{75}{section*.96}%
+\contentsline {paragraph}{Теорема (коллективная память = копредел диаграммы выравнивания).}{75}{section*.97}%
+\contentsline {paragraph}{Следствие (два вычислимых свидетеля).}{75}{section*.98}%
+\contentsline {paragraph}{Границы применимости.}{75}{section*.99}%
+\contentsline {subsection}{\numberline {49.3}Параметры протокола как категорная структура: фазовая диаграмма доверие$\times $каденция}{75}{subsection.49.3}%
+\contentsline {subsection}{\numberline {49.4}К выравниванию символов: заземление алфавитов тегов через общие места}{77}{subsection.49.4}%
+\contentsline {paragraph}{Механизм заземления.}{77}{section*.100}%
+\contentsline {paragraph}{Предварительный результат.}{77}{section*.101}%
+\contentsline {section}{\numberline {50}Ограничения и следующие эксперименты}{77}{section.50}%
+\contentsline {section}{\numberline {51}Заключение}{78}{section.51}%
+\contentsline {section}{\numberline {52}Коалгебраический слой: индивиды как ко-данные, коллектив как финальная коалгебра}{78}{section.52}%
+\contentsline {paragraph}{Сигнатура.}{78}{section*.103}%
+\contentsline {paragraph}{Состояние.}{79}{section*.104}%
+\contentsline {paragraph}{Определение (ко-данные: котип агента).}{79}{section*.105}%
+\contentsline {paragraph}{Определение (индексированное семейство).}{79}{section*.106}%
+\contentsline {paragraph}{Определение (козависимость: коллективная коалгебра).}{79}{section*.107}%
+\contentsline {paragraph}{Определение (поведение и бисимуляция).}{79}{section*.108}%
+\contentsline {paragraph}{Определение (общество / культура).}{80}{section*.109}%
+\contentsline {paragraph}{Замечание (коммуникация = ленивая корекурсия глубины один).}{80}{section*.110}%
+\contentsline {paragraph}{Замечание (мост алгебра--коалгебра к \S \ref {p4:sec:categorical}--\ref {p4:sec:colimit}).}{80}{section*.111}%
+\contentsline {paragraph}{Коалгебраическое прочтение сдвига узкого места.}{80}{section*.112}%
+\contentsline {section}{\numberline {53}Команды воспроизведения}{80}{section.53}%
+\contentsline {section}{\numberline {54}Замечание об активах и лицензиях}{81}{section.54}%
+\contentsline {part}{V\hspace {1em}Грамматика песни и Utility-Certified Memory: онтогенез запоминаемого}{82}{part.5}%
+\contentsline {paragraph}{Аннотация части.}{82}{section*.113}%
+\contentsline {section}{\numberline {55}Введение: от координации к онтогенезу}{83}{section.55}%
+\contentsline {paragraph}{Ключевая идея.}{83}{section*.114}%
+\contentsline {section}{\numberline {56}Модель}{83}{section.56}%
+\contentsline {paragraph}{Контрфактическая маргинальная полезность.}{83}{section*.115}%
+\contentsline {paragraph}{Стоимость аналогии.}{83}{section*.116}%
+\contentsline {paragraph}{Единица памяти --- условная программа, не факт:}{83}{section*.117}%
+\contentsline {paragraph}{Четыре слоя хранения.}{84}{section*.118}%
+\contentsline {section}{\numberline {57}U1: матрица, измеренная детерминированно}{84}{section.57}%
+\contentsline {section}{\numberline {58}U2: матрица выучивается --- и улучшает себя}{84}{section.58}%
+\contentsline {section}{\numberline {59}U3: параметры грамматики эволюционируют --- и константы у аттрактора}{85}{section.59}%
+\contentsline {section}{\numberline {60}U7: семь политик, два тела, три горизонта}{85}{section.60}%
+\contentsline {paragraph}{Что провалилось и что это значит.}{85}{section*.119}%
+\contentsline {paragraph}{Устойчивые позитивы.}{86}{section*.120}%
+\contentsline {paragraph}{U7b: проверка диагноза устаревания.}{86}{section*.121}%
+\contentsline {section}{\numberline {61}Закрытие трёх разрывов: устаревание, эмерджентность, абстракция}{86}{section.61}%
+\contentsline {paragraph}{Устаревание в потреблении (U7c).}{86}{section*.122}%
+\contentsline {paragraph}{Причинно повышенные ориентиры (E1).}{86}{section*.123}%
+\contentsline {paragraph}{Кросс-семейная абстракция первого порядка (X1).}{86}{section*.124}%
+\contentsline {paragraph}{LLM end-to-end цикл (L1).}{86}{section*.125}%
+\contentsline {section}{\numberline {62}Третий эшелон: структура, социум, терминальный кредит}{87}{section.62}%
+\contentsline {paragraph}{Граф-аналогия (G1).}{87}{section*.126}%
+\contentsline {paragraph}{Терминальный кредит (M1).}{87}{section*.127}%
+\contentsline {paragraph}{Социальный процесс (S1) --- честный негатив.}{87}{section*.128}%
+\contentsline {paragraph}{Контракт на часах мира (S2) --- необходим, не достаточен.}{87}{section*.129}%
+\contentsline {paragraph}{Контроль допуска (S3) --- реверс реверсируется.}{88}{section*.130}%
+\contentsline {section}{\numberline {63}Один метод: интегрированный рантайм и его бенчмарк}{88}{section.63}%
+\contentsline {paragraph}{Интеграция одним прогоном (R1).}{88}{section*.131}%
+\contentsline {paragraph}{Интеграционный бенчмарк (I1).}{88}{section*.132}%
+\contentsline {paragraph}{Матрица абляций --- и её честная половина.}{89}{section*.133}%
+\contentsline {paragraph}{Полезность без оракула (UE1).}{89}{section*.134}%
+\contentsline {paragraph}{Урок о марже (N1).}{89}{section*.135}%
+\contentsline {section}{\numberline {64}Закрытие acceptance-теста: бюджеты, противник, безопасность, второй субстрат}{89}{section.64}%
+\contentsline {paragraph}{Статистическая опора.}{89}{section*.136}%
+\contentsline {paragraph}{Равные бюджеты (B1).}{89}{section*.137}%
+\contentsline {paragraph}{Adversarial provenance (P1).}{89}{section*.138}%
+\contentsline {paragraph}{Безопасность под шумом (N1, пересмотр).}{90}{section*.139}%
+\contentsline {paragraph}{Второй субстрат (C1).}{90}{section*.140}%
+\contentsline {paragraph}{Внешний субстрат (физика VMAS).}{90}{section*.141}%
+\contentsline {section}{\numberline {65}Связанные работы}{90}{section.65}%
+\contentsline {section}{\numberline {66}Ограничения и открытые проблемы}{91}{section.66}%
+\contentsline {section}{\numberline {67}Заключение}{91}{section.67}%
+\contentsline {section}{\numberline {68}Воспроизводимость}{91}{section.68}%

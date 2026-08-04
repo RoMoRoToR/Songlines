@@ -104,7 +104,9 @@ def cell(T, tau, R):
     reach = reach_closure(adj, R)
     off = ~np.eye(N, dtype=bool)
     density = float(reach[off].mean())
-    # colimit over all N exists iff every ordered pair composes within R rounds
+    # the colimit SPANS all N (single consensus component) iff every ordered
+    # pair composes within R rounds; a disconnected colimit still exists in Pos
+    # as a coproduct of sub-consensuses
     colimit = int(np.all(reach[off]))
     return density, weak_components(reach), colimit
 
@@ -145,18 +147,19 @@ def main():
         row = f"  {tau:>5.2f} |" + "".join(f"{avg(tau,K)[0]:>7.2f}" for K in KS)
         print(row)
 
-    print("\nP(colimit over all N exists) = fraction of seeds with all-to-all")
+    print("\nP(colimit spans all N) = fraction of seeds with all-to-all")
     print("reachability within R rounds (a consensus object spanning the collective):")
     print(header); print("  " + "-" * 60)
     for tau in TAUS:
         row = f"  {tau:>5.2f} |" + "".join(f"{avg(tau,K)[1]:>7.2f}" for K in KS)
         print(row)
 
-    print("\nReading: low tau -> trust graph is dense -> colimit exists at any cadence.")
+    print("\nReading: low tau -> dense trust graph -> the colimit spans all N at any cadence.")
     print("Raising tau prunes edges to unreliable agents; the collective then fragments")
     print("UNLESS cadence is low enough (R large) for multi-hop paths through still-")
     print("trusted intermediaries to reconnect it. High tau + high K (few rounds) ->")
-    print("no colimit. The phase boundary is a structural transition, not a tuned number.")
+    print("coproduct of sub-consensuses instead of one spanning colimit. The phase")
+    print("boundary is a structural transition, not a tuned number.")
 
     if a.fig:
         import matplotlib
@@ -166,7 +169,7 @@ def main():
         coli = np.array([[avg(t, K)[1] for K in KS] for t in TAUS])
         fig, axes = plt.subplots(1, 2, figsize=(10, 3.4))
         for ax, grid, title in [(axes[0], dens, "Reachability density"),
-                                (axes[1], coli, r"$P(\mathrm{colimit\ over\ all\ }N\mathrm{\ exists})$")]:
+                                (axes[1], coli, r"$P(\mathrm{colimit\ spans\ all\ }N)$")]:
             im = ax.imshow(grid, aspect="auto", cmap="viridis", vmin=0, vmax=1, origin="upper")
             ax.set_xticks(range(len(KS))); ax.set_xticklabels([f"{K}\n(R={R_of(K)})" for K in KS], fontsize=7)
             ax.set_yticks(range(len(TAUS))); ax.set_yticklabels([f"{t:.2f}" for t in TAUS])

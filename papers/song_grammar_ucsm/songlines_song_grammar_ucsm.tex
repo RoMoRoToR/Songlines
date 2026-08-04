@@ -1,0 +1,967 @@
+\documentclass{article}
+
+\usepackage{neurips_2026}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{placeins}
+
+\newcommand{\method}[1]{\texttt{#1}}
+
+\title{Utility-Certified Songline Memory:\\Consolidation as a
+Two-Axis Decision, Learned and Evolved}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\textbf{Problem.} The preceding parts of this series closed the
+\emph{exploitation and coordination} of already-formed distributed
+memory (provenance contracts, transfer units, merge/trust/staleness
+rules). They left open its \emph{ontogenesis}: how agents learn, in
+the course of joint activity, what deserves to be remembered, what
+becomes a landmark, and what fragment of experience becomes a song.
+\textbf{Model.} We define memory formation as a bounded choice among
+five operations --- merge, exception, new schema, repeat, drop ---
+driven by two \emph{independent} axes: counterfactual marginal
+utility $U(m \mid M) = \mathrm{cost}(M) - \mathrm{cost}(M \cup
+\{m\})$, measured by deterministic replay with the memory switched
+on and off, and simplicity of structural analogy (signature overlap
+plus \emph{decision distortion} --- where two songs ultimately send
+the walker). Stored schemas carry \emph{utility certificates}
+(conditions, observed gain, per-role utility profile, evidence,
+failures); receivers recompute their own utility rather than trust
+the sender's number.
+\textbf{Findings.} A deterministic prototype passes all four
+registered predictions: duplicates cost nothing by construction, the
+exception operation beats both last-write-wins merging ($12.3$ vs.\
+$62.6$ steps on the corrupted world) and recency shadowing, and
+similarity is measurably not a consolidation criterion. A contextual
+bandit \emph{learns} the decision matrix from coordination feedback
+alone and surpasses the hand-designed thresholds ($78.1$ vs.\ $83.5$
+vs.\ random $105.9$); its one principled deviation --- append instead
+of overwrite --- is exactly what pays. An evolution loop over the
+song grammar selects a \emph{finite} couplet budget with no cost
+regression and converges to the neighbourhood of the hand-designed
+thresholds. A seven-policy comparison over heterogeneous embodiments
+at $10/100/1000$ episodes ends in four registered failures whose
+mechanisms are the finding: structural memory beats
+embedding-similarity, recency-importance-relevance and full-snapshot
+baselines by $1.7$--$4.5\times$ at every scale; consolidation buys
+\emph{bits}, not success ($154$k vs.\ raw's $339$k vs.\ snapshots'
+$5.2$M at $1000$ episodes); and the long-horizon failure mode is a
+\emph{staleness} problem, with the composition ladder measured:
+consolidation $-14\%$, $+$freshness $-3\%$, $+$trust-flip $-0.9\%$,
+closing the robust role against raw context.
+\textbf{Later waves.} The landmark-promotion loop closes causally
+over a candidate superset (deliberately harmful junk caught at
+$\Delta=-0.67$; a zero-attribution border feature proved causally
+load-bearing --- attribution and causal necessity are different
+quantities); a cross-family signature codebook monetises recurring
+motifs ($-16\%$ bits at $1000$ episodes, growing with scale); a
+graph-matching analogy engine cuts memory $24\%$ at equal cost;
+terminal-only meta-learning beats both the densely-shaped bandit and
+the hand matrix; a live-LLM end-to-end cycle shows reconstruction
+beating replay --- raw transcripts degrade from $0.42$ to $0.08$
+(\texttt{llama3.1}) and from $1.0$ to $0.375$ (\texttt{Qwen2.5-3B})
+as conflict history grows, while the reconstructed active context
+holds $1.0$ at $6$--$12\%$ of the payload; and the social experiment
+returns the programme's strongest honest negative: at long horizon in
+a globally drifting world, independent agents beat every exchange arm
+--- broadcast time is not world time, the series' gate-not-exchange
+law re-derived at the formation level. The social frontier then
+closes along a measured causal ladder: unregulated exchange is
+harmful (S1); a world-time staleness contract is necessary but
+insufficient (S2); and receiver-validated admission --- accept
+foreign memory only where it has shown utility on one's own visits
+--- makes the collective beat independence on every seed and both
+roles (S3, $-20\%$). Finally all mechanisms compose into one runtime
+that passes a reviewer's acceptance test: a runtime utility estimator
+matching the exact counterfactual ($\rho{=}0.989$) so no oracle is
+needed; equal-budget dominance where raw history does not catch up at
+$4\times$ the memory; and safety gates driving fail-open below $1\%$
+on both a grid and a continuous substrate.
+\textbf{Thesis.} What to remember is decided not by descriptive
+salience but by counterfactual usefulness for future individual and
+collective decisions, corrected by the cost of structural transfer
+between agents' local worlds --- and both the decision rule and the
+grammar it operates on is learnable, its parameters evolvable within
+a fixed grammar family.
+\textbf{Scope.} Grid substrates; deterministic replay; a measurement
+programme with registered predictions, not a general theory.
+\end{abstract}
+
+\section{Introduction: from coordination to ontogenesis}
+\label{sec:intro}
+
+The series so far treats memory that already exists. Provenance
+annotation prices foreign evidence at the moment of commitment; the
+song transfers routes and identity without shared frames; the
+merge/trust/staleness triple makes a collective of local memories
+coordinate. What none of these mechanisms does is \emph{form} the
+memory: decide which observation becomes a record, which record
+becomes a schema, which feature earns landmark status, and what is
+worth broadcasting at all. The single sharpest single-agent diagnosis
+of the series --- candidate generation starves at $91\%$ of decision
+points while ranking is near-optimal --- is precisely a formation
+problem, and the open problem list of the ancestor manuscript names
+selective consolidation as its direct attack.
+
+This part states the formation problem as a bounded decision, gives
+it a measured deterministic solution, and then subjects both the
+decision rule and the grammar beneath it to learning and selection.
+Throughout, one methodological commitment from the series carries
+over unchanged: predictions are registered before runs, and failures
+against registration are reported with their mechanisms --- several
+of the most informative results below are registered failures.
+
+\paragraph{The key idea.} Usefulness and simplicity-of-analogy are
+two \emph{independent} axes, and no single scalar (novelty,
+similarity, importance, reward) can substitute for their product
+structure:
+
+\begin{center}
+\small
+\begin{tabular}{lll}
+\toprule
+Utility & Analogy & Memory operation \\
+\midrule
+high & simple & \textbf{MERGE} into the existing schema \\
+high & simple but decision-conflicting & \textbf{EXCEPTION}: a
+counterexample, never an overwrite \\
+high & complex & \textbf{NEW\_SCHEMA} \\
+low & simple & \textbf{REPEAT}: update statistics, no new record \\
+low & complex & \textbf{DROP} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The fifth cell is the load-bearing one: a useful event that
+contradicts an existing schema can be neither merged (it would
+corrupt) nor dropped (it is evidence); it must be stored as an
+exception until the schema splits. This is what protects the memory
+from false generalisation.
+
+\section{The model}
+\label{sec:model}
+
+\paragraph{Counterfactual marginal utility.} For memory item $m$,
+agent $i$, intent $\iota$ and current memory $M$:
+\[
+U_{i,\iota}(m \mid M) \;=\;
+\mathrm{cost}_i(M, \iota) \;-\; \mathrm{cost}_i(M \cup \{m\}, \iota),
+\]
+measured by \emph{deterministic replay} with the item switched on and
+off --- the source-masked replay device of the warp analysis,
+generalised from ``foreign evidence on/off'' to ``this memory
+on/off.'' Utility is contextual (per agent and intent) and marginal
+(relative to what is already stored): a duplicate of a stored schema
+has $U = 0$ \emph{by construction}, so repeats are detected without
+any similarity heuristic. The team-level version subtracts collision,
+communication and false-transfer costs.
+
+\paragraph{Analogy cost.} A new episode $e$ maps onto a stored schema
+$s$ through $\phi$ with cost
+\[
+C_{\mathrm{analog}}(e,s) = L(\phi) + \lambda_d\,
+D_{\mathrm{decision}}(e,s) + \lambda_a \operatorname{Defect}(\phi),
+\qquad A(e,s) = e^{-C_{\mathrm{analog}}},
+\]
+where $L$ counts structure outside the correspondence (here: couplets
+outside the signature LCS), $D_{\mathrm{decision}}$ measures how
+differently the two songs \emph{decide} --- operationalised as the
+distance between their end-to-end beat displacements, i.e.\ where
+they ultimately send the walker --- and $\operatorname{Defect}$
+penalises broken relational structure. Descriptive similarity and
+decision agreement are different quantities, and
+$D_{\mathrm{decision}}$ captures the second; this is the
+rate-distortion intuition of \citet{rdd2026} imported into a
+multi-agent, structural setting.
+
+\paragraph{The memory unit is a conditional programme, not a fact:}
+$m = (G_m, C_m, E_m, U_m, \Phi_m, P_m, F_m)$ --- relational
+graph/song, applicability conditions, expected effects, a utility
+\emph{profile by role}, known analogical maps, provenance with
+references to immutable source episodes, and known failures. On
+exchange, a schema travels with a \textbf{utility certificate}
+$(\text{conditions}, \Delta V, \text{uncertainty},
+\text{evidence ids}, \text{analogy map}, \text{failures})$; the
+receiver transports the song through its own mapping and recomputes
+its own utility. For heterogeneous embodiments this is essential: a
+route through a hazard field can have $U_{\mathrm{robust}} > 0$ and
+$U_{\mathrm{fragile}} < 0$ simultaneously, so a memory item carries a
+utility function over roles, not one weight.
+
+\paragraph{Four storage layers.} (1) an \emph{immutable episodic
+store} --- source episodes are never rewritten (continuous rewriting
+first helps and then hurts \citep{faulty2026}; primary evidence
+anchors reconsolidation); (2) the \emph{analogical schema graph} ---
+songs, landmarks, exceptions, governed by the two-axis matrix; (3) a
+\emph{procedural layer} for schemas promoted to policy fragments;
+(4) a \emph{coordination layer} for social rules (reservations,
+roles, trust, transfer conditions). An agent's active context is a
+reconstruction --- relevant schemas, minimal supporting episodes,
+current exceptions and the coordination contract --- not a replay of
+history.
+
+\subsection{The runtime as one algorithm}
+\label{sec:algorithm}
+
+Every experiment below is a configuration of one per-agent loop; we
+state it once so the method is reconstructable from the paper alone.
+A record is $m=(G,C,E,U,P,T,R,F,A)$ --- song graph, applicability,
+expected effect, per-role utility, provenance, observation/world
+time, frame correspondences (re-derived at consumption, never
+stored), exceptions, and admission/authority state.
+
+\begin{quote}\small
+\textbf{Algorithm 1 (Songline Memory Runtime).}\\
+\emph{In:} observation $o$, intent $\iota$, local memory $M$,
+quarantine $Q$.\\
+1. extract candidate song from $o$;\
+2. estimate marginal utility $\widehat U$ ($\S\ref{sec:acceptance}$,
+UE1);\
+3. find structurally closest schema (analogy $\S\ref{sec:echelon3}$);\
+4. compute analogy cost + decision distortion;\
+5. choose DROP / REPEAT / MERGE / EXCEPTION / NEW\_SCHEMA;\
+6. append to immutable episodic store;\
+7. update schema graph;\
+8. build provenance + utility certificate;\
+9. broadcast on cadence, within wire budget;\
+10. place received records in $Q$;\
+11. on visit, validate world-time, role, local utility;\
+12. promote $Q$-record to retrieval/planning/action authority;\
+13. retrieve an admissible song (support$\times$staleness order);\
+14. recover landmark correspondence (consensus $\ge k$ + loop
+closure);\
+15. reserve target/route;\
+16. execute safe prefix ($\ge 5$ couplets verified);\
+17. detect rupture;\
+18. commit / replan / rollback.
+\end{quote}
+
+\paragraph{Quantities in one place.} Marginal utility
+$U_{i,\iota}(m|M)=\mathrm{cost}_i(M,\iota)-\mathrm{cost}_i(M\cup\{m\},
+\iota)$; analogy cost $C=L(\phi)+\lambda_d D_{\mathrm{decision}}
++\lambda_a\mathrm{Defect}(\phi)$; retrieval score
+$\mathrm{support}\cdot e^{-\alpha\,\mathrm{age}}$ (trust-flip $\times
+0.25$ on an excepted parent); world-clock admissibility
+$\mathrm{ver}(m)\ge\mathrm{known\_ver}(\mathrm{fam})$; rupture index
+$=\arg\min_e \mathrm{trust}\cdot e^{-\alpha\,\mathrm{age}(e)}<\tau$;
+objective $\alpha\,\mathrm{succ}+\beta(-t)-\gamma\,\mathrm{bits}
+-\delta\,\mathrm{collisions}$.
+
+\paragraph{Hyperparameters (frozen; test seeds never used to tune).}
+utility threshold $U_{\mathrm{thr}}{=}5$ (validation, U1); analogy
+share $\ge0.4$ and distortion $\ge3$ (validation, U1); staleness
+$\alpha{=}0.05$, $\tau{=}0.30$ (fixed, Part~II); song budget
+$v_{\max}{=}10$ (\emph{evolved}, U3); anchor consensus $k{=}3$ and
+safe-prefix depth $5$ (safety design, N1/C1). Selection method and
+per-parameter sensitivity are tabulated in
+Appendix~\ref{app:repro}.
+
+\section{U1: the matrix, measured deterministically}
+\label{sec:u1}
+
+Eight valid grid-world families, five candidate memories per family
+--- one per matrix cell, in sequence: a useful novel song
+(\textsc{new}), its exact duplicate (\textsc{repeat}), a song from a
+structurally different world (\textsc{novel}), a song to a goal
+irrelevant to the water intent (\textsc{irrelevant}), and a song from
+a variant world whose water has been secretly moved
+(\textsc{conflict}). Two single-axis baselines run on the same
+stream: similarity-only (store if novel, last-write-wins merge if
+similar) and utility-only (store if useful, consume newest-first).
+Four predictions were registered; the first registration failed on
+two construction defects (an ``irrelevant'' goal that accidentally
+lay en route to the water; consumers spawning inside walls), both
+documented, and the corrected registration passed $4/4$:
+
+\begin{itemize}[leftmargin=16pt,itemsep=2pt,topsep=2pt]
+\item \textbf{Repeats are free by construction:} the duplicate's
+  marginal utility is exactly $0$ in every world; final memory is
+  $3$ schemas vs.\ $5$ for append-everything.
+\item \textbf{Similarity is not a consolidation criterion:} the
+  similarity-only baseline incorporates the irrelevant song and
+  silently corrupts the original world by overwriting its schema with
+  the conflict variant ($62.6$ steps and phantom-first, vs.\
+  \textbf{$12.3$ steps first-try} for the two-axis memory).
+\item \textbf{Exceptions beat both overwrite and recency:} with the
+  exception stored, the variant world costs $20.5$ vs.\ $70.4$
+  without it, while the original stays first-try correct;
+  utility-only's recency order phantoms first on the original
+  ($24.0$ steps).
+\item \textbf{Certificates are recomputable:} a receiver at a
+  different position recovers positive utility from the certificate's
+  evidence in every world.
+\end{itemize}
+
+\section{U2: the matrix is learnable --- and improves itself}
+\label{sec:u2}
+
+A LinUCB contextual bandit replaces the hand thresholds. Features:
+$(U, \text{share}, D, \text{novelty}, \text{memory size})$; actions:
+the five operations; reward: the \emph{measured} cost change of the
+memory on a two-world probe (the candidate's world and the nearest
+schema's origin world --- the second term is what teaches the
+controller not to overwrite), minus a small storage tax.
+
+The first registration failed on two evaluation defects that are
+themselves findings. The final battery was circular (each policy was
+scored on the worlds it chose to store, making random indistinguishable
+from designed), and two pairs of actions were
+\emph{reward-equivalent}: \textsc{new} and \textsc{exception} had the
+identical structural consequence, as did \textsc{drop} and
+\textsc{repeat} --- and the bandit recovered exactly that quotient,
+confusing actions strictly \emph{within} equivalence classes while
+learning the drop cell at $40/43$. Bookkeeping without consequences
+is unlearnable. Version 2 made the battery independent and gave
+support a consequence (consumption order). Result:
+
+\begin{center}
+\small
+\begin{tabular}{lccc}
+\toprule
+ & learned & hand matrix & random \\
+\midrule
+held-out battery cost & \textbf{78.1} & 83.5 & 105.9 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The learned policy beats its own designer by $6.5\%$. Its majority
+actions agree with the hand matrix in $3/5$ cells (a registered
+miss); the disagreements are two context-dependent equivalences
+(merging a duplicate $\equiv$ repeat; repeating junk $\equiv$ drop)
+and one \emph{principled, profitable deviation}: where the hand
+matrix says \textsc{merge}, the controller appends a new version and
+lets support ordering arbitrate --- it independently discovered the
+immutable-store principle (\S\ref{sec:model}), the same lesson the
+consolidation literature reaches from failure analyses
+\citep{trustmem2026,faulty2026}.
+
+\section{U3: the grammar's parameters are evolvable --- and the
+constants are an attractor}
+\label{sec:u3}
+
+An evolution strategy ($30$ generations $\times$ $16$ genomes)
+selects the grammar $\theta = (\text{couplet gap},
+\text{share threshold}, \text{distortion threshold},
+\text{utility threshold}, \text{couplet budget } v_{\max})$, with
+fitness measured on maps the genome never sang on (cost $+$
+$\lambda\cdot$bits). Both registered predictions passed: the evolved
+genome matches the hand grammar on hold-out within registration
+tolerance, and it selects a \emph{finite} budget ($v_{\max} = 10$)
+with no cost regression --- bounded rationality obtained by
+selection, not imposition. Beyond registration: selection converged
+to the neighbourhood of the hand-designed thresholds (share
+$0.74 \to 0.46$ vs.\ hand $0.4$; distortion $3.9$ vs.\ hand $3$)
+while choosing denser couplets and a lower utility bar --- ``store
+more, but shorter.'' The designed constants of the matrix sit near a
+selection attractor rather than being arbitrary.
+
+\section{U7: seven policies, two bodies, three horizons}
+\label{sec:u7}
+
+The decisive comparison runs one mixed episode stream (new families,
+exact repeats, appearance variants with resampled hazard texture over
+persistent walls-and-water structure, and water-moved conflicts)
+through seven team-memory policies, consumed by two embodiments ---
+\emph{fragile} (hazards cost $12$ steps) and \emph{robust} (hazards
+cost $1$, steps cost $2$) --- and evaluates on the families' latest
+true worlds plus fresh appearance variants never streamed. Policies:
+raw long context (append all, newest-first), embedding-style
+signature similarity, recency-importance-relevance
+\citep{genagents2023}, full-snapshot exchange, utility-only,
+analogy-only, and the full two-axis memory with role-profiled
+certificates.
+
+\begin{table}[h]
+\centering
+\caption{Mean fragile-role battery cost by stream length ($12$ seeds)
+and stored bits at $1000$ episodes. All four registered predictions
+failed; the mechanisms are the finding (see text).}
+\label{tab:u7}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Policy & $10$ eps & $100$ eps & $1000$ eps & bits @$1000$ \\
+\midrule
+raw long context & $128.9$ & $\mathbf{53.3}$ & $\mathbf{139.8}$ & $339{,}453$ \\
+utility-only & $130.5$ & $53.6$ & $144.6$ & $162{,}107$ \\
+two-axis (UCSM) & $132.8$ & $60.8$ & $145.2$ & $\mathbf{153{,}774}$ \\
+signature similarity & $161.1$ & $214.7$ & $232.1$ & $186{,}843$ \\
+recency-importance-relevance & $190.7$ & $225.4$ & $250.1$ & $339{,}453$ \\
+full snapshots & $209.4$ & $246.6$ & $264.5$ & $5{,}198{,}886$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{What failed, and what it means.} The registered dominance,
+sublinear-bits, role-preservation and false-merge predictions all
+failed. Three mechanisms carry the content. \emph{First}, the
+fail-closed identity layer makes bloat cheap in steps: stale or
+foreign songs simply produce no anchors and hence no targets, so the
+raw archive is filtered for free at consumption time and pays only in
+bits and matching compute. \emph{Second}, sublinear memory growth is
+impossible without cross-family abstraction: in an open stream where
+$30\%$ of episodes found new structures, consolidation caps
+within-family growth ($2.2\times$ fewer bits than raw, $34\times$
+fewer than snapshots) but cannot compress novelty it has no schema
+for. \emph{Third}, the long-horizon failure mode --- phantom-first
+rates near $0.95$ for every song policy at $1000$ episodes --- is a
+\emph{staleness} cascade from accumulated conflicts, which no storage
+policy fixes by ordering alone; it is the native territory of the
+series' trust$\times$staleness law, which none of the seven policies
+implemented.
+
+\paragraph{The robust positives.} At every scale, structural memory
+(identity $+$ beats, whatever the consolidation rule) beats the
+mainstream heuristics --- embedding similarity, recency-importance-relevance
+scoring \citep{genagents2023,memgas2025}, and snapshots --- by
+$1.7$--$4.5\times$; and the two-axis memory is the cheapest in bits
+among song policies everywhere.
+
+\paragraph{U7b: testing the staleness diagnosis.} An eighth policy
+--- the same two-axis consolidation consumed newest-first --- was
+registered and run. At $100$ episodes it \emph{passes}: it matches or
+beats raw on both roles ($52.0/67.9$ vs.\ $53.6/68.9$) at $54\%$ of
+raw's bits, closing the entire consolidation-overhead gap by
+ordering alone. At $1000$ episodes it fails by $\sim 3\%$: under
+strong appearance drift, raw's redundancy retains residual value ---
+older variants of a song still anchor where the newest one fails to.
+The programme formula that survives: \textbf{consolidation buys bits,
+freshness buys success, and they compose at moderate horizons; the
+next lever is a real age gate and cross-family schemas, not better
+ordering.}
+
+
+\section{Closing three gaps: staleness, emergence, abstraction}
+\label{sec:gaps}
+
+A second registered wave attacked the three most concrete gaps the
+first wave localised.
+
+\paragraph{Staleness in consumption (U7c).} The series'
+trust$\times$staleness contract was wired into consumption: schemas
+ordered by $\text{support}\cdot e^{-\alpha\,\text{age}}$, plus the
+discrete \emph{trust-flip} --- a schema that has accumulated an
+exception is demoted, so the counterexample is tried before its
+discredited parent. At $1000$ episodes this closes the robust role
+entirely ($214.2$ vs.\ raw's $214.3$) and cuts the fragile-role gap
+threefold ($-0.9\%$ vs.\ $-3\%$ for freshness ordering alone); the
+strict both-roles registration still fails, honestly --- residual
+redundancy value under appearance drift survives even the gate. The
+composition ladder is now measured: consolidation alone $-14\%$,
+$+$freshness $-3\%$, $+$trust-flip $-0.9\%$.
+
+\paragraph{Causally promoted landmarks (E1).} The causal loop
+\emph{propose $\to$ ablate $\to$ measure $\to$ promote} was closed:
+starting from a feature superset including a derived candidate and
+deliberately harmful frame-variant junk (cell parity), the loop
+caught the junk causally ($\Delta = -0.67$; its harm manifested as
+refusals --- zero fail-open across all ablation rounds) and reached a
+minimal vocabulary at perfect score ($0.33 \to 1.0$). The registered
+expectation that content classes would survive failed in the most
+instructive way: the surviving pair was $\{\texttt{wall},
+\texttt{void}\}$ --- the border feature that carries \emph{zero}
+consensus mass in the attribution measurement turns out to be
+causally load-bearing as an \emph{anti-aliasing guard} once the
+vocabulary is impoverished. Causal ablation and attribution mass are
+different quantities; the value of a feature is non-additive and
+contingent on the rest of the vocabulary.
+
+\paragraph{First-order cross-family abstraction (X1).} A shared
+signature codebook --- constellations recurring across families
+stored once and referenced by index, lossless by construction ---
+was added to the storage codec. Registered and passed: the codebook's
+bits growth ($7.91\times$ per decade) is smaller than the plain
+codec's ($8.42\times$), and the absolute saving grows with scale
+($-10\%$ at $100$ episodes, $-16\%$ at $1000$): cross-family motifs
+exist and monetise. Sublinearity is approached, not achieved ---
+full schema-level abstraction (slots and roles, not just shared
+constellations) remains the open half.
+
+
+\paragraph{The LLM end-to-end cycle (L1).} The full promised loop ---
+observation $\to$ candidate memory $\to$ controller $\to$ schema
+graph $\to$ reconstructed active context $\to$ LLM action --- was
+closed on live models (the W4 division of labour: the LLM commits the
+semantic target, a deterministic waypoint primitive walks). Formation
+is deterministic UCSM over $4$- or $12$-episode histories in which
+the water is moved once or twice, so the stale targets hold up to a
+$10{:}2$ majority of the raw transcript; a fresh LLM session then
+commits under three context arms (no memory / full transcript /
+schema graph with certificates and exceptions). Registered and
+measured: memory is needed (the no-memory arm is $0.0$ everywhere);
+reconstruction beats replay --- \texttt{llama3.1-8B} degrades on the
+raw transcript from $0.42$ to $0.08$ as history grows (conflict
+chains $0.17 \to 0.00$) while the active context holds $1.0$
+throughout at $6$--$12\%$ of the transcript payload;
+\texttt{Qwen2.5-3B} reads the short transcript perfectly ($1.0$) yet
+drops to $0.375$ on $12$-episode chains, with the active context
+again at $1.0$. A $4$B thinking model fails the supersede chain in
+every arm --- a capability floor below the task, reported for
+honesty. The transcript's failure mode is specifically the stale
+majority, not length (benign $12$-episode logs stay readable to the
+stronger model): raw context reproduces the U7 phantom cascade in
+prompt space, and the reconstructed schema graph is its prompt-space
+staleness gate.
+
+
+\section{The third echelon: structure, society, terminal credit}
+\label{sec:echelon3}
+
+The remaining three gaps were attacked at scale; one closed cleanly,
+one closed with a near-miss, one returned the strongest negative of
+the programme.
+
+\paragraph{Graph-matching analogy (G1).} The LCS proxy was replaced
+by structural alignment: Needleman--Wunsch over couplets with partial
+node similarity (Jaccard over signature keys) and a \emph{relational
+defect} --- beat-chain consistency of the aligned pairs (do the two
+songs walk the same skeleton?). On appearance-heavy streams
+($300$ episodes, $12$ seeds) the graph controller recognises ``the
+same structure in a new texture'' that LCS blindly filed as new:
+$24\%$ fewer schemas and bits ($122$ vs.\ $162$ items; $42$k vs.\
+$55$k bits) at cost within $5\%$ on both roles and no safety price
+(phantom $+0.012$). The registered schema threshold ($\le 0.75\times$)
+was missed by $0.01$ --- reported as a failed registration whose
+every substantive clause held.
+
+\paragraph{Terminal credit (M1).} The immediate-reward bandit was
+retired: an evolution-strategies meta-learner optimises the same
+policy class against a \emph{terminal-only} reward --- one number per
+full stream, after dozens of interleaved decisions. On held-out
+streams the meta-learned policy beats both the densely-shaped bandit
+($-97.95$ vs.\ $-99.69$) and the hand matrix ($-99.95$), and on
+hand-\textsc{exception} candidates it takes store-class actions in
+$91\%$ of cases with no replace-majority --- the third independent
+rediscovery of the immutable-store principle (after the designer and
+the bandit), this time from a single delayed scalar.
+
+\paragraph{The social process (S1) --- the honest negative.} Six
+agents of mixed embodiments, each with its OWN memory, acting
+simultaneously in a world whose families evolve globally, exchanging
+certificates on a cadence. At $20$ episodes communication helps; at
+$300$ episodes \textbf{independence wins outright} (fragile $148$
+vs.\ $170$; robust $171$ vs.\ $238$ for every communicating arm).
+Mechanism: receivers accumulate hundreds of foreign schemas ($741$
+vs.\ $221$ items) whose world-referents drift stale faster than
+role-gating or recency can filter --- broadcast time is not world
+time. Three of four registered predictions failed on this; the one
+that passed is reservations (S1.3: duplicate commitments to zero at
+no cost). This is the series' central law --- \emph{the gate, not the
+exchange, carries the value of collective memory} --- re-derived in
+the formation substrate: certificates without a world-clock
+staleness contract are not merely insufficient, they are net harmful
+at horizon, exactly as raw exchange was for the LLM collective in
+Part II's W6.
+
+
+\paragraph{The world-clock contract (S2) --- necessary, not
+sufficient.} S1's diagnosis was implemented: every family carries a
+state version bumped when its world actually changes; certificates
+carry (family, version); version news travels in certificate metadata
+even when the schema is rejected; admissibility is gated on world
+clocks at both consumption and consolidation. On paired assignment
+streams ($12$ seeds, $300$ episodes) the gate improves every
+communicating arm (robust $238 \to 220$, fragile $170 \to 163$) and
+reservations still zero out duplicate commitments for free --- but
+the S1 reversal does not reverse: independent agents beat the gated
+arm on \emph{every} seed, and memories barely shrink ($688$ vs.\
+$708$ items). The gate recovers only ${\sim}27\%$ of the
+communication penalty. Two registered negatives now bracket the
+problem from both sides: message-time filtering (S1) and world-time
+filtering (S2) both fail to make social exchange net-positive at
+horizon. The residual mechanism is not temporal at all: it is
+\emph{cross-family aliasing from sheer foreign volume} --- hundreds
+of schemas about families the receiver rarely visits still partially
+match its local constellations and emit phantom targets. What the
+data now names is ADMISSION control, not staleness control: accept
+foreign knowledge only where it has demonstrated utility on one's own
+visits --- the certificate is testimony, and testimony, the two
+negatives jointly say, is not admissible evidence.
+
+
+\paragraph{Admission control (S3) --- the reversal reverses.} The
+principle the two negatives pointed at was implemented: every foreign
+certificate is QUARANTINED on arrival (version metadata still
+travels); when the agent visits family $f$, quarantined certificates
+about $f$ are validated ON THE SPOT --- the foreign song's marginal
+utility is replayed on the actual current world under the agent's own
+role; passers are admitted with their utility \emph{measured, not
+told}, and are usable in that same visit; failers are discarded;
+knowledge about never-visited families never enters consumption. All
+four registered predictions pass ($12$ seeds, paired streams).
+\textbf{Social exchange is net-positive at horizon for the first
+time}: the full contract beats independence on every seed and both
+roles (fragile $118$ vs.\ $148$, $-20\%$; robust $134$ vs.\ $171$,
+$-21\%$). The mechanism is monotone --- testimony $162/220$ $\to$
+relevance-only admission $136/169$ $\to$ demonstrated-utility
+admission $118/134$ --- hygiene finally materialises (admitted
+memory $233$ vs.\ $688$ items, $0.34\times$, with $592$ junk
+certificates held harmlessly in quarantine), and reservations compose
+(zero duplicate commitments at $+0.6\%$ cost). The social ladder of
+the programme is thereby measured end to end: exchange without
+contracts is harmful (S1), world-clock staleness is necessary but
+insufficient (S2), and admission by demonstrated utility on one's own
+visits --- testimony is not evidence --- closes the frontier (S3).
+
+
+\section{One method: the integrated runtime and its benchmark}
+\label{sec:integration}
+
+Every mechanism above was validated in its own controlled experiment;
+a reviewer may fairly ask whether the composition works. We therefore
+built \textbf{Songline Memory Runtime v1}: one record type $m = (G,
+C, E, U, P, T, R, F)$ (song graph, applicability, expected effect,
+per-role utility, provenance, time and world version, frame mappings
+re-derived at consumption, exceptions), one cycle from observation to
+execution, and every mechanism as a configuration flag --- so the
+benchmark's arms and ablations are configurations of one artifact,
+not adjacent codebases. Wire and storage accounting uses the full
+codec (certificate $64$, provenance $48$, time/version $32$,
+reservation $24$ bits).
+
+\paragraph{Single-run integration (R1).} The ten-point completion
+test --- route discovered in a private frame; song received;
+certificate held in quarantine; admission by the receiver's own
+measured utility; landmark correspondence; route execution; rupture
+fallback after the world changes; reservation deferral; superseded
+versions never used --- passes in ONE run of one runtime, $10/10$
+scenarios.
+
+\paragraph{The integration benchmark (I1).} Six agents of mixed
+embodiments, two intents (resource and rest), private frames,
+globally drifting families, $300$ episodes, $12$ paired test seeds
+(numbered $100{+}$, never used to tune anything; all thresholds
+frozen from the earlier waves). Group cost (fragile/robust): full
+Songline $\mathbf{120.0/125.1}$ dominates independent ($137.3/146.5$),
+raw shared history ($160.9/204.4$), graph-without-provenance
+($146.3/174.5$) and the song ladder without admission
+($146$--$157/174$--$196$); it is simultaneously the only arm with
+zero duplicate commitments, the lowest phantom-first rate and a wire
+cost below raw's ($55$ vs.\ $69$ KB). The advantage grows with scale
+--- $-11\%$, $-13\%$, $-14\%$ at $N = 4, 6, 8$ (registered H3:
+\textbf{pass}) --- and survives $10\%$ and even $20\%$ perception
+noise ($-13$--$15\%$; the advantage clause of H2: \textbf{pass}).
+
+\paragraph{The ablation matrix --- and its honest half.} Removing
+landmarks or beats is catastrophic (success $0$, cost worst:
+fail-closed by construction); removing admission costs $+22\%/+38\%$
+--- the single most load-bearing component, confirming S3; removing
+the world clock costs $+9\%$ on the robust role; removing
+reservations restores duplicate commitments; removing the utility
+gate bloats wire and memory by ${\sim}40\%$ at equal cost. But three
+ablations --- provenance, exceptions, the immutable layer --- are
+cost-free \emph{in this substrate}: registered H1 therefore
+\textbf{fails} as stated, and the mechanism is worth the failure.
+Their value was demonstrated in the settings that exercise them
+(corruption on return in U1, gossip explosion in S1, audit and
+reconsolidation); the live-visit drifting benchmark never punishes
+their removal. In one artifact they are free insurance, not dead
+weight --- but the composition claim must be scoped to the mechanisms
+the substrate actually stresses.
+
+\paragraph{Utility without the oracle (UE1).} A ridge estimator over
+runtime-available features only (anchoring, local plan distance, song
+shape, memory counts) reaches Spearman $0.989$ and sign accuracy
+$0.97$ against the true counterfactual on held-out worlds, and the
+full controller driven by $\widehat U$ alone matches the oracle
+version (cost ratio $0.965/0.977$) --- the reviewer's critical
+experiment: the system survives estimation.
+
+\paragraph{The margin lesson (N1).} Under independent false-negative
+$\times$ false-positive perception noise, coverage degrades
+gracefully ($0.96 \to 0.92$ at $10\%/10\%$: registered
+\textbf{pass}), but the fail-closed contract does NOT survive naive
+margin softening: with a plain cosine margin the fail-open rate
+reaches $0.21$ inside the $20\%$ envelope (registered N1.1:
+\textbf{fail}). Exact-equality matching was load-bearing; the named
+fix is consensus-of-anchors verification (the identity layer's
+$\ge 3$-pair consensus rule, which single-anchor song consumption
+bypasses) --- margin machinery, not a lower threshold.
+
+
+\section{Closing the acceptance test: budgets, adversary, safety, a
+second substrate}
+\label{sec:acceptance}
+
+A reviewer proposed a concrete acceptance test: at equal budgets the
+full method must beat the best baseline on unseen dynamic worlds
+without hurting safety, the advantage must survive noisy perception,
+private frames, heterogeneity and long-horizon drift, and removing
+provenance, admission, route structure or the world-time contract
+must reproducibly destroy the corresponding gain. We report each
+clause.
+
+\paragraph{Statistical footing.} On the integration benchmark the
+full method beats independent on \textbf{$12/12$ paired test seeds}
+(mean team gain $13.6\%$, sign-test $p = 0.0002$), and its hazard
+contacts are \emph{lower} ($5.06$ vs.\ $5.66$ per visit) --- the
+advantage does not buy speed with safety.
+
+\paragraph{Equal budgets (B1).} Capping wire and memory at the full
+method's own footprint ($55$/$45$ KB) and giving the raw-history
+baseline the same, full wins $119.8/124.5$ vs.\ $158.7/199.9$; and
+raw does not catch up at $2\times$ or even $4\times$ the budget
+($159.3/201.1$ throughout). Raw's deficit is not a storage shortage
+that a bigger cap fixes --- it is the absence of consolidation and
+admission. (On the continuous substrate raw is not merely worse but
+computationally intractable at the full horizon --- $\mathrm{O}(E^2)$
+matching over an unconsolidated store --- a cost the wire/byte
+accounting alone does not capture.)
+
+\paragraph{Adversarial provenance (P1).} With one poisoning peer that
+corrupts its own songs and launders mutated foreign records under
+their original origin, the full method degrades $+1.2\%$ while the
+defense ordering holds (full $\le$ no-provenance $\le$ no-admission).
+The instructive negative: the unprotected arm barely degrades under
+poison \emph{because it is already saturated with phantoms from
+ordinary drift} ($159.7$ clean). The dominant adversary of collective
+memory is world entropy, not a malicious agent --- and admission,
+which gates on demonstrated utility at the receiver's own visit,
+absorbs the liar and the stale alike; origin-bound receipt blocks the
+laundering at no measurable cost.
+
+\paragraph{Safety under noise (N1, revised).} The fail-open bar
+$<1\%$ is not met by a softened cosine margin (up to $0.21$). The
+named fix --- require a consensus of $\ge 2$ mutually-matched anchors
+whose pairwise displacements agree with the beat chain (the identity
+layer's loop-closure rule, which single-anchor song consumption
+bypassed) --- drives \textbf{fail-open to $0.000$ across the entire
+$20\%{\times}20\%$ envelope}, trading coverage ($0.88 \to 0.58$ at
+$10\%/10\%$). Safety is bought with refusals, as the fail-closed
+contract demands.
+
+\paragraph{A second substrate (C1).} Formation and consumption were
+moved to a continuous box with real-valued feature positions,
+per-observation jitter, soft constellation matching (a positional
+tolerance replacing exact key equality), unimodal anchor clustering
+with centroid refinement, and tolerance-based loop closure --- the
+runtime otherwise unchanged. The advantage transfers on both roles and against
+both baselines --- at a matched feasible horizon full $245.5/71.4 <$
+raw $256.9/101.2 <$ (fragile) and $<$ independent $255.3/75.9$
+(C1.3), and at the full horizon full $244.7/74.7 <$ independent
+$256.8/79.6$ (C1.1) --- confirming the effect is not a grid artifact.
+Continuous social-scale safety needs a \emph{three-layer} defense,
+each layer catching what the previous misses: anchor consensus
+($\ge 3$ mutually-matched, loop-closed anchors) reduces per-transport
+aliasing ($0.79 \to 0.15$); single-commitment gating (walk only the
+most-anchored target, never a phantom candidate list) reaches $0.04$;
+and a \emph{safe-prefix verification} --- the traveler physically
+walks the song's first five couplets and requires each observed
+constellation to match, so a foreign-family phantom that diverges
+from the actual terrain is refused before commitment --- drives
+fail-open to $\mathbf{0.0014}$ on held-out test seeds ($554\times$
+below the raw continuous rate, $10/12$ seeds exactly zero),
+\emph{under} the $1\%$ safety bar, while first-lock success
+\emph{rises} (phantoms that used to be committed are now filtered).
+The prefix check is the reviewer's own ``successful use on a short
+safe prefix'' promoted to a hard gate; it also lets the consensus
+threshold relax (recovering coverage) by catching the lone wrong
+anchors a consensus count cannot. Calibration was frozen on dev
+families ($5001{+}$); test seeds ($100{+}$) were never touched.
+
+\paragraph{External substrate (VMAS physics).}
+To answer the strongest reviewer objection --- that grid and
+synthetic-continuous worlds are the authors' own --- we transplanted
+not the diagnostic logger but the \emph{whole runtime}
+(formation, certificate exchange, quarantine, receiver-side
+admission, frame-free continuous alignment, safe-prefix consumption)
+onto VMAS, a third-party continuous-physics multi-agent simulator.
+Holonomic agents move under a proportional controller in a
+landmark-populated box; a receiver with no shared frame recovers a
+witnessed water target purely by matching landmark constellations.
+Against a memory-free baseline given a dense box-tiling search and a
+longer horizon --- so it \emph{can} find the target by exhaustion,
+making the contrast a genuine speed-up rather than a floor --- the
+full runtime reaches the target in $254.5$ versus $543.5$ team steps
+($-53.2\%$, $12/12$ paired seeds, sign test $p=0.0005$), with
+transport fail-open $\mathbf{0.0000}$: agents that cannot anchor
+\emph{refuse} and fall back to the same blind search rather than
+committing a phantom. Only the substrate density (landmark count,
+witness-sampling rate, consensus threshold matched to the
+constellation geometry) was recalibrated; every mechanism flag is
+unchanged from the grid configuration. The effect and its
+fail-closed safety therefore survive a third, externally-authored
+substrate.
+
+\section{Related work}
+\label{sec:related}
+
+\citet{rdd2026} argue memory should preserve decision-relevant
+differences rather than descriptive similarity and gate merging by
+decision distortion; we adopt the intuition and add the coordination
+side: heterogeneous receivers, per-role utility profiles, and
+certificates recomputed by the receiver. Generative
+Agents~\citep{genagents2023} score recency, importance and relevance
+--- our importance is a measured counterfactual, and the U7
+comparison quantifies the gap. MemRL~\citep{memrl2026} learns a
+utility of \emph{using} stored episodes; Mem-$\alpha$~\citep{memalpha2025}
+learns construction operations with RL on question-answering reward
+--- our controller learns \emph{formation} under coordination reward
+with corruption probes. MemGAS~\citep{memgas2025} selects granularity;
+TrustMem~\citep{trustmem2026} verifies consolidation transitions
+(coverage, preservation, faithfulness) --- our exception operation
+and immutable episodic layer attack the same failure from the
+mechanism side, and our learned controller rediscovers
+append-not-overwrite from reward alone. \citet{faulty2026} show
+continuous rewriting eventually corrupts; our U1 measures the same
+corruption in the similarity baseline and prices the cure. To our
+knowledge no prior system combines structural analogy, causal
+utility, heterogeneous embodiments, coordination consequences,
+emergent landmark status and immutable provenance in one measured
+loop.
+
+\section{Limitations and open problems}
+\label{sec:limits}
+
+(1) Grid substrates and deterministic replay; the counterfactual is
+exact here and must become an estimator elsewhere. (2) The analogy now has a measured graph-matching engine
+(\S\ref{sec:echelon3}); roles and causal relations inside the
+alignment remain open. (3) The causal
+promotion loop is closed over a predefined feature superset
+(\S\ref{sec:gaps}); open-ended feature proposal from learned
+representations --- new perceptual concepts named and tested across
+modalities --- remains open. (4) The trust$\times$staleness gate is now wired into consumption
+(\S\ref{sec:gaps}) and closes the robust role; the fragile-role
+residual ($-0.9\%$) is the open remainder. (5) Cross-family
+abstraction has a measured first step (the signature codebook,
+\S\ref{sec:gaps}); schema-level slots and roles remain open. (6) The evaluation criterion
+throughout is \emph{ecological viability} --- performability on fresh
+worlds under the coordination contract --- not direct verification of
+content; the formulation is closed, its full generational measurement
+is the meta-RL programme.
+
+\section{Conclusion}
+
+Memory formation, stated as a bounded five-way choice over two
+independent axes, is measurable (U1), learnable (U2), and evolvable
+(U3) --- and when it is learned or evolved rather than designed, it
+returns lessons to the designer: append instead of overwrite, finite
+budgets for free, thresholds near the selection attractor. The
+seven-policy comparison prices the whole design space honestly:
+structure dominates heuristics, consolidation dominates in bits,
+freshness dominates in success, and the residual failure mode ---
+staleness under drift --- points exactly at the law the rest of this
+volume already proved. The honest status line: the ontogenesis of the
+memory unit --- and its individual, heterogeneous, LLM-mediated
+consumption --- is closed at prototype scale; and sustained long-horizon
+\emph{social} exchange in an evolving world is now closed at the same
+scale, by a three-step measured ladder: exchange without contracts is
+harmful (S1); world-clock staleness is necessary but insufficient
+(S2); admission by demonstrated utility on one's own visits makes the
+collective beat independence on every seed and both roles (S3,
+$-20\%$). The whole runtime, not just the effect, transfers to a
+third-party continuous-physics simulator (VMAS, $-53.2\%$ team steps,
+fail-open $0.0000$). What remains open is still external in a
+different sense: open-ended feature proposal from learned
+representations, the social process on language (LLM) substrates, and
+real-robot validity.
+
+\begin{thebibliography}{9}
+
+\bibitem[Anonymous(2026a)]{rdd2026}
+Anonymous.
+\newblock Remember the decision, not the description: A
+rate-distortion framework for agent memory.
+\newblock \emph{arXiv preprint arXiv:2605.10870}, 2026.
+
+\bibitem[Park et~al.(2023)]{genagents2023}
+J.~S. Park, J.~O'Brien, C.~J. Cai, M.~R. Morris, P.~Liang, and
+M.~S. Bernstein.
+\newblock Generative agents: Interactive simulacra of human behavior.
+\newblock In \emph{UIST}, 2023.
+
+\bibitem[Anonymous(2026b)]{memrl2026}
+Anonymous.
+\newblock {MemRL}: Self-evolving agents via runtime reinforcement
+learning on episodic memory.
+\newblock \emph{arXiv preprint arXiv:2601.03192}, 2026.
+
+\bibitem[Anonymous(2025a)]{memalpha2025}
+Anonymous.
+\newblock {Mem-$\alpha$}: Learning memory construction via
+reinforcement learning.
+\newblock \emph{arXiv preprint arXiv:2509.25911}, 2025.
+
+\bibitem[Anonymous(2025b)]{memgas2025}
+Anonymous.
+\newblock From single to multi-granularity: Toward long-term memory
+association and selection of conversational agents.
+\newblock \emph{arXiv preprint arXiv:2505.19549}, 2025.
+
+\bibitem[Anonymous(2026c)]{trustmem2026}
+Anonymous.
+\newblock {TrustMem}: Learning trustworthy memory consolidation for
+{LLM} agents with long-term memory.
+\newblock \emph{arXiv preprint arXiv:2606.25161}, 2026.
+
+\bibitem[Anonymous(2026d)]{faulty2026}
+Anonymous.
+\newblock Useful memories become faulty when continuously updated by
+{LLMs}.
+\newblock \emph{arXiv preprint arXiv:2605.12978}, 2026.
+
+\end{thebibliography}
+
+\appendix
+
+\section{Reproducibility}
+\label{app:repro}
+Every central result has a command (all in
+\texttt{experiments/song\_grammar/}, run with \texttt{PYTHONPATH=.}):
+\begin{verbatim}
+# formation core
+exp_u1_ucsm_smoke.py                       # U1 two-axis matrix
+exp_u2_bandit.py    --train-seeds 0 24 --eval-seeds 100 110 --episodes 40
+exp_u3_evolution.py --generations 30 --pop 16 --episodes 25
+exp_e1_landmark_emergence.py               # E1 causal promotion
+# scale, learning, LLM
+exp_u7_seven_arms.py --seeds 0 12 --episodes 1000   # U7/U7b/U7c/X1
+exp_m1_metarl.py    --generations 40 --pop 32 --episodes 30
+exp_g1_graph_analogy.py --seeds 0 12 --episodes 300
+exp_l1_llm_endtoend.py --backend hf --model Qwen/Qwen2.5-7B-Instruct \
+    --mode long --layouts 12          # L1/L1b (also llama3.1 via ollama)
+# social ladder
+exp_s1_social.py  --seeds 0 12 --episodes 300 --agents 6
+exp_s2_worldclock.py --seeds 0 12 --episodes 300 --agents 6
+exp_s3_admission.py  --seeds 0 12 --episodes 300 --agents 6
+# integration + acceptance test
+exp_r1_runtime_checklist.py                # R1 single-run integration
+exp_i1_integration.py --config songline_full --seeds 100 112 \
+    --episodes 300 --agents 6         # I1 (17 configs; +--noise +--agents)
+exp_ue1_utility_estimator.py --train-seeds 0 20 --test-seeds 100 110
+exp_n1_noise.py   --seeds 30 --consensus 2                 # N1v2
+exp_i1_integration.py --config raw_history --mem-cap-kb 45 \
+    --wire-cap-kb 55 ...              # B1 equal-budget (caps 1x/2x/4x)
+exp_i1_integration.py --config songline_full --poison 1 ...   # P1
+exp_c1_continuous.py --config songline_safe --seeds 100 112 \
+    --episodes 300 --agents 6         # C1 continuous + three-layer safety
+\end{verbatim}
+Registered predictions, per-run rows and verdicts sit beside each
+output; failed first registrations (U1 v1, U2 v1, N1 v1, C1-safe
+depth-3) are retained with revision notes. Cluster launcher:
+\texttt{cluster/submit\_song\_grammar.sh}. Full method freeze,
+claim--evidence matrix and per-verdict source map:
+\texttt{docs/SONGLINES\_V1\_FREEZE.md},
+\texttt{docs/CLAIM\_EVIDENCE\_MATRIX.md},
+\texttt{docs/SERIES\_VERDICTS.md}. Design documents:
+\texttt{docs/FRONTIER\_\{SONG\_GRAMMAR,UCSM\}\_*.md},
+\texttt{docs/MEMORY\_REFRAMES\_2026-07-26.md}.
+
+\end{document}

@@ -44,11 +44,16 @@ CONSENSUS_SHARE = 0.8    # share of pairs that must agree on the offset
 
 
 def fingerprint(agent_xy: GridXY, cells: List[Dict[str, Any]],
-                radius: int = 2) -> Dict[str, float]:
+                radius: int = 2,
+                salient: Optional[set] = None) -> Dict[str, float]:
     """Local semantic constellation, keyed by tag@relative-offset.
 
     Cells missing from the observation window (outside the grid) are
-    encoded as 'void' — borders are landmarks too."""
+    encoded as 'void' — borders are landmarks too.  ``salient`` is the
+    landmark vocabulary Σ: which tag classes may enter a fingerprint
+    (default SALIENT_TAGS; the W10 ablation passes restricted sets)."""
+    if salient is None:
+        salient = SALIENT_TAGS
     ax, ay = agent_xy
     seen: Dict[GridXY, str] = {}
     for c in cells:
@@ -60,7 +65,7 @@ def fingerprint(agent_xy: GridXY, cells: List[Dict[str, Any]],
             if abs(dx) + abs(dy) > radius:
                 continue
             tag = seen.get((dx, dy), "void")
-            if tag in SALIENT_TAGS:
+            if tag in salient:
                 sig[f"{tag}@{dx},{dy}"] = 1.0
     return sig
 

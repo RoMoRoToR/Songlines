@@ -129,3 +129,11 @@ dmypy.json
 
 # DS_Store
 *.DS_Store
+
+# Project-specific (added at songlines-runtime-v1 tag)
+/tmp/
+.idea/
+wheelhouse/
+wheelhouse*.tar.gz
+*.pptx
+*.docx
