@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1785791718.3903 "songlines_unified.tex" "songlines_unified.pdf" "songlines_unified" 1785791719.8727 0
+["pdflatex"] 1785862693.84281 "songlines_unified.tex" "songlines_unified.pdf" "songlines_unified" 1785862695.357 0
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -238,10 +238,10 @@
   "figures/fig_warp_strata.pdf" 1782994734.87937 19127 3fed2b15dd299b36ade4dcd591e4552f ""
   "figures/fig_warp_universality.pdf" 1783012837.70801 20428 da2704c6232bb6e7f6643a792faf5081 ""
   "neurips_2026.sty" 1773770160 13462 818d80447f57703e59b8270885421e82 ""
-  "songlines_unified.aux" 1785791719.69738 111375 8be94579e1a0c85fb1bcda4910ae3d38 "pdflatex"
-  "songlines_unified.out" 1785791719.70513 31763 3796f6921e534ab4745f8b5c5521dcfa "pdflatex"
-  "songlines_unified.tex" 1785791637.18869 383071 e2c51d765db3ffd490c65302e8885308 ""
-  "songlines_unified.toc" 1785791719.7054 24533 e0640cb15b1e99d1a76114631fe6397c "pdflatex"
+  "songlines_unified.aux" 1785862695.18062 112159 5462186646899a4f1b64b5c2f25aafd2 "pdflatex"
+  "songlines_unified.out" 1785862695.18765 31645 ddbede9573fa93078cfc171fdb097d7b "pdflatex"
+  "songlines_unified.tex" 1785862674.76499 378452 95b4e581c364239dbd3587042c7d0260 ""
+  "songlines_unified.toc" 1785862695.18793 24217 ec73d7cf9a53ad71193b0ae4cab7e761 "pdflatex"
   (generated)
   "songlines_unified.aux"
   "songlines_unified.log"

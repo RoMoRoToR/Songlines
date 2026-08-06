@@ -1,0 +1,2320 @@
+% Academic revision prepared from songlines_unified(2).tex.
+% Revision goals: conventional problem-method-results-scope structure;
+% cautious claim language; terminology consistency; preservation of all
+% equations, tables, labels, references, and reported numerical results.
+\documentclass{article}
+
+\usepackage[preprint]{neurips_2026}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\graphicspath{{./}}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{placeins}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+
+\newcommand{\method}[1]{\texttt{#1}}
+\newcommand{\wstar}{W^{\star}}
+\newcommand{\rwstar}{RW^{\star}}
+\newcommand{\mstar}{M^{\star}}
+\newcommand{\cstar}{C^{\star}}
+\newcommand{\phiroute}{\varphi_{\mathrm{route}}}
+
+\setcounter{tocdepth}{2}
+
+\title{Utility-Certified Collective Semantic Memory:\\Formation, Admission, and Long-Horizon Coordination}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+This paper studies long-term collective memory as a
+\emph{formation-and-admission process} rather than a shared archive,
+in two connected halves. The first establishes the minimal mechanics.
+Treating collective memory as a monotone resource fails under semantic
+target scarcity: fast sharing improves target materialization but
+reduces completion because several agents act on the same records. A
+minimal collective semantic memory (CSM) that separates source-aware
+merge, explicit trust, and staleness-gated consumption occupies a
+distinct, better region of the materialization--completion plane, and
+the benefit comes from selective admissibility, not communication
+volume. Removing the shared-frame assumption through semantic place
+fingerprints preserves this behaviour across private frames; an
+order-theoretic and coalgebraic account (developed compactly in
+dedicated sections a reader may skip) interprets the merged memory as a coherent
+gluing of local views whose consensus-spanning is a measured,
+trust--cadence-dependent property. The second half studies how records
+are \emph{formed} and \emph{admitted}. Retention is a two-axis decision
+--- counterfactual marginal utility (worth retaining) times structural
+analogy (how to integrate) --- realised by five operations (merge,
+exception, new schema, repeat, drop) over an immutable episodic store.
+The formation policy is learnable (a contextual bandit beats the
+hand-designed rule) and a utility estimator matches exact
+counterfactual replay on held-out worlds (Spearman $0.989$), so the
+runtime survives without an oracle. On long horizons, unregulated
+exchange is harmful, a world-clock is necessary but insufficient, and
+receiver-side admission --- validating foreign testimony on the
+recipient's own visit --- reverses the sign, beating independent memory
+by roughly $20\%$ for both roles. An integrated single runtime combines
+formation, quarantine, admission, private-frame alignment, route
+execution, reservation, and rollback; at equal memory and communication
+budgets it dominates raw history and independent memory, survives
+perception noise and adversarial provenance, and transfers to
+synthetic-continuous and VMAS substrates with fail-closed safety.
+Controlled LLM experiments show a consolidated Songlines graph resolves
+freshness and cross-frame identity at a fraction of the raw-context
+cost. The result is a complete research prototype of utility-certified,
+provenance-aware collective memory; it does not establish open-world
+symbol grounding, a general category-theoretic theory of agent
+cognition, broad social-LLM generality, or real-robot validity.
+\par\medskip\noindent\textbf{We claim.} Long-term collective
+memory is not a shared archive but a distributed formation-and-admission
+process. Counterfactual marginal utility determines whether an
+experience should be retained; structural analogy determines whether it
+should be merged, stored as an exception, or promoted to a new schema;
+and foreign records become action-authoritative only after
+receiver-side admission under explicit merge, trust, staleness, and
+coordination constraints.
+\end{abstract}
+
+\section{Introduction}
+\label{p4:sec:intro}
+
+A collection of agents does not obtain a useful collective memory
+merely by placing all observations in one shared store. Our
+stage-decomposed multi-agent measurements show why: communication improves
+access to target evidence, but unrestricted or overly frequent sharing
+can synchronize commitments and reduce task completion. A collective
+memory must therefore regulate not only what is available, but also
+which records are admitted into each agent's decision process and how
+conflicts among local views are resolved.
+
+This paper introduces a minimal collective semantic memory (CSM) based
+on three explicit mechanisms. The merge rule preserves source and
+support information when records from different agents are combined.
+The trust rule assigns source-dependent authority to foreign evidence.
+The staleness rule limits the duration for which an observation can
+influence retrieval and materialization. Agents retain private memory
+and construct local merged views; no central cognitive state or
+single global interpretation is assumed.
+
+The empirical question is whether these mechanisms produce a distinct
+operating regime rather than merely another communication frequency.
+We compare independent memory, a shared bus, a central aggregator,
+fixed-cadence peer exchange, and the proposed CSM under identical
+navigation and planning components. We then relax the common-coordinate
+assumption using semantic place fingerprints and evaluate whether the
+same physical referents can be aligned from local meaning alone.
+
+The formal analysis serves two purposes. First, it clarifies the
+conditions under which local place memories can be glued coherently.
+Each realized memory is represented as an ordered category, and
+partial alignment maps are constructed from observed correspondences.
+Their colimit represents the merged structure, while connectedness of
+the accepted correspondence graph determines whether one consensus
+component spans the population or whether several sub-consensuses
+remain. Second, a coalgebraic reading represents agents as continuing
+processes that emit actions and messages over time, complementing the
+static algebraic description of memory content.
+
+The contributions of this paper are as follows:
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item A minimal collective semantic memory with explicit merge, trust,
+and staleness rules, evaluated against four communication topologies
+and shown to gain from selective admissible consumption rather than
+communication volume --- including semantic place correspondence that
+removes the shared-frame assumption (with order-theoretic and
+coalgebraic interpretations kept to skippable sections).
+\item A two-axis memory-formation rule --- counterfactual marginal
+utility times structural analogy --- realized by five operations
+(merge, exception, new schema, repeat, drop) over an immutable episodic
+store.
+\item A learned formation controller that outperforms the
+hand-designed rule, and an oracle-free utility estimator that matches
+exact counterfactual replay (Spearman $0.989$).
+\item Quarantine and receiver-side admission that turn long-horizon
+social exchange from harmful into net-positive (roughly $20\%$ below
+independent memory), resolving the social ladder exchange $\to$
+world-clock $\to$ admission.
+\item A single integrated equal-budget runtime combining formation,
+admission, private-frame alignment, route execution, reservation, and
+rollback, with adversarial-provenance, perception-noise, and
+continuous/VMAS validation, plus an LLM active-context comparison.
+\end{enumerate}
+
+The mathematical account is intended to formalize the implemented
+merge and alignment operations. It is not used as a decorative claim
+of novelty, nor does it establish that arbitrary agent societies form
+a single global mind. The scope remains a controlled family of
+semantic navigation memories with explicit correspondences and
+admissibility rules.
+
+\paragraph{Secondary claim.} The value of information exchange is
+produced by the admission and consumption contract that converts
+foreign testimony into locally validated evidence, not by exchange
+alone.
+
+\paragraph{Structure of the paper.} The paper proceeds in two halves.
+The first fixes the minimal
+mechanics --- merge, trust, staleness, and private-frame alignment ---
+that make a distributed memory an admissibility gate rather than a
+shared archive, with the order-theoretic and coalgebraic accounts
+deferred to appendices. The second (from
+Section~\ref{p5:sec:intro} onward) asks how records are \emph{formed}
+and \emph{admitted}: the two-axis formation decision and its five
+operations, a learnable controller and an oracle-free utility
+estimator, the long-horizon social ladder (exchange harmful $\to$
+world-clock necessary-but-insufficient $\to$ receiver-side admission),
+and a single integrated runtime evaluated under equal budgets,
+adversarial provenance, and continuous and VMAS substrates. The narrative
+is one arc: a shared archive fails, minimal admissibility mechanics
+help, the system learns what to retain, foreign testimony is validated
+on the receiver's own visit, and collective memory becomes net-positive
+at horizon.
+
+
+\section{Memory substrate and task}
+\label{p4:sec:substrate}
+
+Each agent observes a grid environment and emits semantic place
+evidence such as \texttt{water\_source}, \texttt{hazard\_edge}, and
+\texttt{open}. A local memory stores place records, tag confidences,
+visit counts, freshness, and transition statistics. Planner queries
+retrieve candidate places by matching required, preferred, and penalty
+tags. A selected candidate is materialized into a concrete cell and
+executed by a local controller.
+
+The multi-agent task uses a $12{\times}10$ grid. Each agent must reach
+a cell tagged \texttt{water\_source}. Targets are scarce:
+$N{\in}\{3,5,8\}$ agents, $T{\le}N$ targets, three layouts, three
+hazard densities, and 40 seeds for the main cadence sweep. Every run
+logs Q/R/M/C events per agent:
+\[
+Q^\star \rightarrow R^\star \rightarrow M^\star \rightarrow C^\star,
+\]
+where $M^\star$ means a semantic candidate was locked as an actionable
+target and $C^\star$ means the target was reached. These logs are not
+the architectural contribution; they let us see where each topology
+fails.
+
+
+\section{Four collective-memory topologies}
+\label{p4:sec:archs}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_architectures.pdf}
+  \caption{Four memory topologies. \textbf{(a)} Independent: per-agent private memory, no exchange. \textbf{(b)} Shared bus: one global memory, every agent reads and writes each tick. \textbf{(c)} Central aggregator: private memories plus a hub that merges snapshots into a consensus report. \textbf{(d)} Peer-to-peer broadcast: private memories with snapshot exchange every $K$ ticks and per-agent merged views.}
+  \label{p4:fig:architectures}
+\end{figure}
+
+The four topologies share the same local memory and planner. They
+differ only in where merge happens.
+
+\begin{description}[leftmargin=10pt,topsep=2pt,itemsep=2pt]
+\item[Independent.] Each agent owns a private event store and concept graph. There is no communication path.
+\item[Shared bus.] All observations are appended to a single global event bus. One shared concept graph is rebuilt from the union of all events.
+\item[Central aggregator.] Each agent owns a private concept graph; a central consensus layer pulls snapshots and computes one trust-weighted report for everyone.
+\item[Peer broadcast.] Each agent owns a private concept graph and a private merged view. Every $K$ ticks, agents broadcast snapshots; each agent merges its own memory with the latest snapshot from each peer.
+\end{description}
+
+The key distinction is not the clustering primitive. It is the level at
+which that primitive is instantiated:
+\[
+\begin{array}{rcl}
+\text{independent} &:& N \text{ graphs, }0\text{ mergers}\\
+\text{shared bus} &:& 1 \text{ graph, }1\text{ implicit global merger}\\
+\text{central} &:& N \text{ graphs }+1\text{ central merger}\\
+\text{peer} &:& N \text{ graphs }+N\text{ private mergers.}
+\end{array}
+\]
+
+
+\section{Cadence-dependent materialization--completion trade-off}
+\label{p4:sec:cadence}
+
+The peer topology has one explicit parameter: broadcast cadence $K$.
+The main sweep crosses four architectures and eight peer cadences
+$K{\in}\{1,2,4,8,16,32,48,64\}$ for 35{,}640 runs. Figure~\ref{p4:fig:conditional-rates}
+summarizes the result.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_conditional_rates.pdf}
+  \caption{Conditional rates and mean time-to-success from the 35{,}640-run sweep. Fast sharing improves target materialization but harms completion through contention; slow sharing has the opposite profile. Mean time-to-success has an interior optimum at $K{=}8$.}
+  \label{p4:fig:conditional-rates}
+\end{figure}
+
+Fast peer broadcast and centralized sharing live in the
+M-saturation/C-collapse regime: agents can lock targets reliably, but
+many locks point to targets that peers also pursue. Independent and
+slow peer broadcast live in the M-deficit/C-saturation regime: fewer
+agents lock onto good targets, but those that do are less likely to
+collide with peer occupancy.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/fig_bottleneck_shift.pdf}
+  \caption{Bottleneck shift across peer cadences. $P(M^\star|R^\star)$ falls and $P(C^\star|M^\star)$ rises as $K$ grows. The practical efficiency metric, mean time-to-success, is minimized at $K{=}8$.}
+  \label{p4:fig:bottleneck-shift}
+\end{figure}
+
+Across all peer runs, Spearman of $P(M^\star|R^\star)$ vs $K$ is
+$-0.608$ and of $P(C^\star|M^\star)$ vs $K$ is $+0.420$ (both
+$p<10^{-4}$). The stronger signature is visible at fixed cadence:
+the within-cadence Pearson correlation between the M and C links peaks
+at $-0.61$ for $K{=}4$ and decays toward noise as $K$ grows. Cadence
+therefore does not simply tune ``amount of communication.'' It moves
+the bottleneck between semantic commitment and shared-resource
+completion.
+
+
+\section{Minimal collective semantic memory}
+\label{p4:sec:csm}
+
+The cadence sweep shows that fixed-rate snapshot exchange exposes only
+one control surface. A collective semantic memory should expose at
+least three:
+\begin{description}[leftmargin=14pt,itemsep=1pt,topsep=2pt]
+\item[Merge.] How peer evidence about the same semantic place is combined.
+\item[Trust.] How evidence from different peers is weighted when it conflicts or becomes unreliable.
+\item[Staleness.] How old evidence decays before it influences retrieval.
+\end{description}
+
+The minimal CSM uses peer broadcast at $K{=}8$ and overlays three
+rules:
+\begin{description}[leftmargin=14pt,itemsep=1pt,topsep=2pt]
+\item[\textit{Merge.}] Per-place score equals own evidence at weight 1 plus peer evidence at weight $\mathrm{trust}_i \cdot e^{-\alpha \cdot \mathrm{age}}$, with $\alpha=0.05$. Inclusion threshold $\tau=0.30$.
+\item[\textit{Trust.}] Per-peer EMA on retrieval-success consistency. Peers whose latest snapshot supports the locally locked target gain trust; others decay toward $0.4$. Update rate $\beta=0.10$.
+\item[\textit{Staleness.}] Each broadcast snapshot is timestamped; merge weight decays as $e^{-\alpha\cdot\mathrm{age}}$. Snapshots older than $10K$ ticks are pruned.
+\end{description}
+
+The implementation is a drop-in replacement for fixed-cadence peer
+memory: \method{experiments/collective\_semantic\_memory/csm\_memory.py}.
+
+\subsection{Results}
+
+We compare CSM against fixed-cadence peer broadcast at
+$K \in \{1,4,8,16,64\}$ on scarcity cells
+$(N,T){\in}\{(3,2),(5,3),(8,5)\}$, three layouts, three hazard
+densities, and 20 seeds: 3{,}240 runs total.
+
+\begin{table}[ht]
+\caption{Minimal CSM vs fixed-cadence peer broadcast on the scarcity benchmark. CSM's lower 95\% bootstrap CI bound exceeds every peer-K upper CI.}
+\label{p4:tab:csm-results}
+\centering
+\small
+\begin{tabular}{l c c c}
+\toprule
+Architecture & $P(M^\star|R^\star)$ & $P(C^\star|M^\star)$ & Success rate (95\% CI) \\
+\midrule
+peer ($K{=}1$)  & 0.991 & 0.586 & 0.577 [0.572, 0.586] \\
+peer ($K{=}4$)  & 0.955 & 0.623 & 0.581 [0.572, 0.590] \\
+peer ($K{=}8$)  & 0.730 & 0.871 & 0.599 [0.591, 0.607] \\
+peer ($K{=}16$) & 0.697 & 0.892 & 0.597 [0.589, 0.606] \\
+peer ($K{=}64$) & 0.684 & 0.900 & 0.601 [0.594, 0.609] \\
+\textbf{CSM (minimal)} & \textbf{0.782} & \textbf{0.825} & \textbf{0.617 [0.610, 0.624]} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+CSM occupies a third regime. Fast broadcasts have excellent
+materialization but poor completion; slow broadcasts have the reverse.
+CSM keeps both conditional links above 0.78. The absolute success gain
+is modest, $+1.7$ to $+4.0$ percentage points, but the stage
+decomposition shows why it is meaningful: the architecture changes the
+joint M$\times$C operating point rather than merely moving along the
+fixed-cadence curve.
+
+\paragraph{Mechanism: gated consumption rather than unrestricted sharing.} Provenance
+annotation of the same runs gives the mechanism. CSM does not share
+\emph{better} than fixed-cadence peers --- it \emph{refuses to act on
+stale or untrusted foreign evidence}. The inclusion rule of
+Section~\ref{p4:sec:csm} implies a closed-form horizon beyond which a
+peer's evidence can no longer form an intention,
+$\mathrm{age}_{\max}(\mathrm{trust}_i) = \alpha^{-1}
+\ln(\mathrm{trust}_i \cdot c/\tau)$, and this horizon is empirically
+exact: measured intention-formation cutoffs match the formula
+tick-for-tick across trust levels (23/23.05, 18/18.59, 12/12.84 at
+$\mathrm{trust}=1.0/0.8/0.6$), including a registered-prediction
+hold-out on six never-run cells ($6/6$ exact integer breakpoints) and
+a discrete trust-flip: $\mathrm{trust}\le\tau/c$ zeroes
+foreign-evidence commitments entirely. Fixed-cadence peers have no
+such gate --- their foreign evidence never expires --- which is
+precisely why their completion collapses when sharing is fast. The
+full provenance-conditioned analysis appears in the companion paper
+\emph{The Song, Not the Pin}; here it serves as the mechanistic reading of
+Table~\ref{p4:tab:csm-results}.
+
+
+\section{Place identity from meaning: removing the shared frame}
+\label{p4:sec:semantic-identity}
+
+Everything above --- and the categorical reading below --- assumes a
+shared spatial basis $X$: `the same place' means `the same $(x,y)$ in
+a frame the environment hands to every agent'. This section removes
+that assumption and reports what it was hiding. Each agent now holds a
+\emph{private} frame (the true grid under a secret translation, and,
+in the final experiment, a secret $90^\circ$-multiple rotation);
+broadcast snapshots carry the sender's private coordinates, which are
+meaningless to the receiver until it decides what the sender's places
+\emph{mean}.
+
+\paragraph{Mechanism.} A \emph{place fingerprint} is the local
+semantic constellation around a visited cell: which content tags
+(hazards, walls, water) sit at which relative offsets ---
+translation-invariant and coordinate-free. Two agents match places by
+\emph{mutually unique} fingerprint correspondence (each side is the
+other's sole candidate; one-directional uniqueness aliases distant
+look-alikes into the receiver's neighborhood, and border-only
+patterns are excluded as descriptions of the world's shape rather
+than of a place). The inter-agent frame is the modal translation of
+$\ge 3$ agreeing matched pairs; under rotations, one hypothesis per
+$90^\circ$ reuses the same aligner and the winner must dominate the
+runner-up's consensus by $2\times$. Foreign evidence --- including
+places the receiver has never seen --- is then transported through
+the recovered frame.
+
+\paragraph{Results.} Registered before execution; full protocol in
+the companion route-transfer paper \emph{The Song, Not the Pin}.
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item \textbf{Exact recovery.} Witness--traveler: the secret offset is
+  recovered exactly in $100\%$ of landmark-world runs, and under
+  translations and quarter-turn rotations (the discrete rigid-frame
+  family $\mathbb{Z}^2\rtimes C_4$) in $80/80$
+  rotation$\times$offset$\times$seed combinations, with $100\%$
+  completion on foreign-committed locks.
+\item \textbf{Failure asymmetry.} Where identification is impossible
+  --- a featureless region, or a $180^\circ$-symmetric layout in which
+  the frame is unrecoverable \emph{in principle} --- semantic identity
+  makes \emph{zero} commitments (fails closed), while coordinate
+  identity keeps confidently locking wrong cells ($100\%$ wrong locks;
+  fails open).
+\item \textbf{The full stack.} With $N{=}4$ agents in distinct secret
+  frames, alignment develops online (onset in $100\%$ of episodes,
+  mean tick ${\approx}15$) and recovers $88\%$ of the shared-frame
+  performance gap (success $0.444$ vs.\ $0.456$ oracle vs.\ $0.350$
+  coordinate); under randomly sampled translations and quarter-turn
+  rotations every semantic commitment
+  points at real water ($8/8$) while the coordinate stack produces
+  $992$ phantom locks ($0$ real).
+\item \textbf{The gate is orthogonal.} Re-running the
+  $\mathrm{age}_{\max}$ analysis above with the CSM inclusion rule ON
+  TOP of semantic identity, under a frame offset and under a
+  $90^\circ$ rotation, reproduces the SAME integer breakpoints
+  ($20/14/9$; $\mathrm{bp}=20$ rotated) --- the trust$\times$staleness
+  gate and frame recovery are independent layers.
+\end{enumerate}
+
+The stronger claim promised in earlier drafts' limitations is
+therefore discharged constructively: place identity can be carried by
+meaning alone, it composes with merge/trust/staleness unchanged, and
+--- unlike the coordinate convention it replaces --- it knows when it
+does not know.
+
+\paragraph{The categorical indicator: adjunction round-trip defect.}
+Frame recovery is exactly the operation the categorical reading of
+\S\ref{p4:sec:categorical} needs once the shared basis $X$ is dropped: with
+private frames each agent carries its own place category, and
+communication is a pair of recovery functors $F=\textsc{align}(A,B)$
+(the sender $B$'s frame expressed in receiver $A$'s coordinates) and
+$G=\textsc{align}(B,A)$. If the two are genuinely adjoint --- the frames
+are glued --- the round trip $\eta_X: X\to G(F(X))$ is the identity, so
+the \emph{adjunction defect}
+\[
+\mathrm{def}=\lVert F.\mathrm{offset}+G.\mathrm{offset}\rVert_1
+\ \text{(translation)},\qquad
+r_F{+}r_G\equiv 0\,(\mathrm{mod}\,4)\ \text{and}\
+\lVert R_{r_G}F.\delta+G.\delta\rVert_1\ (\mathbb{Z}^2\rtimes C_4),
+\]
+is zero \citep{maclane1998categories}. Measured on the recovery method
+above (\texttt{experiments/warp/alignment\_defect.py}, 3 offsets
+$\times$ 10 seeds per cell): the defect is \emph{exactly} $0$ in $30/30$
+runs for translation frames and $30/30$ for each of the four $90^\circ$
+rotations --- the recovered transformations are mutual inverses within
+the implemented discrete transformation family, yielding zero
+round-trip defect. Where recovery must fail (an agent that has observed
+only a featureless interior band), the observations are insufficiently
+discriminative to identify a unique admissible alignment: several
+transformations are equally consistent, so the runtime leaves the
+alignment edge undefined in $30/30$ runs and refuses to perform the
+gluing, with \emph{zero} spurious gluings. The exact discrete aligner
+therefore either recovers a mutual-inverse pair ($\mathrm{def}{=}0$) or
+declines to instantiate the edge --- and never produces a confident
+wrong gluing; ``failing closed'' above is precisely
+\emph{declining a non-identifiable alignment}. This is the quantity the categorical
+model computes that a re-description does not. The round-trip defect is
+a \emph{pairwise} witness: zero defect indicates that the recovered
+transformations are mutual inverses on the observed substructure.
+Global coherent gluing additionally requires cycle consistency across
+overlapping alignment paths ($F_{jk}\circ F_{ij}=F_{ik}$), formalized
+in \S\ref{p4:sec:categorical}; it is this gluing --- not a shared
+coordinate convention --- that the merge silently presupposed.
+
+
+\section{From distributed mechanics to memory formation}
+
+We introduced a minimal collective semantic memory in which merge,
+trust, and staleness are represented as separate, inspectable
+mechanisms. The experiments show that collective performance is not a
+monotone function of shared-information volume or communication
+frequency. The effective component is the admissibility gate: agents
+benefit when foreign evidence is merged with source information,
+weighted by trust, and removed from action authority as it becomes
+stale.
+
+The same architecture can operate without a shared coordinate frame
+when local place records are aligned through semantic fingerprints.
+The formal analysis characterizes this alignment as a coherent gluing
+of local ordered memories and clarifies the distinction between a
+single population-spanning consensus component and several
+sub-consensuses. The coalgebraic interpretation complements this
+static description by representing the collective as an ongoing
+behavioral process.
+
+The LLM experiments reinforce the central systems conclusion. Raw
+context can contain all historical evidence while still failing to
+resolve which information is current or which records refer to the
+same world entity. A consolidated graph supplies these relations
+explicitly and reduces the active context required by the model. The
+remaining problem is not how to coordinate a memory that already
+exists, but how agents should learn which observations, distinctions,
+and route structures deserve to become long-term memory. The second
+half of the paper addresses this formation problem.
+
+
+\section{Formation and admission: learning what to retain}
+\label{p5:sec:intro}
+\emph{Memory formation as a two-axis decision (counterfactual utility times simplicity of analogy): measured deterministically, learned by a contextual bandit that outperforms the hand-designed rule, evolved to a finite budget, and priced against seven policies over heterogeneous embodiments.}
+
+\medskip
+The preceding sections specify how structured memories are aligned,
+merged, and consumed; we now address how observations become durable
+memory records. This is a
+separate problem. An effective long-term memory must distinguish
+between repeated evidence, useful exceptions, novel schemas,
+short-lived observations, and records whose apparent similarity would
+produce an incorrect action if merged.
+
+The need for an explicit formation mechanism is already visible in the
+Q/R/M/C diagnosis. In the single-agent benchmark, candidate ranking is
+accurate when candidates exist, but the memory frequently contains no
+eligible record. The limitation is therefore not only retrieval; it
+is the preceding process that determines which observations are
+consolidated into queryable structure. In a collective, the same
+formation decision additionally affects communication cost,
+cross-agent transfer, and the possibility of propagating stale or
+misleading evidence.
+
+We formulate memory formation through two independent axes. The first
+is counterfactual marginal utility: the expected change in task or
+team cost produced by adding a candidate record to the current memory.
+The second is structural assimilability: the cost of mapping the
+candidate onto an existing schema while preserving decision-relevant
+relations. Utility answers whether the record is worth retaining.
+Analogy answers whether it should update an existing schema or create
+a distinct one. A single importance, novelty, or similarity score
+cannot represent both questions.
+
+The resulting controller selects among five operations:
+\begin{center}
+\small
+\begin{tabular}{lll}
+\toprule
+Utility & Structural relation & Operation \\
+\midrule
+high & compatible with an existing schema & \textbf{MERGE} \\
+high & similar but decision-conflicting & \textbf{EXCEPTION} \\
+high & not assimilable & \textbf{NEW\_SCHEMA} \\
+low & redundant with stored evidence & \textbf{REPEAT} \\
+low & unsupported and non-redundant & \textbf{DROP} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The exception operation is essential. A useful observation that
+contradicts a stored schema should not overwrite the original evidence,
+but it should not be discarded either. It is retained as a
+context-dependent counterexample and resolved during later retrieval
+or schema splitting. This design is supported by an immutable
+episodic layer and by provenance links from schemas to their source
+episodes.
+
+The empirical program proceeds in four stages. First, deterministic
+replay tests the five-way formation rule under controlled conflicts.
+Second, a contextual bandit and a terminal-reward learner evaluate
+whether the formation policy can be recovered from coordination
+feedback rather than fixed by the designer. Third, evolutionary search
+and structural matching test whether the route grammar and analogy
+mechanism can be compressed without losing decision quality. Fourth,
+an integrated multi-agent runtime evaluates receiver-side admission,
+world-time staleness, equal budgets, perceptual noise, adversarial
+provenance, continuous transfer, and LLM active-context
+reconstruction.
+
+The formation-and-admission half contributes the following:
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item We define a two-axis memory-formation model that separates
+counterfactual usefulness from structural assimilability and includes
+an explicit exception operation.
+\item We specify a conditional memory record with provenance,
+per-role utility, applicability conditions, analogical mappings, and
+failure cases, together with a receiver-side admission process.
+\item We show that the formation policy is learnable and that its
+parameters can be optimized within a fixed grammar family.
+\item We evaluate the method over horizons of up to $1000$ episodes,
+identify staleness as the principal long-horizon failure of
+consolidation-only policies, and measure the contribution of freshness
+and trust-aware conflict handling.
+\item We integrate formation, communication, quarantine, admission,
+alignment, route consumption, reservation, rupture, and rollback into
+a single runtime and compare it with independent, raw-history,
+heuristic, and structurally ablated memories under equal budgets.
+\item We evaluate utility estimation without oracle replay, causal
+landmark promotion from a fixed candidate set, graph-based analogy,
+LLM context reconstruction, adversarial provenance, and fail-closed
+safety on discrete, continuous, and VMAS substrates.
+\end{enumerate}
+
+The scope is that of an end-to-end research prototype. The utility
+estimator is calibrated against exact counterfactual replay in
+controlled environments; its validity in external stochastic systems
+remains open. Landmark promotion operates over a predefined candidate
+superset rather than generating new perceptual concepts. The grammar
+parameters evolve within a fixed representation family. These
+restrictions are retained explicitly in the claims and limitations.
+
+
+\section{The model}
+\label{p5:sec:model}
+
+\paragraph{Counterfactual marginal utility.} For memory item $m$,
+agent $i$, intent $\iota$ and current memory $M$:
+\[
+U_{i,\iota}(m \mid M) \;=\;
+\mathrm{cost}_i(M, \iota) \;-\; \mathrm{cost}_i(M \cup \{m\}, \iota),
+\]
+measured by \emph{deterministic replay} with the item switched on and
+off --- the source-masked replay device of the warp analysis,
+generalised from ``foreign evidence on/off'' to ``this memory
+on/off.'' Utility is contextual (per agent and intent) and marginal
+(relative to what is already stored): a duplicate of a stored schema
+has $U = 0$ \emph{by construction}, so repeats are detected without
+any similarity heuristic. The team-level version subtracts collision,
+communication and false-transfer costs.
+
+\paragraph{Analogy cost.} A new episode $e$ maps onto a stored schema
+$s$ through $\phi$ with cost
+\[
+C_{\mathrm{analog}}(e,s) = L(\phi) + \lambda_d\,
+D_{\mathrm{decision}}(e,s) + \lambda_a \operatorname{Defect}(\phi),
+\qquad A(e,s) = e^{-C_{\mathrm{analog}}},
+\]
+where $L$ counts structure outside the correspondence (here: couplets
+outside the signature LCS), $D_{\mathrm{decision}}$ measures how
+differently the two songs \emph{decide} --- operationalized as the
+distance between their end-to-end beat displacements, i.e.\ where
+they ultimately send the walker --- and $\operatorname{Defect}$
+penalises broken relational structure. Descriptive similarity and
+decision agreement are different quantities, and
+$D_{\mathrm{decision}}$ captures the second; this is the
+rate-distortion intuition of \citet{rdd2026} imported into a
+multi-agent, structural setting.
+
+\paragraph{The memory unit is a conditional program, not a fact.}
+We fix a single canonical record for the whole part,
+\[
+m = (G, C, E, U, P, T, F, A, H),
+\]
+with $G$ the relational graph/song, $C$ applicability conditions, $E$
+expected effects, $U$ the role-conditioned utility profile, $P$
+provenance (references to immutable source episodes), $T$ observation
+and world time, $F$ failures and exceptions, $A$ admission and
+authority state, and $H$ alignment requirements (and any temporary
+alignment hypotheses). Two things are deliberately \emph{not} stored
+fields: the known analogical maps $\mathcal{A}_m$ and the concrete
+inter-frame correspondence $\Gamma_{ij,t}$ are both re-derived at
+consumption (from $G$ and the receiver's own observations) rather than
+carried in the record --- $H$ records only what a valid correspondence
+would have to satisfy, not a fixed transform. On
+exchange, a schema travels with a \textbf{utility certificate}
+$(\text{conditions}, \Delta V, \text{uncertainty},
+\text{evidence ids}, \mathcal{A}_m, \text{failures})$; the
+receiver transports the song through its own mapping and recomputes
+its own utility. For heterogeneous embodiments this is essential: a
+route through a hazard field can have $U_{\mathrm{robust}} > 0$ and
+$U_{\mathrm{fragile}} < 0$ simultaneously, so a memory item carries a
+utility function over roles, not one weight.
+
+\paragraph{Four storage layers.} (1) an \emph{immutable episodic
+store} --- source episodes are never rewritten (continuous rewriting
+first helps and then hurts \citep{faulty2026}; primary evidence
+anchors reconsolidation); (2) the \emph{analogical schema graph} ---
+songs, landmarks, exceptions, governed by the two-axis matrix; (3) a
+\emph{procedural layer} for schemas promoted to policy fragments;
+(4) a \emph{coordination layer} for social rules (reservations,
+roles, trust, transfer conditions). An agent's active context is a
+reconstruction --- relevant schemas, minimal supporting episodes,
+current exceptions and the coordination contract --- not a replay of
+history.
+
+\subsection{The runtime as one algorithm}
+\label{p5:sec:algorithm}
+
+Every experiment below is a configuration of one per-agent loop; we
+state it once so the method is reconstructable from the paper alone.
+A record is the canonical $m=(G,C,E,U,P,T,F,A,H)$ of
+\S\ref{p5:sec:model} --- song graph, applicability, expected effect,
+per-role utility, provenance, observation/world time, failures and
+exceptions, admission/authority state, and alignment requirements
+$H$. The concrete inter-frame correspondence $\Gamma_{ij,t}$ is
+re-derived at consumption and never stored.
+
+\begin{quote}\small
+\textbf{Algorithm 1 (Songline Memory Runtime).}\\
+\emph{In:} observation $o$, intent $\iota$, local memory $M$,
+quarantine $Q$.\\
+1. extract candidate song from $o$;\
+2. estimate marginal utility $\widehat U$ ($\S\ref{p5:sec:acceptance}$,
+UE1);\
+3. find structurally closest schema (analogy $\S\ref{p5:sec:echelon3}$);\
+4. compute analogy cost + decision distortion;\
+5. choose DROP / REPEAT / MERGE / EXCEPTION / NEW\_SCHEMA;\
+6. append to immutable episodic store;\
+7. update schema graph;\
+8. build provenance + utility certificate;\
+9. broadcast on cadence, within wire budget;\
+10. place received records in $Q$;\
+11. on visit, validate world-time, role, local utility;\
+12. promote $Q$-record to retrieval/planning/action authority;\
+13. retrieve an admissible song (support$\times$staleness order);\
+14. recover landmark correspondence (consensus $\ge k$ + loop
+closure);\
+15. reserve target/route;\
+16. execute safe prefix ($\ge 5$ couplets verified);\
+17. detect rupture;\
+18. commit / replan / rollback.
+\end{quote}
+
+\paragraph{Quantities in one place.} Marginal utility
+$U_{i,\iota}(m|M)=\mathrm{cost}_i(M,\iota)-\mathrm{cost}_i(M\cup\{m\},
+\iota)$; analogy cost $C=L(\phi)+\lambda_d D_{\mathrm{decision}}
++\lambda_a\mathrm{Defect}(\phi)$; retrieval score
+$\mathrm{support}\cdot e^{-\alpha\,\mathrm{age}}$ (trust-flip $\times
+0.25$ on an excepted parent); world-clock admissibility
+$\mathrm{ver}(m)\ge\mathrm{known\_ver}(\mathrm{fam})$; rupture index
+$=\arg\min_e \mathrm{trust}\cdot e^{-\alpha\,\mathrm{age}(e)}<\tau$;
+objective $w_s\,\mathrm{succ}+w_t(-t)-w_b\,\mathrm{bits}
+-w_c\,\mathrm{collisions}$ (weights $w_s,w_t,w_b,w_c$ distinct from
+the staleness rate $\alpha$ above and from the conditional product
+$\Phi$ of the companion evaluation study).
+
+\paragraph{Hyperparameters (frozen; test seeds never used to tune).}
+utility threshold $U_{\mathrm{thr}}{=}5$ (validation, U1); analogy
+share $\ge0.4$ and distortion $\ge3$ (validation, U1); staleness
+$\alpha{=}0.05$, $\tau{=}0.30$ (fixed; the trust--staleness constants
+of the companion route-transfer paper); song budget
+$v_{\max}{=}10$ (\emph{evolved}, U3); anchor consensus $k{=}3$ and
+safe-prefix depth $5$ (safety design, N1/C1). Selection method and
+per-parameter sensitivity are tabulated in
+Appendix~\ref{p5:app:repro}.
+
+
+\section{U1: the matrix, measured deterministically}
+\label{p5:sec:u1}
+
+Eight valid grid-world families, five candidate memories per family
+--- one per matrix cell, in sequence: a useful novel song
+(\textsc{new}), its exact duplicate (\textsc{repeat}), a song from a
+structurally different world (\textsc{novel}), a song to a goal
+irrelevant to the water intent (\textsc{irrelevant}), and a song from
+a variant world whose water has been secretly moved
+(\textsc{conflict}). Two single-axis baselines run on the same
+stream: similarity-only (store if novel, last-write-wins merge if
+similar) and utility-only (store if useful, consume newest-first).
+Four predictions were registered; the first registration failed on
+two construction defects (an ``irrelevant'' goal that accidentally
+lay en route to the water; consumers spawning inside walls), both
+documented, and the corrected registration passed $4/4$:
+
+\begin{itemize}[leftmargin=16pt,itemsep=2pt,topsep=2pt]
+\item \textbf{Repeats are free by construction:} the duplicate's
+  marginal utility is exactly $0$ in every world; final memory is
+  $3$ schemas vs.\ $5$ for append-everything.
+\item \textbf{Similarity is not a consolidation criterion:} the
+  similarity-only baseline incorporates the irrelevant song and
+  silently corrupts the original world by overwriting its schema with
+  the conflict variant ($62.6$ steps and phantom-first, vs.\
+  \textbf{$12.3$ steps first-try} for the two-axis memory).
+\item \textbf{Exceptions beat both overwrite and recency:} with the
+  exception stored, the variant world costs $20.5$ vs.\ $70.4$
+  without it, while the original stays first-try correct;
+  utility-only's recency order phantoms first on the original
+  ($24.0$ steps).
+\item \textbf{Certificates are recomputable:} a receiver at a
+  different position recovers positive utility from the certificate's
+  evidence in every world.
+\end{itemize}
+
+
+\section{U2: the matrix is learnable --- and improves itself}
+\label{p5:sec:u2}
+
+A LinUCB contextual bandit replaces the hand thresholds. Features:
+$(U, \text{share}, D, \text{novelty}, \text{memory size})$; actions:
+the five operations; reward: the \emph{measured} cost change of the
+memory on a two-world probe (the candidate's world and the nearest
+schema's origin world --- the second term is what teaches the
+controller not to overwrite), minus a small storage tax.
+
+The first registration failed on two evaluation defects that are
+themselves findings. The final battery was circular (each policy was
+scored on the worlds it chose to store, making random indistinguishable
+from designed), and two pairs of actions were
+\emph{reward-equivalent}: \textsc{new} and \textsc{exception} had the
+identical structural consequence, as did \textsc{drop} and
+\textsc{repeat} --- and the bandit recovered exactly that quotient,
+confusing actions strictly \emph{within} equivalence classes while
+learning the drop cell at $40/43$. Bookkeeping without consequences
+is unlearnable. Version 2 made the battery independent and gave
+support a consequence (consumption order). Result:
+
+\begin{center}
+\small
+\begin{tabular}{lccc}
+\toprule
+ & learned & hand matrix & random \\
+\midrule
+held-out battery cost & \textbf{78.1} & 83.5 & 105.9 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The learned policy reduces task cost by $6.5\%$ relative to the hand-designed policy. Its majority
+actions agree with the hand matrix in $3/5$ cells (a registered
+miss); the disagreements are two context-dependent equivalences
+(merging a duplicate $\equiv$ repeat; repeating junk $\equiv$ drop)
+and one \emph{principled, profitable deviation}: where the hand
+matrix says \textsc{merge}, the controller appends a new version and
+lets support ordering arbitrate --- it independently discovered the
+immutable-store principle (\S\ref{p5:sec:model}), the same lesson the
+consolidation literature reaches from failure analyses
+\citep{trustmem2026,faulty2026}.
+
+
+\section{U3: optimization of grammar parameters within a fixed family}
+\label{p5:sec:u3}
+
+An evolution strategy ($30$ generations $\times$ $16$ genomes)
+selects the grammar $\theta = (\text{couplet gap},
+\text{share threshold}, \text{distortion threshold},
+\text{utility threshold}, \text{couplet budget } v_{\max})$, with
+fitness measured on maps the genome never sang on (cost $+$
+$\lambda\cdot$bits). Both registered predictions passed: the evolved
+genome matches the hand grammar on hold-out within registration
+tolerance, and it selects a \emph{finite} budget ($v_{\max} = 10$)
+with no cost regression --- bounded rationality obtained by
+selection, not imposition. Beyond registration: selection converged
+to the neighborhood of the hand-designed thresholds (share
+$0.74 \to 0.46$ vs.\ hand $0.4$; distortion $3.9$ vs.\ hand $3$)
+while choosing denser couplets and a lower utility bar --- ``store
+more, but shorter.'' The designed constants of the matrix sit near a
+selected parameter region rather than being arbitrary.
+
+
+\section{U7: seven policies, two bodies, three horizons}
+\label{p5:sec:u7}
+
+The decisive comparison runs one mixed episode stream (new families,
+exact repeats, appearance variants with resampled hazard texture over
+persistent walls-and-water structure, and water-moved conflicts)
+through seven team-memory policies, consumed by two embodiments ---
+\emph{fragile} (hazards cost $12$ steps) and \emph{robust} (hazards
+cost $1$, steps cost $2$) --- and evaluates on the families' latest
+true worlds plus fresh appearance variants never streamed. Policies:
+raw long context (append all, newest-first), embedding-style
+signature similarity, recency-importance-relevance
+\citep{genagents2023}, full-snapshot exchange, utility-only,
+analogy-only, and the full two-axis memory with role-profiled
+certificates.
+
+\begin{table}[h]
+\centering
+\caption{Mean fragile-role battery cost by stream length ($12$ seeds)
+and stored bits at $1000$ episodes. All four registered predictions
+failed; the corresponding failure mechanisms are analyzed in the text.}
+\label{p5:tab:u7}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Policy & $10$ eps & $100$ eps & $1000$ eps & bits @$1000$ \\
+\midrule
+raw long context & $128.9$ & $\mathbf{53.3}$ & $\mathbf{139.8}$ & $339{,}453$ \\
+utility-only & $130.5$ & $53.6$ & $144.6$ & $162{,}107$ \\
+two-axis (UCSM) & $132.8$ & $60.8$ & $145.2$ & $\mathbf{153{,}774}$ \\
+signature similarity & $161.1$ & $214.7$ & $232.1$ & $186{,}843$ \\
+recency-importance-relevance & $190.7$ & $225.4$ & $250.1$ & $339{,}453$ \\
+full snapshots & $209.4$ & $246.6$ & $264.5$ & $5{,}198{,}886$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Failure analysis.} The registered dominance,
+sublinear-bits, role-preservation and false-merge predictions all
+failed. Three mechanisms carry the content. \emph{First}, the
+fail-closed identity layer makes bloat cheap in steps: stale or
+foreign songs simply produce no anchors and hence no targets, so the
+raw archive is filtered without an explicit storage penalty at consumption time and pays only in
+bits and matching compute. \emph{Second}, sublinear memory growth is
+impossible without cross-family abstraction: in an open stream where
+$30\%$ of episodes found new structures, consolidation caps
+within-family growth ($2.2\times$ fewer bits than raw, $34\times$
+fewer than snapshots) but cannot compress novelty it has no schema
+for. \emph{Third}, the long-horizon failure mode --- phantom-first
+rates near $0.95$ for every song policy at $1000$ episodes --- is a
+\emph{staleness} cascade from accumulated conflicts, which no storage
+policy fixes by ordering alone; it is the native territory of the
+series' trust$\times$staleness law, which none of the seven policies
+implemented.
+
+\paragraph{Results stable across horizons.} At every scale, structural memory
+(identity $+$ beats, whatever the consolidation rule) beats the
+mainstream heuristics --- embedding similarity, recency-importance-relevance
+scoring \citep{genagents2023,memgas2025}, and snapshots --- by
+$1.7$--$4.5\times$; and the two-axis memory is the cheapest in bits
+among song policies everywhere.
+
+\paragraph{U7b: testing the staleness diagnosis.} An eighth policy
+--- the same two-axis consolidation consumed newest-first --- was
+registered and run. At $100$ episodes it \emph{passes}: it matches or
+beats raw on both roles ($52.0/67.9$ vs.\ $53.6/68.9$) at $54\%$ of
+raw's bits, closing the entire consolidation-overhead gap by
+ordering alone. At $1000$ episodes it fails by $\sim 3\%$: under
+strong appearance drift, raw's redundancy retains residual value ---
+older variants of a song still anchor where the newest one fails to.
+The program formula that survives: \textbf{consolidation buys bits,
+freshness buys success, and they compose at moderate horizons; the
+next lever is a real age gate and cross-family schemas, not better
+ordering.}
+
+
+\section{Addressing staleness, landmark selection, and abstraction}
+\label{p5:sec:gaps}
+
+A second registered wave attacked the three most concrete gaps the
+first wave localized.
+
+\paragraph{Staleness in consumption (U7c).} The series'
+trust$\times$staleness contract was wired into consumption: schemas
+ordered by $\text{support}\cdot e^{-\alpha\,\text{age}}$, plus the
+discrete \emph{trust-flip} --- a schema that has accumulated an
+exception is demoted, so the counterexample is tried before its
+discredited parent. At $1000$ episodes this closes the robust role
+entirely ($214.2$ vs.\ raw's $214.3$) and cuts the fragile-role gap
+threefold ($-0.9\%$ vs.\ $-3\%$ for freshness ordering alone); the
+strict both-roles registration still fails --- the failure is retained
+and analyzed: residual
+redundancy value under appearance drift survives even the gate. The
+composition ladder is now measured: consolidation alone $-14\%$,
+$+$freshness $-3\%$, $+$trust-flip $-0.9\%$.
+
+\paragraph{Causally promoted landmarks (E1).} The causal loop
+\emph{propose $\to$ ablate $\to$ measure $\to$ promote} was implemented and evaluated:
+starting from a feature superset including a derived candidate and
+deliberately harmful frame-variant junk (cell parity), the loop
+caught the junk causally ($\Delta = -0.67$; its harm manifested as
+refusals --- zero fail-open across all ablation rounds) and reached a
+minimal vocabulary at perfect score ($0.33 \to 1.0$). The registered
+expectation that content classes would survive failed in the most
+instructive way: the surviving pair was $\{\texttt{wall},
+\texttt{void}\}$ --- the border feature that carries \emph{zero}
+consensus mass in the attribution measurement turns out to be
+causally necessary as an \emph{anti-aliasing guard} once the
+vocabulary is impoverished. Causal ablation and attribution mass are
+different quantities; the value of a feature is non-additive and
+contingent on the rest of the vocabulary.
+
+\paragraph{First-order cross-family abstraction (X1).} A shared
+signature codebook --- constellations recurring across families
+stored once and referenced by index, lossless by construction ---
+was added to the storage codec. Registered and passed: the codebook's
+bits growth ($7.91\times$ per decade) is smaller than the plain
+codec's ($8.42\times$), and the absolute saving grows with scale
+($-10\%$ at $100$ episodes, $-16\%$ at $1000$): cross-family motifs
+exist and reduce storage through lossless reuse of recurring
+constellations. Sublinearity is approached, not achieved ---
+full schema-level abstraction (slots and roles, not just shared
+constellations) remains the open half.
+
+
+\paragraph{The LLM end-to-end cycle (L1).} The full promised loop ---
+observation $\to$ candidate memory $\to$ controller $\to$ schema
+graph $\to$ reconstructed active context $\to$ LLM action --- was
+implemented on live models (the W4 division of labour: the LLM commits the
+semantic target, a deterministic waypoint primitive walks). Formation
+is deterministic UCSM over $4$- or $12$-episode histories in which
+the water is moved once or twice, so the stale targets hold up to a
+$10{:}2$ majority of the raw transcript; a fresh LLM session then
+commits under three context arms (no memory / full transcript /
+schema graph with certificates and exceptions). Registered and
+measured: memory is needed (the no-memory arm is $0.0$ everywhere);
+reconstruction beats replay --- \texttt{llama3.1-8B} degrades on the
+raw transcript from $0.42$ to $0.08$ as history grows (conflict
+chains $0.17 \to 0.00$) while the active context holds $1.0$
+throughout at $6$--$12\%$ of the transcript payload;
+\texttt{Qwen2.5-3B} reads the short transcript perfectly ($1.0$) yet
+drops to $0.375$ on $12$-episode chains, with the active context
+again at $1.0$. A $4$B thinking model fails the supersede chain in
+every arm --- a capability floor below the task, reported for
+completeness. The transcript's failure mode is specifically the stale
+majority, not length (benign $12$-episode logs stay readable to the
+stronger model): raw context reproduces the U7 phantom cascade in
+prompt space, and the reconstructed schema graph is its prompt-space
+staleness gate.
+
+
+\section{Extensions: structural matching, social exchange, and delayed credit}
+\label{p5:sec:echelon3}
+
+The remaining three gaps were evaluated at scale. One was resolved within the registered criterion, one produced a near-miss, and one returned the strongest negative result of
+the program.
+
+\paragraph{Graph-matching analogy (G1).} The LCS proxy was replaced
+by structural alignment: Needleman--Wunsch over couplets with partial
+node similarity (Jaccard over signature keys) and a \emph{relational
+defect} --- beat-chain consistency of the aligned pairs (do the two
+songs walk the same skeleton?). On appearance-heavy streams
+($300$ episodes, $12$ seeds) the graph controller recognises ``the
+same structure in a new texture'' that LCS blindly filed as new:
+$24\%$ fewer schemas and bits ($122$ vs.\ $162$ items; $42$k vs.\
+$55$k bits) at cost within $5\%$ on both roles and no safety price
+(phantom $+0.012$). The registered schema threshold ($\le 0.75\times$)
+was missed by $0.01$ --- reported as a failed registration whose
+every substantive clause held.
+
+\paragraph{Terminal credit (M1).} The immediate-reward bandit was
+retired: an evolution-strategies meta-learner optimizes the same
+policy class against a \emph{terminal-only} reward --- one number per
+full stream, after dozens of interleaved decisions. On held-out
+streams the meta-learned policy beats both the densely-shaped bandit
+($-97.95$ vs.\ $-99.69$) and the hand matrix ($-99.95$), and on
+hand-\textsc{exception} candidates it takes store-class actions in
+$91\%$ of cases with no replace-majority --- the third independent
+recovery of the immutable-store principle (after the hand-designed controller and
+the bandit), this time from a single delayed scalar.
+
+\paragraph{Long-horizon social exchange without admission (S1).} Six
+agents of mixed embodiments, each with its OWN memory, acting
+simultaneously in a world whose families evolve globally, exchanging
+certificates on a cadence. At $20$ episodes communication helps; at
+$300$ episodes \textbf{independence wins outright} (fragile $148$
+vs.\ $170$; robust $171$ vs.\ $238$ for every communicating arm).
+Mechanism: receivers accumulate hundreds of foreign schemas ($741$
+vs.\ $221$ items) whose world-referents drift stale faster than
+role-gating or recency can filter --- broadcast time is not world
+time. Three of four registered predictions failed on this; the one
+that passed is reservations (S1.3: duplicate commitments to zero at
+no cost). This is the series' central law --- \emph{the gate, not the
+exchange, carries the value of collective memory} --- re-derived in
+the formation substrate: certificates without a world-clock
+staleness contract are not merely insufficient, they are net harmful
+at horizon, exactly as raw exchange was for the LLM collective in
+the companion route-transfer paper.
+
+
+\paragraph{The world-clock contract (S2) --- necessary, not
+sufficient.} S1's diagnosis was implemented: every family carries a
+state version bumped when its world actually changes; certificates
+carry (family, version); version news travels in certificate metadata
+even when the schema is rejected; admissibility is gated on world
+clocks at both consumption and consolidation. On paired assignment
+streams ($12$ seeds, $300$ episodes) the gate improves every
+communicating arm (robust $238 \to 220$, fragile $170 \to 163$) and
+reservations still eliminate duplicate commitments without additional task cost --- but
+the S1 reversal does not reverse: independent agents beat the gated
+arm on \emph{every} seed, and memories barely shrink ($688$ vs.\
+$708$ items). The gate recovers only ${\sim}27\%$ of the
+communication penalty. Two registered negatives now bracket the
+problem from both sides: message-time filtering (S1) and world-time
+filtering (S2) both fail to make social exchange net-positive at
+horizon. The residual mechanism is not temporal at all: it is
+\emph{cross-family aliasing from sheer foreign volume} --- hundreds
+of schemas about families the receiver rarely visits still partially
+match its local constellations and emit phantom targets. What the
+data now names is ADMISSION control, not staleness control: accept
+foreign knowledge only where it has demonstrated utility on one's own
+visits --- the certificate is testimony, and testimony, the two
+negatives jointly say, is not admissible evidence.
+
+
+\paragraph{Admission control (S3) --- the reversal reverses.} The
+principle the two negatives pointed at was implemented: every foreign
+certificate is QUARANTINED on arrival (version metadata still
+travels); when the agent visits family $f$, quarantined certificates
+about $f$ are validated ON THE SPOT --- the foreign song's marginal
+utility is replayed on the actual current world under the agent's own
+role; passers are admitted with their utility \emph{measured, not
+told}, and are usable in that same visit; failers are discarded;
+knowledge about never-visited families never enters consumption. All
+four registered predictions pass ($12$ seeds, paired streams).
+\textbf{Social exchange is net-positive at horizon for the first
+time}: the full contract beats independence on every seed and both
+roles (fragile $118$ vs.\ $148$, $-20\%$; robust $134$ vs.\ $171$,
+$-21\%$). The mechanism is monotone --- testimony $162/220$ $\to$
+relevance-only admission $136/169$ $\to$ demonstrated-utility
+admission $118/134$ --- hygiene finally materialises (admitted
+memory $233$ vs.\ $688$ items, $0.34\times$, with $592$ junk
+certificates held harmlessly in quarantine), and reservations compose
+(zero duplicate commitments at $+0.6\%$ cost). The social ladder of
+the program is thereby measured end to end: exchange without
+contracts is harmful (S1), world-clock staleness is necessary but
+insufficient (S2), and admission by demonstrated utility on one's own
+visits --- testimony is not evidence --- resolves the evaluated social-memory setting (S3).
+
+
+\section{One method: the integrated runtime and its benchmark}
+\label{p5:sec:integration}
+
+Every mechanism above was validated in its own controlled experiment;
+the central integration question is whether these mechanisms remain effective when composed. We therefore
+built \textbf{Songline Memory Runtime v1}: the one canonical record
+type $m = (G, C, E, U, P, T, F, A, H)$ of \S\ref{p5:sec:model} (song
+graph, applicability, expected effect, per-role utility, provenance,
+time and world version, failures/exceptions, admission state, and
+alignment requirements; frame mappings $\Gamma_{ij,t}$ re-derived at
+consumption, never stored), one cycle from observation to
+execution, and every mechanism as a configuration flag --- so the
+benchmark's arms and ablations are configurations of one artifact,
+not adjacent codebases. Wire and storage accounting uses the full
+codec (certificate $64$, provenance $48$, time/version $32$,
+reservation $24$ bits).
+
+\paragraph{Single-run integration (R1).} The ten-point completion
+test --- route discovered in a private frame; song received;
+certificate held in quarantine; admission by the receiver's own
+measured utility; landmark correspondence; route execution; rupture
+fallback after the world changes; reservation deferral; superseded
+versions never used --- passes within a single execution of the
+integrated runtime, $10/10$
+scenarios.
+
+\paragraph{The integration benchmark (I1).} Six agents of mixed
+embodiments, two intents (resource and rest), private frames,
+globally drifting families, $300$ episodes, $12$ paired test seeds
+(numbered $100{+}$, never used to tune anything; all thresholds
+frozen from the earlier waves). Group cost (fragile/robust): full
+Songline $\mathbf{120.0/125.1}$ dominates independent ($137.3/146.5$),
+raw shared history ($160.9/204.4$), graph-without-provenance
+($146.3/174.5$) and the song ladder without admission
+($146$--$157/174$--$196$); it is simultaneously the only arm with
+zero duplicate commitments, the lowest phantom-first rate and a wire
+cost below raw's ($55$ vs.\ $69$ KB). The advantage grows with scale
+--- $-11\%$, $-13\%$, $-14\%$ at $N = 4, 6, 8$ (registered H3:
+\textbf{pass}) --- and survives $10\%$ and even $20\%$ perception
+noise ($-13$--$15\%$; the advantage clause of H2: \textbf{pass}).
+
+\paragraph{Ablation matrix and failure modes.} Removing
+landmarks or beats is catastrophic (success $0$, cost worst:
+fail-closed by construction); removing admission costs $+22\%/+38\%$
+--- the component with the largest measured contribution, confirming S3; removing
+the world clock costs $+9\%$ on the robust role; removing
+reservations restores duplicate commitments; removing the utility
+gate bloats wire and memory by ${\sim}40\%$ at equal cost. But three
+ablations --- provenance, exceptions, the immutable layer --- are
+cost-free \emph{in this substrate}: registered H1 therefore
+\textbf{fails} as stated, and the mechanism is worth the failure.
+Their value was demonstrated in the settings that exercise them
+(corruption on return in U1, gossip explosion in S1, audit and
+reconsolidation); the live-visit drifting benchmark never punishes
+their removal. In one artifact they are free insurance, not dead
+weight --- but the composition claim must be scoped to the mechanisms
+the substrate actually stresses.
+
+\paragraph{Utility without the oracle (UE1).} A ridge estimator over
+runtime-available features only (anchoring, local plan distance, song
+shape, memory counts) reaches Spearman $0.989$ and sign accuracy
+$0.97$ against the true counterfactual on held-out worlds, and the
+full controller driven by $\widehat U$ alone matches the oracle
+version (cost ratio $0.965/0.977$) --- the critical
+experiment: the system survives estimation.
+
+\paragraph{The margin lesson (N1).} Under independent false-negative
+$\times$ false-positive perception noise, coverage degrades
+gracefully ($0.96 \to 0.92$ at $10\%/10\%$: registered
+\textbf{pass}), but the fail-closed contract does NOT survive naive
+margin softening: with a plain cosine margin the fail-open rate
+reaches $0.21$ inside the $20\%$ envelope (registered N1.1:
+\textbf{fail}). Exact-equality matching was necessary in this configuration; the named
+fix is consensus-of-anchors verification (the identity layer's
+$\ge 3$-pair consensus rule, which single-anchor song consumption
+bypasses) --- margin machinery, not a lower threshold.
+
+
+\section{Integrated evaluation under equal budgets, adversarial
+provenance, and continuous transfer}
+\label{p5:sec:acceptance}
+
+We evaluate whether each mechanism produces its predicted failure mode
+in at least one targeted or integrated setting: at equal budgets the
+full method should beat the best baseline on unseen dynamic worlds
+without hurting safety, the advantage should survive noisy perception,
+private frames, heterogeneity and long-horizon drift, and removing a
+mechanism should reproduce its characteristic failure somewhere in the
+suite. We do \emph{not} require every component to affect aggregate
+cost in every substrate --- a mechanism whose value is shown in a
+specialized experiment (corruption for provenance, gossip for the
+immutable layer) need not also move the integration benchmark. We
+report each clause below.
+
+\paragraph{Statistical footing.} On the integration benchmark the
+full method beats independent on \textbf{$12/12$ paired test seeds}
+(mean team gain $13.6\%$, sign-test $p = 0.0002$), and its hazard
+contacts are \emph{lower} ($5.06$ vs.\ $5.66$ per visit) --- the
+advantage does not buy speed with safety.
+
+\paragraph{Equal budgets (B1).} Capping wire and memory at the full
+method's own footprint ($55$/$45$ KB) and giving the raw-history
+baseline the same, the full method obtains $119.8/124.5$ versus\ $158.7/199.9$; and
+raw does not catch up at $2\times$ or even $4\times$ the budget
+($159.3/201.1$ throughout). Raw's deficit is not a storage shortage
+that a bigger cap fixes --- it is the absence of consolidation and
+admission. (On the continuous substrate raw is not merely worse but
+computationally intractable at the full horizon --- $\mathrm{O}(E^2)$
+matching over an unconsolidated store --- a cost the wire/byte
+accounting alone does not capture.)
+
+\paragraph{Adversarial provenance (P1).} With one poisoning peer that
+corrupts its own songs and launders mutated foreign records under
+their original origin, the full method degrades $+1.2\%$ while the
+defense ordering holds (full $\le$ no-provenance $\le$ no-admission).
+The instructive negative: the unprotected arm barely degrades under
+poison \emph{because it is already saturated with phantoms from
+ordinary drift} ($159.7$ clean). The dominant adversary of collective
+memory is world entropy, not a malicious agent --- and admission,
+which gates on demonstrated utility at the receiver's own visit,
+absorbs the liar and the stale alike; origin-bound receipt blocks the
+laundering at no measurable cost.
+
+\paragraph{Safety under noise (N1, revised).} The fail-open bar
+$<1\%$ is not met by a softened cosine margin (up to $0.21$). The
+named fix --- require a consensus of $\ge 2$ mutually-matched anchors
+whose pairwise displacements agree with the beat chain (the identity
+layer's loop-closure rule, which single-anchor song consumption
+bypassed) --- drives \textbf{fail-open to $0.000$ across the entire
+$20\%{\times}20\%$ envelope}, trading coverage ($0.88 \to 0.58$ at
+$10\%/10\%$). Safety is bought with refusals, as the fail-closed
+contract demands.
+
+\paragraph{A second substrate (C1).} Formation and consumption were
+moved to a continuous box with real-valued feature positions,
+per-observation jitter, soft constellation matching (a positional
+tolerance replacing exact key equality), unimodal anchor clustering
+with centroid refinement, and tolerance-based loop closure --- the
+runtime otherwise unchanged. The advantage transfers on both roles and against
+both baselines --- at a matched feasible horizon full $245.5/71.4 <$
+raw $256.9/101.2 <$ (fragile) and $<$ independent $255.3/75.9$
+(C1.3), and at the full horizon full $244.7/74.7 <$ independent
+$256.8/79.6$ (C1.1) --- confirming the effect is not a grid artifact.
+Continuous social-scale safety needs a \emph{three-layer} defense,
+each layer catching what the previous misses: anchor consensus
+($\ge 3$ mutually-matched, loop-closed anchors) reduces per-transport
+aliasing ($0.79 \to 0.15$); single-commitment gating (walk only the
+most-anchored target, never a phantom candidate list) reaches $0.04$;
+and a \emph{safe-prefix verification} --- the traveler physically
+walks the song's first five couplets and requires each observed
+constellation to match, so a foreign-family phantom that diverges
+from the actual terrain is refused before commitment --- drives
+fail-open to $\mathbf{0.0014}$ on held-out test seeds ($554\times$
+below the raw continuous rate, $10/12$ seeds exactly zero),
+\emph{under} the $1\%$ safety bar, while first-lock success
+\emph{rises} (phantoms that used to be committed are now filtered).
+The prefix check is the proposed ``successful use on a short
+safe prefix'' promoted to a hard gate; it also lets the consensus
+threshold relax (recovering coverage) by catching the lone wrong
+anchors a consensus count cannot. Calibration was frozen on dev
+families ($5001{+}$); test seeds ($100{+}$) were never touched.
+
+\paragraph{External substrate (VMAS physics).}
+To test whether the effect depends on the authors' own grid and synthetic-continuous substrates, we transplanted
+not the diagnostic logger but the \emph{whole runtime}
+(formation, certificate exchange, quarantine, receiver-side
+admission, frame-free continuous alignment, safe-prefix consumption)
+onto VMAS, a third-party continuous-physics multi-agent simulator.
+Holonomic agents move under a proportional controller in a
+landmark-populated box; a receiver with no shared frame recovers a
+witnessed water target purely by matching landmark constellations.
+Against a memory-free baseline given a dense box-tiling search and a
+longer horizon --- so it \emph{can} find the target by exhaustion,
+making the contrast a genuine speed-up rather than a floor --- the
+full runtime reaches the target in $254.5$ versus $543.5$ team steps
+($-53.2\%$, $12/12$ paired seeds, sign test $p=0.0005$), with
+transport fail-open $\mathbf{0.0000}$: agents that cannot anchor
+\emph{refuse} and fall back to the same blind search rather than
+committing a phantom. Only the substrate density (landmark count,
+witness-sampling rate, consensus threshold matched to the
+constellation geometry) was recalibrated; every mechanism flag is
+unchanged from the grid configuration. The effect and its
+fail-closed safety therefore transfer to a third, externally implemented
+substrate.
+
+
+\section{Related work}
+\label{p5:sec:related}
+
+\citet{rdd2026} argue memory should preserve decision-relevant
+differences rather than descriptive similarity and gate merging by
+decision distortion; we adopt the intuition and add the coordination
+side: heterogeneous receivers, per-role utility profiles, and
+certificates recomputed by the receiver. Generative
+Agents~\citep{genagents2023} score recency, importance and relevance
+--- our importance is a measured counterfactual, and the U7
+comparison quantifies the gap. MemRL~\citep{memrl2026} learns a
+utility of \emph{using} stored episodes; Mem-$\alpha$~\citep{memalpha2025}
+learns construction operations with RL on question-answering reward
+--- our controller learns \emph{formation} under coordination reward
+with corruption probes. MemGAS~\citep{memgas2025} selects granularity;
+TrustMem~\citep{trustmem2026} verifies consolidation transitions
+(coverage, preservation, faithfulness) --- our exception operation
+and immutable episodic layer attack the same failure from the
+mechanism side, and our learned controller rediscovers
+append-not-overwrite from reward alone. \citet{faulty2026} show
+continuous rewriting eventually corrupts; our U1 measures the same
+corruption in the similarity baseline and quantifies the benefit of the exception mechanism. The
+present system combines structural analogy, causal
+utility, heterogeneous embodiments, coordination consequences,
+causally promoted landmark status and immutable provenance in one measured
+loop.
+
+
+\section{Limitations and open problems}
+\label{p5:sec:limits}
+
+The present results establish an integrated prototype, but several
+limitations remain. First, the utility estimator is trained and
+validated in environments where exact paired replay is available for
+calibration. External stochastic environments require additional
+causal or off-policy validation. Second, the graph-matching analogy
+represents route structure but does not yet include a complete model
+of roles, affordances, preconditions, and causal effects. Third,
+landmark promotion is causal only within a predefined feature
+superset; open-ended proposal and naming of new concepts from learned
+representations remain unresolved. Fourth, the cross-family codebook
+captures repeated motifs but does not yet induce higher-order schemas
+with variables and role slots. Fifth, the social LLM experiments
+address active-context reconstruction rather than the complete
+multi-agent admission process. Sixth, the continuous and VMAS studies
+remain simulated and do not establish robustness under real sensors,
+actuation uncertainty, or robot hardware. Finally, the evaluation
+criterion is task and coordination utility under the implemented
+contract; it should not be interpreted as direct verification of the
+truth of every stored proposition.
+
+
+\label{p4:sec:limits}
+
+The minimal CSM is evaluated primarily in controlled semantic
+navigation environments. The merge, trust, and staleness rules are
+explicitly specified rather than learned, and their transfer to
+richer perceptual or social settings remains to be established. The
+semantic place-correspondence mechanism assumes that the candidate
+vocabulary contains sufficiently discriminative local features; open
+symbol creation and heterogeneous sensor grounding are not solved in
+this paper. The categorical results formalize coherent gluing in
+$\mathbf{Pos}$ and should be interpreted accordingly. In particular,
+a colimit exists for disconnected diagrams; the phase analysis
+concerns whether one accepted correspondence component spans all
+agents, not whether a colimit exists at all. The coalgebraic section is
+an interpretive model of continuing behavior rather than a new
+control algorithm. Finally, the LLM context comparison uses two model
+families and controlled tasks. It shows that structured consolidation
+can resolve specific freshness and identity failures, but it does not
+establish general superiority over all long-context or production
+memory architectures.
+
+
+\section{Conclusion}
+
+This paper treated long-term collective memory as a distributed
+formation-and-admission process. Its first half established the minimal
+mechanics --- merge, trust, staleness, and private-frame alignment ---
+under which a distributed memory acts as an admissibility gate rather
+than a shared archive, and showed that the benefit comes from selective
+consumption, not communication volume. Its second half introduced a
+two-axis model of long-term memory formation in
+which counterfactual utility determines whether an observation should
+be retained and structural analogy determines how it should be
+integrated. The resulting controller distinguishes merging,
+exception storage, new-schema creation, repetition, and candidate rejection (dropping).
+Deterministic experiments show that the exception operation prevents
+the corruption caused by similarity-based overwriting, while learned
+and evolutionary controllers recover interpretable design principles,
+including append rather than overwrite and a finite route-description
+budget.
+
+The long-horizon evaluation separates the functions of the main
+components. Structural consolidation reduces memory cost, but
+freshness and trust-aware consumption are required to preserve task
+performance under drift. Unregulated social exchange is harmful at
+long horizons; a world-time contract is necessary but insufficient;
+and receiver-side admission based on locally demonstrated utility
+changes the outcome in favor of collective exchange. The integrated
+runtime combines these mechanisms with provenance, private-frame
+alignment, route execution, reservation, rupture detection, and
+rollback. Under the tested equal-budget conditions, it outperforms raw
+history and independent memory, and the safety gates reduce fail-open
+behavior below the predefined threshold on the controlled substrates.
+
+The current result is therefore a complete research prototype of
+utility-certified, provenance-aware collective memory. It should not
+be interpreted as a universal solution to long-context memory for all
+LLM or robotic systems. Open-ended concept formation, richer causal
+analogy, broad social LLM evaluation, and real-world robotic
+validation remain the principal extensions.
+
+\FloatBarrier
+
+
+
+
+\clearpage
+\appendix
+
+\section{Categorical BDI reading of collective semantic memory}
+\label{p4:sec:categorical}
+
+This section gives a compact theoretical reading of the water-search
+example in terms of belief, desire, and intention. The goal is not to
+introduce a new planner, but to make explicit the mathematical
+structure already used by the collective semantic memory architecture.
+
+We assume a finite set of agents $A=\{1,\ldots,N\}$, a shared spatial
+basis $X$, and a shared semantic alphabet $\Sigma$. In the present
+grid-world implementation, $X$ is the common coordinate frame and
+$\Sigma$ contains tags such as \texttt{water\_source},
+\texttt{water\_candidate}, \texttt{hazard\_edge}, and \texttt{open}.
+This is an explicit modelling assumption. The agents may have different
+observations, different memories, and different confidence values, but
+they interpret places in a common coordinate framework and express
+semantic evidence in a common tag alphabet. Without the first
+assumption, peer merge requires a place-alignment problem to be solved
+first --- Section~\ref{p4:sec:semantic-identity} solves it constructively
+(fingerprint consensus recovers the inter-agent frame), and
+Section~\ref{p4:sec:colimit} states what that construction is,
+categorically. Symbol alignment (a shared $\Sigma$) remains assumed.
+
+\paragraph{What parameterizes commonality of interpretation.} It is
+worth stating explicitly that the categorical setup localizes ``how
+much the agents mean the same thing'' in exactly three parameters with
+three different statuses. \emph{(i) The alphabet $\Sigma$} --- what
+counts as the same \emph{predicate} --- is a parameter of the category
+itself (the subscript of $\mathbf{Ctx}_\Sigma$) and is here
+\emph{assumed}; relaxing it means constructing a translation between
+$\mathbf{Ctx}_{\Sigma_1}$ and $\mathbf{Ctx}_{\Sigma_2}$, which we leave
+open. \emph{(ii) The alignment morphisms} of the merge diagram ---
+what counts as the same \emph{place} --- were assumed in earlier
+drafts and are now \emph{constructed}
+(Sections~\ref{p4:sec:semantic-identity} and~\ref{p4:sec:colimit}), with
+their existence an empirically decidable predicate. \emph{(iii) The
+trust$\times$staleness enrichment} --- how much a peer's
+interpretation \emph{counts} --- makes commonality graded rather than
+binary, with its own closed-form horizon and a discrete trust-flip.
+The three are ordered by hardness: weights are tunable, place
+correspondence is solvable from co-observation, and predicate
+correspondence is genuinely open. The same triple reappears one level
+up, at the evaluator: scoring retrieval and materialization
+presupposes a correspondence between memory entities and world
+referents (see the companion measurement paper's limitations), and
+grounding \emph{that} correspondence by the mechanisms of
+Section~\ref{p4:sec:semantic-identity} is future work.
+
+Parameter (i) has, in addition, a measurable \emph{interior}: within a
+fixed $\Sigma$, which tag classes actually carry place correspondence
+is an empirical property, not a modelling choice. A registered
+vocabulary ablation in the companion route-transfer paper makes the
+alphabet itself the treatment and finds the identity machinery
+\emph{fail-safe in $\Sigma$}: impoverishing the vocabulary down to a
+single content class converts frame recovery into refusal, never into
+a wrong alignment (zero fail-open transports across $252$ cells), and
+the consensus mass is attributable per class (hazards $0.56$, walls
+$0.44$, world borders $0.00$). What no mechanism yet does is
+\emph{select} $\Sigma$: here features receive landmark status from
+design plus the world's cooperation. A rule by which features
+\emph{earn} that status through participation in successful alignments
+--- the alphabet shaped by coordination rather than assumed --- is the
+sharpest open end of parameter (i), and the natural meeting point with
+the symbol-alignment program of \S\ref{p4:sec:symbol-alignment}.
+
+At time $t$, agent $i$ maintains a local semantic context
+$\mathcal{K}_t^i=(G_t^i,\Sigma,I_t^i)$, where $G_t^i$ is the set of
+place records stored in the agent's private memory, and
+\[
+I_t^i \subseteq G_t^i \times \Sigma
+\]
+is the thresholded incidence relation saying that place $g\in G_t^i$
+carries tag $\sigma\in\Sigma$ with sufficient confidence. The graded
+implementation uses tag confidences and weighted scores; the crisp
+relation $I_t^i$ is the thresholded skeleton needed for the theoretical
+description.
+
+This formal context induces a Galois connection between sets of tags
+and sets of places:
+\[
+\operatorname{ext}_t^i(B)=\{g\in G_t^i:\forall\sigma\in B,\ (g,\sigma)\in I_t^i\},
+\qquad
+\operatorname{int}_t^i(S)=\{\sigma\in\Sigma:\forall g\in S,\ (g,\sigma)\in I_t^i\}.
+\]
+For a water-search task, the desired semantic predicate is
+$B_{\mathrm{water}}=\{\texttt{water\_source}\}$, or, in the implemented
+weighted form, a predicate combining positive evidence for
+\texttt{water\_source}, \texttt{water\_candidate}, and
+\texttt{water\_nearby} with penalties for \texttt{hazard\_edge} or
+nearby risk. Retrieval succeeds for agent $i$ at time $t$ exactly when
+\[
+\operatorname{ext}_t^i(B_{\mathrm{water}})\neq\varnothing .
+\]
+Thus the retrieval stage is not a coordinate lookup. It is the test
+that the queried semantic meaning already has a non-empty extent in the
+agent's realized memory.
+
+We can now define the BDI components.
+
+\paragraph{Belief.} The belief state of agent $i$ is the structured
+semantic memory induced by $\mathcal{K}_t^i$. Equivalently, it is the
+concept lattice $L_t^i=\operatorname{Concepts}(\mathcal{K}_t^i)$, whose
+nodes pair extents of places with intensions of tags. A water belief is
+not the proposition ``there is water at coordinate $x$.'' It is the
+region of $L_t^i$ whose intension contains the water predicate. If this
+region is empty, the agent does not merely choose badly; the relevant
+semantic object is absent from its current memory.
+
+\paragraph{Desire.} Desire is a state-conditioned semantic predicate
+over the belief lattice. In the water example, the agent's internal
+state contains a thirst variable. The active desire can be written as
+\[
+D_t^i =
+\begin{cases}
+B_{\mathrm{water}}, & \text{if } \mathrm{thirst}_t^i\geq\theta_{\mathrm{on}},\\
+B_{\mathrm{goal}}, & \text{otherwise.}
+\end{cases}
+\]
+Thus desire is not an additional metaphysical object. It is the rule
+that selects which semantic predicate should be queried from the
+current belief structure.
+
+\paragraph{Intention.} Intention is the commitment to one materialized
+candidate. Once desire has selected a predicate and retrieval has
+produced a non-empty extent, the planner applies a satisficing choice
+function
+\[
+\chi_t^i:\mathcal{P}(G_t^i)\rightarrow G_t^i\cup\{\bot\},
+\qquad
+g_t^{i,\star}=\chi_t^i\!\big(\operatorname{ext}_t^i(D_t^i)\big),
+\]
+where $\bot$ denotes failure to materialize a target. In Q/R/M/C terms,
+desire determines the query $Q^\star$, belief supports retrieval
+$R^\star$, and intention corresponds to materialization $M^\star$.
+Completion $C^\star$ is downstream of this semantic structure: it
+depends on whether the physical controller reaches the locked target
+and whether the target remains available under multi-agent occupancy.
+
+This gives a compact categorical reading. Let $\mathbf{Ctx}_\Sigma$ be
+the category whose objects are semantic contexts $(G,\Sigma,I)$ over the
+fixed alphabet $\Sigma$, and whose morphisms preserve semantic
+incidence. A local memory trajectory for agent $i$ is a time-indexed
+diagram
+\[
+\mathcal{K}_0^i\rightarrow\mathcal{K}_1^i\rightarrow\cdots
+\rightarrow\mathcal{K}_t^i\rightarrow\mathcal{K}_{t+1}^i\rightarrow\cdots
+\]
+in $\mathbf{Ctx}_\Sigma$. Each arrow is induced by observation and
+memory update. When new evidence is consolidated, the formal context
+changes; therefore its concept lattice changes. This is the
+order-theoretic content of memory growth.
+
+In Q/R/M/C terms, an empty extent
+$\operatorname{ext}_t^i(D_t^i)=\varnothing$ is a belief/retrieval
+failure, a non-empty extent with no stable lock is a materialization
+failure, and a successful lock that cannot be reached is a completion
+failure --- the semantic and the physical parts of the agent's state
+fail in different, separately measurable ways.
+
+The collective case lifts this by one construction. At broadcast times
+the receiver $i$ holds a diagram of local memory objects
+$\mathcal{D}_t^i=(\mathcal{K}_t^i,\mathcal{K}_t^{j_1},\ldots,
+\mathcal{K}_t^{j_m})$ together with alignment maps, and queries the
+merged consensus object
+$\widetilde{\mathcal{K}}_t^i=\operatorname{Merge}_{\mathrm{trust},
+\mathrm{stale}}(\mathcal{D}_t^i)$, with peer evidence weighted exactly
+by the rules of Section~\ref{p4:sec:csm}
+($\mathrm{trust}_{j\to i}\cdot e^{-\alpha\,\mathrm{age}_j}$). The same
+BDI definitions apply to the merged context: intention is now selected
+from $\operatorname{ext}_{\widetilde{\mathcal{K}}_t^i}(D_t^i)$ rather
+than from the private extent alone.
+
+This explains why communication cadence produces a bottleneck shift.
+Faster broadcast increases the freshness of peer evidence. This tends
+to enlarge or improve the water extent
+$\operatorname{ext}_{\widetilde{\mathcal{K}}_t^i}(B_{\mathrm{water}})$,
+so agents can materialize targets more reliably; in Q/R/M/C terms, this
+raises $P(M^\star\mid R^\star)$. But the same fresh shared belief also
+synchronizes intentions. Several agents may lock onto the same scarce
+water source. The memory is semantically accurate, but the physical
+target is now contested. This lowers $P(C^\star\mid M^\star)$. The
+bottleneck is therefore physically grounded. It is not a formal
+artifact of the decomposition: it arises because semantic belief is
+shared through memory, while completion is constrained by occupancy and
+scarce resources. Collective semantic memory must therefore regulate
+not only how much information is shared, but also how it is merged,
+whose evidence is trusted, and when stale evidence should stop
+influencing intention formation.
+
+In this sense the ``collective'' is not a central mind and not a global
+map but a stabilised family of peer-indexed processes; the next
+subsection makes that statement precise.
+
+The dual, process-level reading --- agents as coalgebras (codata), the
+collective as a final coalgebra, communication as depth-one
+corecursion, and the bottleneck shift as a competition between belief-
+and intention-bisimilarity --- is developed in
+Appendix~\ref{p4:sec:coalgebra}. It is a lens, not a mechanism: nothing
+downstream depends on it, which is why it lives in the appendix.
+
+\subsection{Colimit merge and its invariants}
+\label{p4:sec:colimit}
+
+The merge object above can be described more precisely. Working in a
+timestamp- and provenance-enriched version of $\mathbf{Ctx}_\Sigma$, a
+snapshot merge from agents $1,\dots,N$ is a diagram of local memory
+objects plus alignment maps induced by the place-identity relation. The
+consensus object $\widetilde{\mathcal{K}}_t^i$ is the colimit of this
+diagram, implemented concretely by the union-find merge over aligned
+concepts. This reading gives three useful constraints.
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item \textbf{Order independence.} The merged object is unique up to isomorphism, so the result is not an artefact of processing agent snapshots in a particular order.
+\item \textbf{Chaining is expected.} If concept A aligns with B and B aligns with C, union-find performs the transitive closure. Over-merging is therefore not a bug in the data structure; it is the cost of the chosen equivalence relation.
+\item \textbf{Decay is not a morphism.} Staleness is kept as a weight field outside the alignment morphisms. Otherwise age-then-merge and merge-then-age need not commute, breaking the clean interpretation of broadcast snapshots as one diagram.
+\end{enumerate}
+
+In earlier drafts this section ended by conceding that the model does
+not answer which perceptual features should identify two places ---
+the alignment maps were assumed, not constructed. That gap is now
+closed by Section~\ref{p4:sec:semantic-identity}, and the closure gives
+the colimit reading its missing scientific function:
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item \textbf{The alignment morphisms are constructed, not assumed.}
+  Fingerprint consensus IS an algorithm that produces the alignment
+  maps of the diagram --- mutually-unique landmark matches determine
+  the frame transform through which every local memory object embeds.
+\item \textbf{Faithful consensus becomes an empirical predicate.} A
+  unique faithful alignment edge is instantiated only when semantic
+  consensus is sufficiently discriminative. The colimit itself still
+  exists for an unaligned or disconnected diagram (\S\ref{p4:sec:gluing}:
+  $\mathbf{Pos}$ is cocomplete), but it then represents separated
+  components --- a coproduct of sub-consensuses --- rather than a single
+  consensus-spanning memory. In a $180^\circ$-symmetric world the
+  available observations do not identify a unique admissible alignment
+  morphism (two incomparable diagrams support equal consensus), and the
+  runtime therefore refuses to instantiate the edge --- the fail-closed
+  behavior of Section~\ref{p4:sec:semantic-identity} is exactly this
+  non-instantiation made operational. The predicate is measured, not
+  asserted: the round-trip defect of
+  \S\ref{p4:sec:semantic-identity} is exactly $0$ when the recovered
+  transformations are mutual inverses on the observed substructure
+  within the implemented discrete transformation family (in every
+  recovered translation and $90^\circ$-rotation case, $30/30$), and the
+  edge is left undefined when the observations do not identify a unique
+  admissible alignment (fail-closed, $30/30$, with zero spurious
+  gluings); a scalar witness for whether the colimit is
+  consensus-spanning rather than fragmented.
+\item \textbf{Decay stays outside the morphisms} (invariant 3), and
+  empirically the trust$\times$staleness gate is unchanged by frame
+  recovery --- the same integer breakpoints with and without a shared
+  frame --- confirming that the two layers commute as the diagram
+  reading requires.
+\end{enumerate}
+
+\subsection{Collective memory as a coherent gluing of local place categories}
+\label{p4:sec:gluing}
+
+The colimit merge of \S\ref{p4:sec:colimit} \emph{assumed} the alignment maps and
+\S\ref{p4:sec:semantic-identity} \emph{constructs} them; we can now state, as the
+central categorical result, what object the collective memory is when agents
+hold \emph{different} frames, and exactly when it exists faithfully.
+
+\paragraph{Setup.} Agent $i$'s realized memory is a thin category (a poset):
+its concept lattice $L_i=\operatorname{Concepts}(\mathcal{K}_i)$ over $i$'s
+private frame, objects the places, order the extent inclusion of
+\S\ref{p4:sec:categorical}. Frame recovery (\S\ref{p4:sec:semantic-identity}) yields,
+on the co-observed subposet, a monotone map $F_{ij}:L_i\to L_j$ that transports
+$i$'s places into $j$'s frame, and its reverse $F_{ji}$. Because the categories
+are \emph{thin}, a recovered pair $(F_{ij},F_{ji})$ is an \emph{adjoint pair}
+precisely when it is a Galois connection, with unit
+$\eta^{ij}:\operatorname{Id}_{L_i}\Rightarrow F_{ji}\!\circ\!F_{ij}$ --- the
+adjunction defect measured in \S\ref{p4:sec:semantic-identity}.
+
+\paragraph{Definition (coherent alignment system).} The family $\{F_{ij}\}$
+over the communication graph is \emph{coherent} if (i) each pair is an adjoint
+order-embedding ($\eta^{ij}$ an isomorphism, i.e.\ defect $0$: no place is
+aliased onto a distinct one), and (ii) it satisfies the cocycle condition
+$F_{jk}\!\circ\!F_{ij}=F_{ik}$ on triple overlaps.
+
+\paragraph{Proposition (two agents).} For an adjoint pair $F\dashv G$ between
+$L_A,L_B$, the collage (comma) category $\mathrm{Gl}(F)$ --- objects
+$L_A\sqcup L_B$, cross-hom $\mathrm{Gl}(F)(X,Y)=L_B(FX,Y)\cong L_A(X,GY)$
+\citep{maclane1998categories} --- contains $L_A,L_B$ as full subposets and is
+the two-agent collective memory; the defect $\eta_X$ is the obstruction to $X$
+round-tripping to itself, and the gluing collapses distinct places iff $\eta$
+is not an isomorphism.
+
+\paragraph{Theorem (collective memory = colimit of the alignment diagram).}
+Let $\mathbf{D}$ be the diagram in $\mathbf{Pos}$ (equivalently the enriched
+$\mathbf{Ctx}_\Sigma$) whose vertices are the $L_i$ and whose edges are the
+$F_{ij}$. The collective memory is $\operatorname{colim}\mathbf{D}$. As
+$\mathbf{Pos}$ is cocomplete this colimit always exists; it is a \emph{faithful}
+gluing --- every $L_i$ embeds and no two distinct places are identified ---
+\emph{iff} the alignment system is coherent. When all $F_{ij}=\operatorname{id}$
+(a shared frame) $\mathbf{D}$ is the constant diagram and
+$\operatorname{colim}\mathbf{D}$ is exactly the union-find colimit merge of
+\S\ref{p4:sec:colimit}; the general statement removes the shared-frame assumption
+by replacing identities with the recovered order-embeddings (mutual inverses on the observed substructure).
+
+\emph{Argument.} Cocompleteness of $\mathbf{Pos}$ realizes the colimit as the
+disjoint union quotiented by the preorder generated by the
+$F_{ij}$-identifications. Each canonical injection
+$L_i\hookrightarrow\operatorname{colim}\mathbf{D}$ is faithful iff those
+identifications add no collapse inside an $L_i$, which holds iff every $F_{ij}$
+is an order-embedding (unit iso, defect $0$) and the identifications agree
+across overlaps (cocycle) --- i.e.\ coherence. The shared-frame case is the
+constant diagram, whose colimit is the componentwise union, i.e.\ union-find.
+\hfill$\square$
+
+\paragraph{Corollary (two computable witnesses).} Coherence is checkable
+without solving general semantic alignment. (a)~The pairwise \emph{round-trip
+defect} $\eta$ (\S\ref{p4:sec:semantic-identity}) is zero iff each recovered edge is a
+mutual inverse on the observed substructure within the discrete transformation family
+--- measured exactly $0$ in $30/30$ recovered translation and
+rotation cases --- and guards against \emph{over-merge}. (b)~The
+\emph{connectedness} of the trust$\times$cadence reachability graph
+(\S\ref{p4:sec:phase-diagram}, Figure~\ref{p4:fig:phase-diagram}) decides whether a
+single $\operatorname{colim}\mathbf{D}$ spans all $N$ or the diagram
+disconnects into a coproduct of sub-consensuses (\emph{fragmentation}). The two
+failure modes are categorically distinct and separately measured: defect $>0$
+is collapse, disconnection is fragmentation --- the two axes of
+Figure~\ref{p4:fig:phase-diagram} and the fail-closed behavior of
+\S\ref{p4:sec:semantic-identity}.
+
+\paragraph{Scope.} The proofs are the standard cocompleteness of $\mathbf{Pos}$
+and the collage construction \citep{maclane1998categories}; the theorem's job
+is to name the object and pin its existence to two measured quantities. The
+empirical content is that fingerprint recovery yields mutually inverse
+order-embeddings on the observed substructure, thereby instantiating the
+coherent-alignment case used by the categorical model; it lives in
+\S\ref{p4:sec:semantic-identity}, not in the theorem. One
+assumption is \emph{not} discharged: a shared tag alphabet $\Sigma$; with
+different alphabets the $F_{ij}$ would have to translate $\Sigma$ as well,
+which is beyond the present correspondence mechanism and remains unresolved.
+
+\subsection{Protocol parameters as categorical structure: a trust\texorpdfstring{$\times$}{x}cadence phase diagram}
+\label{p4:sec:phase-diagram}
+
+The reading so far models the \emph{memory} (objects are semantic contexts,
+merge is their colimit) under a shared frame and full exchange. Its
+predictive use comes from turning the lens on the \emph{communication
+structure} and asking \emph{what shape the colimit takes} as a function of
+the two protocol parameters --- so that the category computes a structural
+fact rather than re-describing an algorithm. (In $\mathbf{Pos}$ the colimit
+of the diagram always \emph{exists} by cocompleteness, disconnected or not;
+the structural question is whether it is a single consensus component or a
+coproduct of sub-consensuses, exactly the dichotomy of \S\ref{p4:sec:gluing}.) Two parameters play two structural roles:
+\begin{description}[leftmargin=12pt,topsep=2pt,itemsep=1pt]
+\item[Trust $\tau$ gates morphisms.] An edge $i\!\to\!j$ (agent $i$
+incorporates $j$'s evidence) exists only where $i$'s trust in $j$ is at least
+$\tau$. Raising $\tau$ prunes the trust graph.
+\item[Cadence $K$ gates composition depth.] Over a horizon $H$ there are
+$R=\lfloor H/K\rfloor$ broadcast rounds, so a composed chain
+$i\!\to\!k\!\to\!\cdots\!\to\!j$ can be at most $R$ morphisms long. Low $K$
+(many rounds) allows deep composition; high $K$ allows only short paths.
+\end{description}
+A \emph{consensus-spanning} colimit --- a single connected consensus
+component that fuses and serves every agent's evidence --- obtains iff the
+$R$-round reachability of the $\tau$-thinned trust graph is all-to-all;
+otherwise the colimit degenerates into a coproduct of sub-consensuses.
+
+Figure~\ref{p4:fig:phase-diagram} sweeps $\tau\times K$ for $N{=}8$ agents whose
+pairwise trust is produced by the system's own EMA rule
+(\method{peer\_memory.peer\_trust.AsymmetricTrust}) under a ring co-observation
+topology (neighbours co-observe often and earn high trust; distant agents do
+not), averaged over $12$ seeds
+(\method{experiments/collective\_semantic\_memory/phase\_diagram\_trust\_cadence.py}).
+The result is a genuine phase transition with a diagonal boundary. At low
+$\tau$ the trust graph is dense and the colimit spans all agents at every
+cadence. Raising $\tau$ prunes the long-range morphisms down to a
+near-neighbour ring; the collective then keeps a spanning colimit \emph{only
+if} cadence is low enough for multi-hop composition through still-trusted
+intermediaries to reconnect it ---
+$\tau{=}0.55$ holds the spanning colimit down to $R{=}2$, $\tau{=}0.80$ needs $R\ge4$
+(the ring diameter), and $\tau{=}0.90$ fragments throughout. Cadence and trust
+are therefore not opaque knobs: together they determine a categorical
+structural invariant, and the phase boundary is exactly where the collective
+transitions from a single consensus object to fragmented sub-consensuses.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_phase_diagram.pdf}
+  \caption{Communication-structure phase diagram over trust threshold $\tau$
+  (rows) and cadence $K$ (columns; $R=\lfloor H/K\rfloor$ broadcast rounds),
+  $N{=}8$ agents on an interaction ring, $12$ seeds. \textbf{Left:} reachability
+  density (fraction of ordered agent pairs whose evidence can compose within
+  $R$ rounds). \textbf{Right:} $P(\text{the colimit spans all }N)$,
+  i.e.\ all-to-all reachability. The diagonal boundary is a structural
+  transition: the collective admits a single consensus object in the
+  low-$\tau$/low-$K$ region and fragments in the high-$\tau$/high-$K$ corner,
+  with higher $\tau$ demanding lower $K$ (more rounds) to stay connected.}
+  \label{p4:fig:phase-diagram}
+\end{figure}
+
+This is the sense in which the categorical model is operational rather than
+descriptive: each protocol parameter maps to a concrete change in the
+communication diagram, and the diagram's structural invariant (whether the
+colimit spans all agents or splits into a coproduct) predicts a qualitative
+regime of the collective. \emph{Scope.} The
+trust matrix is produced by the real EMA rule under a modelled ring
+co-observation topology, and ``consensus-spanning'' is operationalized as
+all-to-all $R$-round reachability; establishing quantitatively that crossing
+this structural boundary predicts the drop in observed Q/R/M/C performance is
+the natural next experiment.
+
+\subsection{Toward symbol alignment: grounding tag alphabets through shared places}
+\label{p4:sec:symbol-alignment}
+
+The gluing theorem (\S\ref{p4:sec:gluing}) still assumes a shared alphabet
+$\Sigma$. Dropping it, each agent holds a context $(G_i,\Sigma_i,I_i)$ over its
+\emph{own} vocabulary, and the right morphism is no longer a functor over one
+$\Sigma$ but an \emph{infomorphism} \citep{barwise1997information}: a pair
+$f:G_A\!\to\!G_B$, $\hat f:\Sigma_B\!\to\!\Sigma_A$ with
+$I_B(f g,\,y)\Leftrightarrow I_A(g,\,\hat f y)$. Infomorphisms compose and have
+colimits (Barwise--Seligman channels), so the collective memory over
+heterogeneous alphabets is the \emph{channel core} --- the colimit of the
+infomorphism diagram --- which extends \S\ref{p4:sec:gluing} verbatim (functors
+over one $\Sigma$ become infomorphisms over the $\Sigma_i$; shared $\Sigma$ with
+$\hat f=\mathrm{id}$ is the old case).
+
+\paragraph{Grounding mechanism.} Symbols align through shared referents: on the
+places already anchored by frame recovery (\S\ref{p4:sec:semantic-identity}), the
+co-occurrence of an $A$-tag and a $B$-tag is evidence they name the same
+feature, and $\hat f$ is read off the anchored co-occurrence. (When the
+alphabets differ so much that fingerprints themselves cannot seed the anchors,
+one bootstraps from the alphabet-independent structural constellations and
+alternates recovery of $f$ and $\hat f$.) The \emph{symbol-alignment defect}
+$\mathrm{def}_\Sigma$ --- the fraction of anchored $(\text{place},y)$ pairs
+violating the infomorphism biconditional --- is the symbol analogue of the
+frame adjunction defect of \S\ref{p4:sec:semantic-identity}.
+
+\paragraph{Preliminary result.} A controlled study
+(\method{experiments/warp/symbol\_alignment.py}; $|\Sigma_A|{=}8$, $120$ places,
+$20$ seeds) gives agent $B$ a secret relabelling of $A$'s alphabet with
+observation noise, and recovers $\hat f$ from anchored co-occurrence.
+
+\begin{table}[h]
+\caption{Symbol alignment by grounding vs.\ assuming identical alphabets.
+Target-ID F1 is identifying $A$'s target feature from $B$'s (translated)
+evidence. ``naive'' assumes the alphabets coincide by index; ``recovered''
+learns $\hat f$; ``oracle'' is the true map.}
+\label{p4:tab:symbol-alignment}
+\centering
+\small
+\begin{tabular}{c c c c c c}
+\toprule
+noise & transl.\ acc.\ & $\mathrm{def}_\Sigma$ & F1 naive & F1 recovered & F1 oracle \\
+\midrule
+0.00 & 1.00 & 0.000 & 0.56 & 1.00 & 1.00 \\
+0.10 & 1.00 & 0.099 & 0.55 & 0.92 & 0.92 \\
+0.30 & 0.89 & 0.304 & 0.56 & 0.69 & 0.73 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Assuming identical alphabets fails ($\text{F1}\approx0.55$: the relabelling
+sends $B$'s target tag to the wrong feature); grounding recovers the map
+(translation accuracy $1.00$, $\mathrm{def}_\Sigma$ tracking the noise floor)
+and reaches oracle-level target identification, robustly down to $15\%$
+anchored places (accuracy $0.95$). Coarsening two features into one $B$-tag
+bounds the achievable accuracy --- there is no faithful bijection, so the
+channel core coarsens rather than errs. Symbol alignment is thus not a wholly
+open problem but the same grounding-plus-defect recipe one alphabet up; a full
+treatment (genuine incommensurability, online drift) is the next paper.
+
+
+\section{The coalgebraic layer: individuals as codata, the collective as a final coalgebra}
+\label{p4:sec:coalgebra}
+
+The reading of \S\ref{p4:sec:categorical} fixes belief \emph{content}: at a
+state, the concept lattice $L_t^i=\operatorname{Concepts}(\mathcal{K}_t^i)$
+says what is retrievable, and the merge of \S\ref{p4:sec:colimit} says how peer
+contents combine into $\widetilde{\mathcal K}_t^i$. Both are
+\emph{algebraic}: they build a belief object. Neither speaks to the agent as
+a non-terminating \emph{process} that must emit an action and a signal at
+every tick under a moving environment, nor to the sense in which a
+\emph{population} comes to share a convention. That process side is
+\emph{coalgebraic}~\citep{rutten2000universal,jacobs2016coalgebra}. We make it precise on the water-search example and show
+the two sides are dual, meeting inside a single state transition. (The
+belief/desire/intention vocabulary follows the BDI agent tradition
+\citep{rao1995bdi}, here given coalgebraic content.)
+
+\paragraph{Signature.} Fix an action set $\mathrm{Act}$ (move, dig, noop), a
+per-agent observation set $O_i$ (agent $i$'s local percept --- its
+\emph{unique view}), and an \emph{ostension} set
+\[
+  M \;=\; 1 \,+\, (X\times\Sigma),
+\]
+whose values are either \emph{silence} (the summand $1$) or a pointer
+``place $x$ carries tag $\sigma$'' (whistle-and-point at a water-marked
+cell). That silence is a first-class value of $M$ matters: the ostension
+channel \emph{can be informatively empty}, and it is separate from the state
+update below. This is exactly the observability that a learned real-valued
+message vector destroys (its channel is never empty and never separates
+signalling from stepping), and it is why the symbolic stages remain
+readable.
+
+\paragraph{State.} We take the coalgebra carrier to be the H-MDP high-level
+state of \S\ref{p4:sec:categorical},
+\[
+  \mathcal{S}_i \;=\; \big\{\, h=(\mathcal{K}^i,\,D^i,\,g^{i,\star},\,s^i) \,\big\},
+\]
+carrying the same information as $(L^i,D^i,g^{i,\star},s^i)$ since
+$L^i=\operatorname{Concepts}(\mathcal K^i)$. Thus \emph{belief lives in the
+state}; the lattice is a projection of it.
+
+\paragraph{Definition (codata: the agent's cotype).}
+The observable behavior of agent $i$ is a coalgebra for the endofunctor
+\[
+  B_i(S)\;=\;\underbrace{\mathrm{Act}}_{\text{act now}}\;\times\;
+            \underbrace{M}_{\text{signal now}}\;\times\;
+            \underbrace{S^{\,O_i\times M^{A\setminus\{i\}}}}_{\text{continue given (my next percept, peers' signals)}},
+\]
+i.e. a map $c_i=\big\langle\, \method{observe\_act}_i,\ \method{observe\_ostension}_i,\ \method{step\_intension}_i \,\big\rangle : \mathcal{S}_i \to B_i(\mathcal{S}_i)$ with three destructors
+\[
+  \method{observe\_act}_i:\mathcal{S}_i\to\mathrm{Act},\quad
+  \method{observe\_ostension}_i:\mathcal{S}_i\to M,\quad
+  \method{step\_intension}_i:\mathcal{S}_i\to \mathcal{S}_i^{\,O_i\times M^{A\setminus\{i\}}} .
+\]
+Here $M^{A\setminus\{i\}}=\prod_{j\neq i}M$ is the tuple of peers' ostensions
+delivered this tick. Operationally, $\method{step\_intension}_i(h)(o,(m_j)_{j\neq i})$
+(i)~folds the percept $o$ and the peer pointers $(m_j)$ into the context by
+the trust/staleness merge, $\widetilde{\mathcal K}_t^i=\operatorname{Merge}_{\mathrm{trust,stale}}(\cdots)$
+of \S\ref{p4:sec:colimit}; (ii)~recomputes the lattice; (iii)~re-evaluates the
+desire predicate $D^i$; and (iv)~re-locks the intention
+$g^{i,\star}=\chi_t^i(\operatorname{ext}(D^i))$ of \S\ref{p4:sec:categorical}.
+So $\operatorname{Merge}$ and $\chi$ are \emph{components of one destructor}.
+The agent \emph{is} the codata generated by $c_i$: it has no finite terminal
+plan, only the standing ability to emit an action and an ostension and to
+continue. This is the ``infinite survival generator'' of the motivating
+example.
+
+\paragraph{Definition (indexed family).}
+The system is the $A$-indexed family $\{(\mathcal{S}_i,c_i)\}_{i\in A}$, a
+coalgebra in $\mathbf{Set}^{A}$. The functor $B_i$ depends on the index $i$
+through $O_i$ (and through the peer set $A\setminus\{i\}$): the same survival
+cotype is instantiated at each agent through that agent's local viewpoint.
+Agent~1 on the dune generates from ``I see the horizon''; agent~2 in the
+hollow generates from ``I feel the soil.'' The index is the viewpoint.
+
+\paragraph{Definition (codependence: the collective coalgebra).}
+Let the environment deliver a joint percept $o=(o_i)_{i\in A}\in\prod_i O_i$.
+The collective one-tick map on $\prod_i\mathcal{S}_i$ wires each agent's
+ostension output into the others' step inputs,
+\[
+  \Phi\big((h_i)_i\big)(o)\;=\;
+  \Big(\ \method{step\_intension}_i(h_i)\big(o_i,\,(\method{observe\_ostension}_j(h_j))_{j\neq i}\big)\ \Big)_{i\in A}.
+\]
+Because $i$'s next state is a function of the \emph{destructor outputs} of
+the others, the family is not $N$ independent processes but one coalgebra for
+the product functor $\mathbf{B}(S)=\big(\prod_i(\mathrm{Act}\times M)\big)\times S^{\prod_i O_i}$
+on $\prod_i\mathcal{S}_i$. This wiring is the \emph{codependence}: agent~1
+cannot step without passing agent~2's ostension through its own
+$\method{step\_intension}$. Broadcast cadence enters here as a gate: at
+non-broadcast ticks the delivered tuple $(m_j)$ is the last received (stale)
+tuple, or silence; $K$ is the delivery period.
+
+\paragraph{Definition (behavior and bisimulation).}
+$B_i$ is a container (polynomial) functor, so it has a final coalgebra
+$(\nu B_i,\ \mathrm{beh}_i)$~\citep{aczel1988nonwellfounded,rutten2000universal} whose elements are the $\big(O_i\times M^{A\setminus\{i\}}\big)$-branching,
+$(\mathrm{Act}\times M)$-labelled behavior trees, and there is a unique
+coalgebra morphism $!_i:\mathcal{S}_i\to\nu B_i$ sending a state to its whole
+future behavior. A \emph{$B_i$-bisimulation} is a relation
+$R\subseteq\mathcal{S}_i\times\mathcal{S}_i$ under which related states emit
+equal action and equal ostension and, on every input, step to $R$-related
+states. Container functors preserve weak pullbacks, so the \emph{greatest
+bisimulation} $\sim_i$ exists, is an equivalence, and equals $\ker(!_i)$:
+two states are bisimilar iff they have the same behavior~\citep{sangiorgi2011bisimulation}. The same holds for
+the collective coalgebra $(\prod_i\mathcal{S}_i,\ \langle(\method{observe\_act}_i)_i,(\method{observe\_ostension}_i)_i,\Phi\rangle)$,
+with greatest bisimulation $\approx$.
+
+\paragraph{Definition (society / culture).}
+The \emph{collective} is the image of the states in the final coalgebra
+$\nu\mathbf{B}$, equivalently the quotient $\big(\prod_i\mathcal{S}_i\big)/\!\approx$.
+It is neither a central server nor a shared map: it is a bisimilarity class of
+joint behavior. A \emph{water-search convention} is this invariant read on
+the water sub-signature. Let $M_{\mathrm{water}}\subseteq M$ be the pointers
+whose tag lies in the water family, and let
+$\nu B_i\to\nu B^{\mathrm{w}}$ be the forgetful map to the behavior trees
+restricted to receiving $M_{\mathrm{water}}$ and emitting the corresponding
+intention lock. The population \emph{holds the convention} when all agents'
+reachable behaviors agree under this map: hearing ``point-and-dig at a
+water-marked place'' drives every agent's intention destructor to lock that
+place (up to occupancy). Governance is then automatic in both directions. A
+new agent (the example's fourth agent) is a member of the society exactly
+when its behavior lands in the class $[\cdot]_{\approx}$ on
+$M_{\mathrm{water}}$ --- otherwise its ostensions are not understood and its
+own step never converges (top-down); and the class itself was reached by the
+local, coupled steps of the first agents at one green shrub (bottom-up).
+
+\paragraph{Remark (communication = lazy, depth-one corecursion).}
+The behavior $!_i(h)$ is defined by unfolding $c_i$ indefinitely. On
+receiving $m_j=\method{observe\_ostension}_j(h_j)$, agent $i$ uses only this
+\emph{depth-one} destructor output inside $\method{step\_intension}_i$; it
+does \emph{not} compute $!_j(h_j)\in\nu B_j$, the peer's full behavior, which
+is the ``I~think that you~think\ldots'' regress. Communication is therefore
+corecursion truncated to the least depth that resolves the receiver's own
+next step --- a finite approximation of the final-coalgebra map --- with a
+relevance-theoretic stopping rule \citep{sperber1995relevance} deciding that depth. The
+regress collapses into one effective action.
+
+\paragraph{Remark (algebra--coalgebra bridge to \S\ref{p4:sec:categorical}--\ref{p4:sec:colimit}).}
+Belief is algebraic: the FCA lattice $L_t^i$ built by the colimit merge is
+the \emph{content at a state}. The agent is coalgebraic: the codata observed
+by the three destructors is the \emph{process over states}. They are dual and
+meet in one place --- the colimit merge and the satisficing choice $\chi$ are
+the internals of $\method{step\_intension}$. The memory-growth diagram
+$\mathcal{K}_0^i\to\mathcal{K}_1^i\to\cdots$ of \S\ref{p4:sec:categorical} is
+precisely the belief-projection of the coalgebra trajectory
+$h_0^i\mapsto h_1^i\mapsto\cdots$.
+
+\paragraph{Coalgebraic reading of the bottleneck shift.}
+The result of \S\ref{p4:sec:cadence} and Table~\ref{p4:tab:csm-results} has a
+one-line reading here. Two kinds of bisimilarity compete. Bisimilarity on the
+\emph{ostension / belief} sub-signature is the wanted invariant: it is the
+shared water convention. Bisimilarity on the raw \emph{intention} output over
+a \emph{scarce} target is the unwanted one: several states mapping to the same
+$g^{\star}$ is a collision. Occupancy $\mathcal{O}_{-i}$ is the
+extra-coalgebraic constraint that penalises the second. Cadence $K$ tunes how
+hard the coupling $\Phi$ drives the collective toward the \emph{full}
+greatest bisimulation $\approx$: small $K$ delivers fresh ostensions often,
+enlarging the merged water extent so intention locks reliably
+($P(M^\star\mid R^\star)\uparrow$), but over-synchronises the intention
+destructor so agents collide ($P(C^\star\mid M^\star)\downarrow$). The
+interior optimum $K{=}8$ is where belief converges without intention
+collapsing onto one cell; the minimal CSM adds trust and staleness precisely
+so that $\method{step\_intension}$ reaches belief-bisimilarity (fresh,
+trusted, aligned evidence) while damping intention-bisimilarity (stale
+evidence decays before it can herd every agent onto the same lock). We state
+this as a reading consistent with the data, not as a theorem: the container
+functors, their final coalgebras, and bisimulation are standard constructions
+used here as a lens, and the relevance-theoretic stopping rule is an
+interpretive gloss rather than a fitted mechanism.
+
+\begin{table}[t]
+\caption{The motivating example's terms as formal objects of the coalgebraic
+reading. Each row is the water-search meaning of a construction already used
+in \S\ref{p4:sec:coalgebra}.}
+\label{p4:tab:coalg-dictionary}
+\centering
+\small
+\begin{tabular}{p{2.9cm} p{4.3cm} p{4.4cm}}
+\toprule
+Informal term & Formal object & Water-search meaning \\
+\midrule
+Cotype (codata) & $B_i$-coalgebra $(\mathcal{S}_i,c_i)$ & the agent's non-terminating action/signal generator \\
+Indexed type & family over $A$; dependence of $B_i$ on $O_i$ & the agent's unique local viewpoint (dune vs.\ hollow) \\
+Codependent type & wiring $\method{observe\_ostension}_j\!\to\!\method{step\_intension}_i$ in $\Phi$ & ``I step only through your ostension'' \\
+Individual (instance) & a state $h\in\mathcal{S}_i$ and its behavior $!_i(h)$ & the running agent digging and whistling now \\
+Destructors (cogenerators) & $\method{observe\_act}$, $\method{observe\_ostension}$, $\method{step\_intension}$ & step-and-dig; whistle-and-point; fold neighbour's signal into next state \\
+Lazy evaluation & depth-one corecursion + relevance stop & unfold the peer's coalgebra one step, not its whole behavior \\
+Final coinductive core / society & $\nu\mathbf{B}$; greatest bisimulation $\approx$ (on $M_{\mathrm{water}}$) & the stable, distributed water-search culture \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Structured memory versus raw context under a fixed model}
+\label{p4:app:ctx-vs-structure}
+
+Modern LLMs \emph{accept} long context; the question this appendix measures is
+whether they turn it into a stable, globally coherent state --- and whether the
+Songlines graph supplies that state instead. In every arm the \emph{same} model
+answers; only the memory substrate differs: \textbf{raw} (the full observation
+transcript in the prompt --- typical usage) vs.\ \textbf{graph} (the same
+evidence consolidated by the Songlines rule: latest state per place, staleness
+explicit, $O(\text{salient places})$ prompt). Three axes
+(\method{experiments/context\_vs\_structure/}; HF backend on SLURM GPU nodes
+and local Ollama as an independent second backend).
+
+\paragraph{Axis 1: volume and integration (one witness log).}
+A witness log over a $30{\times}24$ grid contains a freshness conflict (water
+seen repeatedly at site $A$, later dried; one fresher sighting at $B$).
+Questions: \emph{fact} (where is water now), \emph{count} (how many waters
+now), \emph{hop} (nearest hazard to current water).
+
+\begin{table}[h]
+\caption{Accuracy by question, arm, and log volume $L$ (lines). Qwen2.5-7B (cluster, $20$ seeds/cell) on cells within its compute envelope; Llama-3.1-8B (local, $10$ seeds/cell) at large $L$ with \emph{verified full ingestion} (\texttt{prompt\_eval\_count}${=}25{,}030$ tokens at $L{=}2000$; no truncation). Graph prompts stay $\approx$350 bytes at every $L$.}
+\label{p4:tab:ctx-axis1}
+\centering
+\small
+\begin{tabular}{l l c c c c}
+\toprule
+Question & Arm & $L{=}50$ & $L{=}200$ & $L{=}800$ & $L{=}2000$ \\
+\midrule
+fact  & raw   & 1.00\,/\,--   & 1.00\,/\,--   & --\,/\,0.00 & --\,/\,0.00 \\
+fact  & graph & 1.00\,/\,--   & 1.00\,/\,--   & 1.00\,/\,1.00 & 1.00\,/\,1.00 \\
+count & raw   & \textbf{0.00}\,/\,-- & \textbf{0.00}\,/\,-- & --\,/\,\textbf{0.00} & --\,/\,\textbf{0.00} \\
+count & graph & 1.00\,/\,--   & 1.00\,/\,--   & 1.00\,/\,1.00 & 1.00\,/\,1.00 \\
+hop   & raw   & 0.00\,/\,--   & 0.05\,/\,--   & --\,/\,0.00 & --\,/\,0.00 \\
+hop   & graph & 0.00\,/\,--   & 0.15\,/\,--   & 0.40\,/\,0.50 & 0.30\,/\,0.60 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two failure layers, both with identified mechanisms. \emph{Cognitive:} the raw
+arm loses global state at \textbf{any} volume --- on \emph{count} it answers
+``2'' ($17/20$) or ``3'' ($3/20$) when the truth is $1$: it adds up historical
+mentions instead of resolving freshness, i.e.\ no consolidation. At large $L$
+even single-fact retrieval collapses despite verified full ingestion (a probe
+with the answer at the very end of a $25$k-token prompt is also missed).
+\emph{Systemic:} on the cluster's 24\,GB sm75 GPUs, raw-arm inference at
+$5$--$10$k tokens exhausts memory through the quadratic attention matrix
+(marked as compute-envelope cells, ``--'', never reported as cognition), while
+the graph arm runs at constant cost at every volume. Raw context loses twice
+--- as cognition and as systems cost; \emph{hop} identifies the empirical boundary:
+structure repairs retrieval, not arithmetic reasoning.
+
+\paragraph{Axis 2: time (sessions).}
+A persistent world drifts (water relocates, $p{=}0.35$/session); after each of
+$8$ sessions the model is asked where the water is now, from \textbf{raw
+replay} (all past transcripts re-injected, the typical chat pattern) vs.\ the
+persisted \textbf{graph}. Qwen2.5-7B: the graph arm holds $0.62$--$1.00$
+across all eight sessions at a flat $\approx$0.3\,kB prompt; the replay arm's
+valid cells are already at $0.00$--$0.67$ in the earliest sessions and its
+prompt grows to $25$\,kB by session $8$ (later cells envelope-limited on the
+cluster; on the local backend, where no envelope exists, replay degrades to
+$0.00$--$0.50$ by $19$\,kB --- the same pattern).
+
+\paragraph{Axis 3: system size (multi-agent, private frames).}
+Three agents accumulate observations over $G$ sessions, each logging in its
+\emph{own} secret coordinate frame. Question: ``how many DISTINCT water sources
+exist?'' --- the same physical water seen by two agents at different private
+coordinates must be counted once. The raw arm gets all three logs (and is told
+the frames differ); the graph arm gets the Songlines machinery's merged map
+(fingerprint frame recovery, \S\ref{p4:sec:semantic-identity}, plus dedup).
+Qwen2.5-7B: graph accuracy \emph{rises} with growth --- $0.40, 0.90, 1.00,
+1.00$ at $G{=}1,2,4,8$ ($\approx$330 bytes) --- because frame alignment locks
+as fingerprints accumulate (the exact\% curve of the growth study); the raw arm
+($13$k--$105$k chars) does not produce a single correct answer on any
+envelope-valid cell. Cross-frame identity is precisely what a context window
+cannot represent and the gluing structure can.
+
+\paragraph{Summary.}
+The same model, given the same evidence, preserves long, drifting, multi-agent
+context when --- and only when --- the evidence reaches it as the consolidated
+Songlines structure: flat-cost prompts, freshness resolved, frames glued.
+Given the raw stream instead, it fails on integration at $1.3$\,kB, on
+freshness at $19$\,kB with full ingestion, and on cross-frame identity at every
+tested size. Scope: two model families, one task family per axis, and the
+compute-envelope cells are reported as such; the graph arm's consolidation
+here is the deterministic Songlines rule --- LLM-driven consolidation is the
+roadmap's next stage.
+
+
+\section{Reproducibility commands}
+\label{p4:app:repro}
+
+\begin{itemize}[leftmargin=16pt]
+\item Main cadence sweep:
+\path{python experiments/big_experiment/exp_cadence_phase.py --mode full --workers 8 --out_dir tmp/big_experiment_qrmc_40}
+\item Extended cadences:
+\path{python experiments/big_experiment/exp_extra_K.py --workers 8 --out_dir tmp/big_experiment_extraK}
+\item Q/R/M/C analysis:
+\path{python experiments/big_experiment/analyze_qrmc.py --runs_csv tmp/big_experiment_qrmc_40/runs.csv --out_dir tmp/big_experiment_qrmc_40}
+\item Minimal CSM benchmark:
+\path{python -m experiments.collective_semantic_memory.run_csm_benchmark --out_dir tmp/csm_benchmark}
+\item MiniGrid portability sweep:
+\path{python -m experiments.minigrid_multiagent_wrapper.run_portability_sweep --out_dir tmp/minigrid_portability}
+\item Adjunction round-trip defect of frame recovery (Section~\ref{p4:sec:semantic-identity}):
+\path{python experiments/warp/alignment_defect.py}
+\item Context-vs-structure suite (Appendix~\ref{p4:app:ctx-vs-structure}): \path{experiments/context_vs_structure/run_ctx_vs_struct.py}, \path{run_persistence_llm.py}, \path{run_growth_llm.py} (HF backend on GPU or --backend ollama locally)
+\item Trust$\times$cadence structural phase diagram (Section~\ref{p4:sec:phase-diagram}, Figure~\ref{p4:fig:phase-diagram}):
+\path{python experiments/collective_semantic_memory/phase_diagram_trust_cadence.py --fig figures/fig_phase_diagram.pdf}
+\end{itemize}
+
+
+\label{p5:app:repro}
+Every central result has a command (all in
+\texttt{experiments/song\_grammar/}, run with \texttt{PYTHONPATH=.}):
+\begin{verbatim}
+# formation core
+exp_u1_ucsm_smoke.py                       # U1 two-axis matrix
+exp_u2_bandit.py    --train-seeds 0 24 --eval-seeds 100 110 --episodes 40
+exp_u3_evolution.py --generations 30 --pop 16 --episodes 25
+exp_e1_landmark_emergence.py               # E1 causal promotion
+# scale, learning, LLM
+exp_u7_seven_arms.py --seeds 0 12 --episodes 1000   # U7/U7b/U7c/X1
+exp_m1_metarl.py    --generations 40 --pop 32 --episodes 30
+exp_g1_graph_analogy.py --seeds 0 12 --episodes 300
+exp_l1_llm_endtoend.py --backend hf --model Qwen/Qwen2.5-7B-Instruct \
+    --mode long --layouts 12          # L1/L1b (also llama3.1 via ollama)
+# social ladder
+exp_s1_social.py  --seeds 0 12 --episodes 300 --agents 6
+exp_s2_worldclock.py --seeds 0 12 --episodes 300 --agents 6
+exp_s3_admission.py  --seeds 0 12 --episodes 300 --agents 6
+# integration + acceptance test
+exp_r1_runtime_checklist.py                # R1 single-run integration
+exp_i1_integration.py --config songline_full --seeds 100 112 \
+    --episodes 300 --agents 6         # I1 (17 configs; +--noise +--agents)
+exp_ue1_utility_estimator.py --train-seeds 0 20 --test-seeds 100 110
+exp_n1_noise.py   --seeds 30 --consensus 2                 # N1v2
+# B1 equal-budget: run the cap at 1x, 2x, 4x the full method's footprint
+exp_i1_integration.py --config raw_history --seeds 100 112 --episodes 300 \
+    --agents 6 --mem-cap-kb 45 --wire-cap-kb 55    # 1x
+exp_i1_integration.py --config raw_history --seeds 100 112 --episodes 300 \
+    --agents 6 --mem-cap-kb 90 --wire-cap-kb 110   # 2x
+exp_i1_integration.py --config raw_history --seeds 100 112 --episodes 300 \
+    --agents 6 --mem-cap-kb 180 --wire-cap-kb 220  # 4x
+# P1 adversarial provenance (one poisoning peer)
+exp_i1_integration.py --config songline_full --seeds 100 112 --episodes 300 \
+    --agents 6 --poison 1 --launder 1              # P1
+exp_c1_continuous.py --config songline_safe --seeds 100 112 \
+    --episodes 300 --agents 6         # C1 continuous + three-layer safety
+# external substrate: the whole runtime on VMAS physics (V2.1, -53.2%)
+exp_v2_vmas_runtime.py --arm songline_safe --seeds 0 12 --agents 4 \
+    --max-steps 600 --out tmp/v2_full
+exp_v2_vmas_runtime.py --arm independent   --seeds 0 12 --agents 4 \
+    --max-steps 600 --out tmp/v2_full
+# main equal-budget benchmark, 30-seed rerun (BU.1/BU.2), run ON SPHINX:
+#   bash cluster/submit_bench30.sh          # 6 policies x 30 seeds (100-129)
+#   python scripts/aggregate_bench30.py tmp/cluster/song_grammar/bench30
+\end{verbatim}
+Registered predictions, per-run rows and verdicts sit beside each
+output; failed first registrations (U1 v1, U2 v1, N1 v1, C1-safe
+depth-3) are retained with revision notes. Cluster launcher:
+\texttt{cluster/submit\_song\_grammar.sh}. Full method freeze,
+claim--evidence matrix and per-verdict source map:
+\texttt{docs/SONGLINES\_V1\_FREEZE.md},
+\texttt{docs/CLAIM\_EVIDENCE\_MATRIX.md},
+\texttt{docs/SERIES\_VERDICTS.md}. Design documents:
+\texttt{docs/FRONTIER\_\{SONG\_GRAMMAR,UCSM\}\_*.md},
+\texttt{docs/MEMORY\_REFRAMES\_2026-07-26.md}.
+
+\paragraph{Tables, figures, environment, and expected cost.} All
+tables and figures in this paper regenerate from the raw run outputs
+with \texttt{python scripts/aggregate\_song\_grammar.py} (long CSV) and
+\texttt{scripts/make\_figures.py}; \texttt{scripts/reproduce\_core.sh}
+chains the central deterministic blocks end to end. The pinned
+environment is \texttt{environment.yml} (local: Python 3.9, numpy
+2.0.2; cluster base: Python 3.13, numpy 2.5.1, \texttt{vmas} 1.5.2);
+the GPU LLM arms use the cluster \texttt{gpu-env} (torch cu124).
+Expected cost of the heavy blocks: U7 at $1000$ episodes
+$\approx 24$--$48$\,h per seed-shard on a CPU node; the L1/ALFWorld
+HuggingFace arms run on a 24\,GB SLURM GPU node ($7$B fp16); the VMAS
+external runtime is CPU, ${\approx}4$\,s for all $12$ seeds; the
+30-seed benchmark is $18$ CPU shards, ${\approx}1.5$\,h wall-clock;
+the local grid sweeps and Ollama studies are minutes-to-hours on the
+workstation. Test seeds ($100{+}$) were frozen before any tuning.
+\FloatBarrier
+
+
+\section{Asset and license note}
+\label{p4:app:assets}
+
+The experiments use MiniGrid and MiniWorld~\citep{MinigridMiniworld23}. Locally implemented benchmark and memory code will be released under the MIT License as part of the artifact package.
+
+\clearpage
+\FloatBarrier
+\FloatBarrier
+
+\clearpage
+
+\begin{thebibliography}{99}
+\bibitem[Chevalier-Boisvert et~al.(2023)]{MinigridMiniworld23}
+M.~Chevalier-Boisvert, B.~Lahlou, S.~Willems, and P.~S. Castro.
+\newblock MiniGrid and MiniWorld: Modular reinforcement learning environments.
+\newblock \emph{arXiv:2306.13831}, 2023.
+\bibitem[Mac~Lane(1998)]{maclane1998categories}
+S.~Mac~Lane.
+\newblock \emph{Categories for the Working Mathematician}.
+\newblock Springer, 2nd edition, 1998.
+\bibitem[Aczel(1988)]{aczel1988nonwellfounded}
+P.~Aczel.
+\newblock \emph{Non-Well-Founded Sets}.
+\newblock CSLI Lecture Notes 14, 1988.
+\bibitem[Barwise and Seligman(1997)]{barwise1997information}
+J.~Barwise and J.~Seligman.
+\newblock \emph{Information Flow: The Logic of Distributed Systems}.
+\newblock Cambridge University Press, 1997.
+\bibitem[Jacobs(2016)]{jacobs2016coalgebra}
+B.~Jacobs.
+\newblock \emph{Introduction to Coalgebra: Towards Mathematics of States and Observation}.
+\newblock Cambridge University Press, 2016.
+\bibitem[Rao and Georgeff(1995)]{rao1995bdi}
+A.~S. Rao and M.~P. Georgeff.
+\newblock BDI agents: From theory to practice.
+\newblock In \emph{ICMAS}, 1995.
+\bibitem[Rutten(2000)]{rutten2000universal}
+J.~J.~M.~M. Rutten.
+\newblock Universal coalgebra: a theory of systems.
+\newblock \emph{Theoretical Computer Science}, 249(1):3--80, 2000.
+\bibitem[Sangiorgi(2011)]{sangiorgi2011bisimulation}
+D.~Sangiorgi.
+\newblock \emph{Introduction to Bisimulation and Coinduction}.
+\newblock Cambridge University Press, 2011.
+\bibitem[Sperber and Wilson(1995)]{sperber1995relevance}
+D.~Sperber and D.~Wilson.
+\newblock \emph{Relevance: Communication and Cognition}.
+\newblock Blackwell, 2nd edition, 1995.
+\bibitem[Zou et~al.(2026)]{rdd2026}
+M.~Zou, Z.~Guo, L.~Liang, Z.~Wang, Q.~Wang, Q.~Wen, I.~King, L.~Qu, and Z.~Xu.
+\newblock Remember the decision, not the description: A
+rate-distortion framework for agent memory.
+\newblock \emph{arXiv preprint arXiv:2605.10870}, 2026.
+\bibitem[Park et~al.(2023)]{genagents2023}
+J.~S. Park, J.~O'Brien, C.~J. Cai, M.~R. Morris, P.~Liang, and
+M.~S. Bernstein.
+\newblock Generative agents: Interactive simulacra of human behavior.
+\newblock In \emph{UIST}, 2023.
+\bibitem[Zhang et~al.(2026a)]{memrl2026}
+S.~Zhang, J.~Wang, R.~Zhou, J.~Liao, Y.~Feng, Z.~Li, Y.~Zheng, W.~Zhang, Y.~Wen, Z.~Li, F.~Xiong, Y.~Qi, B.~Tang, and M.~Wen.
+\newblock {MemRL}: Self-evolving agents via runtime reinforcement
+learning on episodic memory.
+\newblock \emph{arXiv preprint arXiv:2601.03192}, 2026.
+\bibitem[Wang et~al.(2025)]{memalpha2025}
+Y.~Wang, R.~Takanobu, Z.~Liang, Y.~Mao, Y.~Hu, J.~McAuley, and X.~Wu.
+\newblock {Mem-$\alpha$}: Learning memory construction via
+reinforcement learning.
+\newblock \emph{arXiv preprint arXiv:2509.25911}, 2025.
+\bibitem[Xu et~al.(2025)]{memgas2025}
+D.~Xu, Y.~Wen, P.~Jia, Y.~Zhang, W.~Zhang, Y.~Wang, H.~Guo, R.~Tang, X.~Zhao, E.~Chen, and T.~Xu.
+\newblock From single to multi-granularity: Toward long-term memory
+association and selection of conversational agents.
+\newblock \emph{arXiv preprint arXiv:2505.19549}, 2025.
+\bibitem[Yang et~al.(2026)]{trustmem2026}
+T.~Yang, S.~Paul, V.~Srinivasan, V.~Kulkarni, and S.~Chappidi.
+\newblock {TrustMem}: Learning trustworthy memory consolidation for
+{LLM} agents with long-term memory.
+\newblock \emph{arXiv preprint arXiv:2606.25161}, 2026.
+\bibitem[Zhang et~al.(2026b)]{faulty2026}
+D.~Zhang, Y.~Lin, Z.~Wu, Y.~Sun, B.~Li, D.~Li, and H.~Peng.
+\newblock Useful memories become faulty when continuously updated by
+{LLMs}.
+\newblock \emph{arXiv preprint arXiv:2605.12978}, 2026.
+\end{thebibliography}
+\end{document}

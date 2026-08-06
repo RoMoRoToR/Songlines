@@ -1,0 +1,1430 @@
+% Academic revision prepared from songlines_unified(2).tex.
+% Revision goals: conventional problem-method-results-scope structure;
+% cautious claim language; terminology consistency; preservation of all
+% equations, tables, labels, references, and reported numerical results.
+\documentclass{article}
+
+\usepackage[preprint]{neurips_2026}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\graphicspath{{./}}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{placeins}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+
+\newcommand{\method}[1]{\texttt{#1}}
+\newcommand{\wstar}{W^{\star}}
+\newcommand{\rwstar}{RW^{\star}}
+\newcommand{\mstar}{M^{\star}}
+\newcommand{\cstar}{C^{\star}}
+\newcommand{\phiroute}{\varphi_{\mathrm{route}}}
+
+\setcounter{tocdepth}{2}
+
+\title{The Song, Not the Pin: Provenance-Conditioned Route Transfer across Private Frames}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+Collective-memory systems allow an agent to act on evidence that was
+acquired by another agent, yet conventional task and stage metrics do
+not identify when a commitment is supported primarily by foreign
+memory. We introduce a provenance-conditioned extension of Q/R/M/C.
+For each materialized target, the method records the foreign share
+$\varphi$ of the evidence mass used by the memory merge and freezes
+this value at commitment time. A semantic-warp event is then defined
+as a materialization whose supporting evidence exceeds a specified
+foreignness threshold. This annotation permits three analyses: direct
+completion stratified by provenance, deterministic counterfactual
+replay with foreign evidence removed, and a closed-form admissibility
+horizon derived from the trust--staleness gate. On a 2,400-episode
+scarcity benchmark, foreign-evidence locks complete substantially less
+often than own-evidence locks ($0.004$--$0.020$ versus
+$0.22$--$0.41$), but this direct comparison understates their value.
+Lock-chain analysis shows that foreign evidence frequently transports
+an agent into self-confirmation range, accounting for up to $51\%$ of
+subsequent own-evidence completions. The trust--staleness law predicts
+the latest admissible intention time exactly on the registered
+$6/6$ hold-out. The same analysis identifies target contention, rather
+than incorrect evidence, as the principal completion cost of fast
+sharing. We therefore introduce a decentralized reservation and
+rollback protocol that increases success at every tested fast cadence
+and exceeds the strongest fixed-cadence baseline ($0.614$--$0.620$
+versus $0.583$). A controlled LLM experiment further demonstrates
+cross-session use of foreign memory. Extending provenance from target
+records to route edges then reveals a structural boundary between
+place-only and route-level transfer: place-only guidance fails at the
+first obstructing structure and can perform worse than unguided
+exploration, whereas transferred routes remain executable. An
+edge-specific rupture law predicts all $110$ tested validity regimes and
+all $21$ intermediate failure indices exactly, and a traveler on a
+foreign route preserves the witness's measured risk profile up to the
+predicted rupture. Semantic landmark constellations recover
+correspondence across translations and quarter-turn rotations in $80/80$
+tests and fail closed under ambiguity. Landmarks and edges provide
+complementary identity and transport functions; their composition
+reaches an unseen target at $6.4\%$ of the full-snapshot bit cost before
+protocol metadata. These results indicate that the
+value of shared memory depends on the provenance, temporal validity,
+and coordination authority attached to a record, not only on its
+semantic content. The scope is limited to controlled grid and
+continuous simulations and a small text-world demonstration.
+\par\medskip\noindent\textbf{We claim.} Foreign navigation memory
+becomes executable only when referential identity, relational transport,
+evidence provenance, temporal validity, and coordination authority are
+preserved together. A target without a route is operationally
+incomplete; a route without a valid cross-frame correspondence is
+unsafe; and foreign evidence without a validity and coordination
+contract should not directly determine action. The correct unit of
+transferable navigation memory is therefore not a coordinate target but
+a provenance-conditioned relational route whose landmarks establish
+identity, whose edges provide transport, and whose validity contract
+determines how far and under what conditions another agent may execute
+it.
+\end{abstract}
+
+
+\FloatBarrier
+\section{Introduction}
+\label{p2:sec:intro}
+
+A shared memory architecture is usually described in terms of the
+information available to each agent. This description is incomplete.
+Two agents may retrieve the same target record, but the epistemic
+basis of their commitments can be different: one may rely on direct
+observation, whereas the other may rely entirely on a peer's report.
+End-to-end success, retrieval accuracy, and the original Q/R/M/C
+rates do not distinguish these cases because they do not condition
+materialization and completion on evidence provenance.
+
+This paper introduces a provenance-conditioned measurement layer for
+collective semantic memory. Every contribution to a merged record
+retains its source, support, confidence, trust, and age. For a selected
+candidate, the method computes the foreign share $\varphi$ using the
+same weights that produced the merge. The value is frozen when the
+agent commits to the target so that later self-confirmation does not
+retroactively change the provenance of the decision. A semantic-warp
+event is therefore not an additional stage, but a stratification of
+materialization and completion according to the source of the
+supporting evidence.
+
+The analysis separates three questions. First, how often do
+foreign-evidence commitments complete directly? Second, what is the
+counterfactual effect of foreign memory when its contribution is
+removed under an otherwise identical replay? Third, for how long may
+foreign evidence remain action-authoritative under explicit trust and
+staleness rules? The symbolic memory representation makes all three
+questions operational: the merge is source-decomposable, the simulator
+supports paired deterministic replays, and the exponential staleness
+gate yields a closed-form horizon.
+
+The results show that direct completion is only one component of
+foreign-memory value. Under target scarcity, foreign locks rarely
+complete because several agents can commit to the same resource.
+Nevertheless, the same lock often guides the recipient to a region in
+which it can obtain its own confirming evidence. We therefore treat
+foreign memory as a transport mechanism as well as a destination
+proposal. This distinction explains why an architecture can receive a
+positive counterfactual benefit from foreign evidence even when
+$P(C^\star\mid W^\star)$ is small.
+
+The observed failure is primarily coordinative. Fast exchange
+increases the number of commitments based on the same peer evidence,
+which improves materialization but increases duplicate target claims.
+To address this mechanism, we introduce a minimal decentralized
+protocol consisting of optimistic commitment, reservation messages,
+and rollback with backoff. The protocol does not alter the semantic
+content of the memory; it regulates when a shared record is permitted
+to determine action.
+
+The contributions of this paper are as follows:
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item We define a provenance-conditioned annotation of materialized
+targets and completion events, together with a deterministic
+counterfactual measure of the contribution of foreign evidence.
+\item We derive a trust--staleness admissibility horizon and validate
+its discrete predictions on a registered hold-out.
+\item We identify downstream transport through mixed-provenance lock
+chains as a major component of foreign-memory value.
+\item We introduce and evaluate a decentralized reservation and
+rollback protocol that converts fast sharing from a contention-prone
+setting into the strongest tested communication regime.
+\item We demonstrate that the same provenance concept can be applied
+to a controlled cross-session LLM memory task.
+\end{enumerate}
+
+The claims are limited to the tested memory rules and environments.
+The distance law is exact under the specified exponential gate; it is
+not asserted for arbitrary learned memory policies. Similarly, the LLM
+study demonstrates measurability and cross-session transfer, but does
+not constitute a broad benchmark of hallucination-resistant agent
+collectives.
+
+\paragraph{Structure of the paper.} The paper has two movements on a
+single object. The first (Sections~\ref{p2:sec:setting}--\ref{p2:sec:llm})
+treats foreign evidence about an isolated \emph{target}: it defines the
+provenance-conditioned commitment, measures its counterfactual value,
+derives the trust--staleness admissibility horizon, and adds the
+reservation-and-rollback coordination contract. The second
+(Sections~\ref{p3:sec:route} onward) shows that the transferable unit is
+not a target but a \emph{relational route}: landmarks establish
+cross-frame identity, edges provide transport, edge-level provenance
+sets a rupture boundary, and only the composition reaches an unseen
+target. The two movements share one contract --- identity, transport,
+provenance, validity, and coordination authority preserved together.
+
+
+\section{Setting}
+\label{p2:sec:setting}
+
+\paragraph{Substrate and task.} $N$ agents explore a $12\times10$ grid
+with $M$ semantic water targets ($N>M$: scarcity) and hazards. Each
+agent maintains symbolic place memory (tags, confidences, support,
+freshness). Four sharing architectures over the identical substrate
+and planner: \method{independent} (no communication),
+\method{shared} (single event bus), \method{centralized} (consensus
+aggregator), \method{peer} (broadcast every $K$ ticks, asymmetric
+trust), plus \method{CSM} (peer $+$ explicit merge/trust/staleness
+rules with decay rate $\alpha{=}0.05$ and inclusion threshold
+$\tau{=}0.30$).
+
+\paragraph{Q/R/M/C instrumentation.} Per tick and per agent we log
+query formation (Q), retrieval satisfaction (R), target
+materialization as the planner's lock ($\mstar$), and completion
+($\cstar$). Episode-level conditional rates follow the companion
+definition. All warp measurements below are annotations of these
+$\mstar$ events; no planner or memory invariant is modified.
+
+
+\section{The warp event}
+\label{p2:sec:warp-def}
+
+\paragraph{Provenance and foreignness.} Every evidence unit entering a
+merge carries its source. For the candidate $m$ the planner locks,
+\[
+\varphi(m) \;=\;
+\frac{\sum_{e\in\mathrm{supp}(m),\,\pi(e)\neq\mathrm{self}} w(e)}
+     {\sum_{e\in\mathrm{supp}(m)} w(e)},
+\]
+where $w(e)$ are \emph{the merge's own weights}: $\text{trust}\cdot
+\log(1{+}\text{support})$ for peer/centralized consensus,
+$\text{trust}\cdot e^{-\alpha\,\text{age}}\cdot\text{conf}$ for CSM,
+observation masses for the shared bus. For peer and centralized
+architectures $\varphi$ is reconstructed exactly from the
+per-contribution fields the merge already exports; the measurement
+layer reads state and never writes it.
+
+\paragraph{Freezing rule.} $\varphi$ is fixed at the moment of the
+lock. If the agent later confirms the place with its own eyes,
+$\varphi$ is \emph{not} recomputed --- otherwise every successful warp
+would dilute itself on approach and $P(\cstar|\wstar)$ would be
+unmeasurable by construction.
+
+\paragraph{Warp events and strata.} $\wstar_\theta := \mstar \wedge
+(\varphi\ge\theta)$ with $\theta{=}1$ (strict: never self-observed,
+cross-checked against an observation ledger) and $\theta{=}0.8$
+(soft). Warp share $P(\wstar|\mstar)$ is a structural descriptor
+(identically $0$ for \method{independent}); warp completion
+$P(\cstar|\wstar)$ is the new quantity. Under the Q/R/M/C event
+contract defined in the companion evaluation study, warp is an exact
+stratification of the materialization event $\mstar$ rather than an
+additional stage: identifiability of Q/R/M/C is untouched.
+
+\paragraph{Regression anchor.} The known misled-agent episode of the
+architecture comparison (agent A locks $(3,8)$ known only from C; C
+claims it first; A strands) is annotated by the instrumentation as
+$\varphi=1.0$ strict $\wstar$ with collision --- the pathology the
+framework must see, and the protocol of \S\ref{p2:sec:drive} must fix.
+
+
+\section{Direct and downstream effects of foreign evidence}
+\label{p2:sec:raw}
+
+\paragraph{Design.} $2{,}400$ episodes: $(N,M)\in\{(3,2),(5,3),(8,5),
+(4,4),(6,2)\}$ $\times$ three layouts $\times$
+$\{\text{peer-}K2,\text{peer-}K8,\text{CSM-}K8,\text{shared}\}$
+$\times$ 20 seeds $\times$ \{full, foreign-masked\} with identical
+seeds. Unit of analysis: lock event; CIs by episode-cluster bootstrap.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.72\linewidth]{figures/fig_warp_strata}
+\caption{$\varphi$-stratified completion vs.\ broadcast cadence $K$
+(dedicated peer sweep: scarcity cells, random layouts, 20 seeds,
+episode-cluster bootstrap CIs). As $K$ shrinks, the warp share
+$P(\wstar|\mstar)$ grows from $0.11$ to $0.55$ while
+$P(\cstar|\wstar)$ stays below $0.05$ and the own-stratum rate stays
+flat: the completion collapse of fast sharing is concentrated in the
+$\wstar$ stratum, giving the Q/R/M/C bottleneck shift reported in the companion evaluation study its
+mechanistic reading. The share uptick at $K{=}16$ (broadcasts are
+rare, but agents also discover little on their own) is reported as
+observed.}
+\label{p2:fig:strata}
+\end{figure}
+
+Figure~\ref{p2:fig:strata} shows the cadence view on a dedicated peer
+sweep ($K\in\{1,2,4,8,16\}$): warp share is what fast sharing buys,
+and it is precisely the stratum that does not complete.
+Table~\ref{p2:tab:hw1} gives the architecture view.
+
+\begin{table}[h]
+\centering
+\caption{Provenance strata of completion under scarcity ($N>M$), full
+runs. Warp locks complete an order of magnitude less often than
+own-evidence locks; all CI pairs are disjoint. (H-W1 confirmed.)}
+\label{p2:tab:hw1}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Architecture & $P(\cstar|\wstar_{0.8})$ & $n_{\wstar}$ & $P(\cstar|\mstar,\text{own})$ & $n_{\text{own}}$ \\
+\midrule
+peer-$K{=}2$ & 0.004 [0.001, 0.008] & 1{,}437 & 0.223 [0.186, 0.275] & 2{,}738 \\
+peer-$K{=}8$ & 0.020 [0.000, 0.038] & 149    & 0.389 [0.329, 0.446] & 1{,}734 \\
+CSM-$K{=}8$  & 0.017 [0.006, 0.044] & 637    & 0.414 [0.368, 0.453] & 1{,}684 \\
+shared       & 0.004 [0.002, 0.008] & 2{,}099 & 0.279 [0.237, 0.332] & 2{,}250 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Downstream transport through lock chains}
+\label{p2:sec:taxi}
+
+Direct completion understates the value of foreign evidence. A
+\emph{warp-assisted own completion} is a completed own-evidence lock
+preceded (same agent, same episode) by a soft-$\wstar$ lock that was
+dropped: the warp failed as a destination but succeeded as a ride.
+
+\begin{table}[h]
+\centering
+\caption{Lock-chain analysis (random layouts, full runs). The first
+$\wstar$ lock in a chain is made from ${\approx}8$--$10$ cells away;
+the completing own lock from $2.0$ cells --- exactly the observation
+radius, i.e.\ the self-confirmation point.}
+\label{p2:tab:taxi}
+\small
+\begin{tabular}{lccc}
+\toprule
+Arm & own $\cstar$ & warp-assisted (share) & $r(\text{first }\wstar) \to r(\text{own})$ \\
+\midrule
+shared          & 248 & 127 (\textbf{51.2\%}) & $9.5 \to 2.0$ \\
+peer-$K{=}2$    & 223 & 99 (\textbf{44.4\%})  & $9.7 \to 2.0$ \\
+CSM-$K{=}8$     & 279 & 13 (4.7\%)            & $5.8 \to 2.0$ \\
+peer-$K{=}8$    & 246 & 7 (2.8\%)             & $8.4 \to 2.0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This resolves an apparent paradox in the counterfactual data: the
+shared bus at moderate scarcity gains $+10.8$ ticks $[+2.2,+20.9]$
+from foreign evidence although its direct $P(\cstar|\wstar)$ is
+$0.004$. The gain flows through chains; the freezing rule books the
+completion in the own-evidence stratum, and the chain analysis
+recovers the warp's contribution as a separate measured quantity.
+
+\subsection{Counterfactual warp gain}
+\label{p2:sec:gain}
+
+Masking foreign evidence at merge under the same seed gives
+$\mathrm{WG} = t_{\text{cens}}(\text{masked}) -
+t_{\text{cens}}(\text{full})$ per episode. The sign map over (layout,
+scarcity $\rho{=}N/M$) is regime-dependent: positive for the shared
+bus at unpredictable layouts and moderate scarcity ($+10.8$ at
+$\rho{=}1.5$), negative for fast peer sharing (peer-$K2$ random:
+$-7.1$ $[-13.5,-1.3]$), ${\approx}0$ at hard scarcity. A per-agent
+mask (one agent masked, others share normally) confirms the sign at
+the individual level: $\mathrm{WG}_i = -10.25$ $[-20.91,-0.16]$ ticks
+on the fast-share scarcity cell, with spillover on unmasked agents
+${\approx}0$ ($-0.62$ $[-3.06,+1.91]$). Raw warp \emph{hurts} its
+recipient precisely where sharing is fastest --- the collision cost
+exceeds the information value.
+
+\paragraph{Exploratory: collision pressure.} Co-lock pressure (other
+agents locked on the same target) correlates with warp failure with
+the predicted sign but negligible magnitude (Spearman $+0.033$,
+$p{=}0.018$, $n{=}5{,}117$); we report it as exploratory rather than
+as a confirmed predictor.
+
+
+\section{The warp distance law}
+\label{p2:sec:law}
+
+CSM includes foreign evidence with weight $\tau_i\, e^{-\alpha\,
+\text{age}}\, c$ (trust $\tau_i$, confidence $c{=}0.95$) and inclusion
+threshold $\tau{=}0.30$. Foreign evidence therefore stops forming
+intention at
+\[
+\mathrm{age}_{\max}(\tau_i) \;=\; \tfrac{1}{\alpha}\,
+\ln\!\big(\tau_i\, c / \tau\big), \qquad \text{defined for } \tau_i c > \tau .
+\]
+
+\paragraph{Witness--traveller protocol.} A witness observes water once
+and goes silent; a traveller who has never seen it receives the
+snapshot at a parameterised age. Every lock the traveller makes is a
+strict $\wstar$ by construction. Figure~\ref{p2:fig:law} summarises both
+experiments.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_warp_law}
+\caption{The warp distance law. \textbf{(a)} Foreign-evidence merge
+weight under trust$\times$staleness decay; $\times$ marks the
+empirically measured last age at which the traveller's query still
+exposes the target --- each sits on its curve's crossing of the
+inclusion threshold $\tau$. Fixed-cadence peer memory has no staleness
+term (dashed): its gate never closes; the architectures differ in the
+\emph{shape} of the curve. \textbf{(b)} Predicted vs.\ empirical
+completion breakpoints in full navigation episodes: original grid
+(circles; age sampled in steps of 2, hence points at most one grid
+step below the diagonal) and the registered hold-out (stars; age step
+1, predictions written to disk before execution, $6/6$ exact,
+including the never-cell at $(-1,-1)$ and the cell where the pruning
+horizon undercuts the exponential gate).}
+\label{p2:fig:law}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\caption{Gate curve: largest evidence age at which the traveller's
+query still exposes the target. Fixed-cadence peer memory has no
+staleness term: the gate never closes (checked to age 120 at all
+trusts) --- the architectures differ in the \emph{shape} of the curve,
+not just its level.}
+\label{p2:tab:gate}
+\small
+\begin{tabular}{lcc}
+\toprule
+trust $\tau_i$ & empirical $\mathrm{age}_{\max}$ & predicted \\
+\midrule
+1.00 & 23 & 23.05 \\
+0.80 & 18 & 18.59 \\
+0.60 & 12 & 12.84 \\
+0.40 & 4  & 4.73 \\
+0.25 & gate closed & 0 (trust-flip) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Completion breakpoint.} In full navigation episodes the
+feasibility inequality acquires one discrete refinement: the traveller
+self-confirms the target once it is within the observation radius, so
+the foreign gate only has to survive until tick $t_{\text{gate}} = d -
+r_{\text{obs}} - 1$, giving breakpoint $\mathrm{bp} =
+\mathrm{age}_{\max} - t_{\text{gate}}$; snapshot pruning executes on
+broadcast ticks and adds the bound $10K - t_{\text{bcast}}$. All
+constants of the law are unchanged. All 11 CSM cells of the original
+grid match within sampling resolution; completion curves are monotone
+steps; the trust-flip zeroes $\wstar$ events discretely.
+
+\begin{table}[h]
+\centering
+\caption{Registered-prediction hold-out: six cells absent from the
+original grid, predictions written to disk \emph{before} any episode,
+age grid step 1. All six are exact integer matches, including the
+never-cell and the cell where the pruning horizon must undercut the
+exponential gate.}
+\label{p2:tab:holdout}
+\small
+\begin{tabular}{lccc}
+\toprule
+Cell & binding bound & predicted & empirical \\
+\midrule
+$K{=}8$, $\tau_i{=}0.9$, $d{=}9$  & gate    & 14 & \textbf{14} \\
+$K{=}8$, $\tau_i{=}0.7$, $d{=}9$  & gate    & 9  & \textbf{9}  \\
+$K{=}8$, $\tau_i{=}0.5$, $d{=}15$ & gate    & never & \textbf{never} \\
+$K{=}4$, $\tau_i{=}1.0$, $d{=}6$  & gate    & 20 & \textbf{20} \\
+$K{=}2$, $\tau_i{=}1.0$, $d{=}12$ & \emph{pruning} & 12 & \textbf{12} \\
+$K{=}2$, $\tau_i{=}0.8$, $d{=}8$  & gate    & 13 & \textbf{13} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The law therefore predicts the held-out horizons exactly at tick resolution: the CSM rules
+really are the mechanism that forms (and un-forms) intention. It also
+reinterprets the companion result that CSM dominates fixed-cadence
+peers: trust$\times$staleness is a \emph{warp gate} --- CSM does not
+share better, it \emph{refuses to warp on a stale or untrusted song}.
+
+\paragraph{Portability to continuous dynamics.} All three registered
+predictions survive on a continuous VMAS substrate through the same
+continuous$\to$grid bridge used by the companion's portability test:
+(i) the provenance strata stay an order of magnitude apart
+($P(\cstar|\wstar)=0.012$ $[0.000,0.042]$ vs.\ $0.562$
+$[0.457,0.709]$ at $K{=}1$); (ii) warp share falls monotonically with
+cadence ($0.723\to0.366\to0.000$ over $K{=}1/4/16$); (iii) the law
+becomes \emph{metric}: with the travel-to-sight time calibrated once
+on a fresh-evidence episode, the predicted breakpoints match within
+the sampling grid, and all cells beyond the metric warp radius
+($v\cdot\mathrm{age}_{\max}$ shorter than the distance) are predicted
+\emph{never} and observed \emph{never}. One genuinely continuous
+finding: inertia is a physical warp-leak channel --- an agent can
+coast into sighting range after the gate closes --- removed by a
+no-lock-then-brake controller that restores the grid semantics.
+
+
+\section{The Warp Drive protocol}
+\label{p2:sec:drive}
+
+Warp collision --- locking on foreign evidence for a target someone
+else will claim --- is the dominant failure of fast sharing. Warp
+Drive adds three primitives, all decentralized:
+
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item \textbf{Optimistic warp lock} --- locks on foreign evidence
+  remain allowed immediately (planner unchanged).
+\item \textbf{Warp reservation} --- at the owner's next broadcast tick
+  the reservation rides on the ordinary snapshot (same cadence $K$, no
+  coordinator, no extra channel); receivers suppress reserved targets
+  in their queries. Priority: (lock tick, distance at lock, agent id).
+\item \textbf{Anti-$\mstar$ rollback} (Time Warp
+  semantics~\cite{jefferson1985}) --- an agent holding a lock
+  dominated by a foreign reservation retracts it: the planner
+  re-queries, the target enters exponential backoff
+  ($4\to8\to\cdots\to32$ ticks) with an agent-id tie-break against
+  oscillation. The event log stays append-only.
+\end{enumerate}
+
+\paragraph{Decentralisation check.} Driving the protocol by direct
+per-agent calls --- no runtime, no environment --- produces the same
+retraction decisions from each agent's own inbox alone.
+
+\paragraph{Misled-A anchor.} With Warp Drive the pathological lock is
+resolved \emph{preventively}: C's reservation arrives before A ever
+locks $(3,8)$; A completes on another target. In the sweep, rollback
+latency of dominated locks is finite and ${\approx}K$: $1.0/1.5/2.7$
+ticks at $K{=}1/2/4$ (baseline: until end of episode).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_warp_drive}
+\caption{Warp Drive on unconditional metrics (840 episodes; bootstrap
+CIs). \textbf{(a)} Success rate rises at every cadence with disjoint
+CIs, and every fast-$K$ protocol arm exceeds the $K{=}8$ sweet-spot
+baseline (dashed). \textbf{(b)} Censored time-to-success falls
+correspondingly. The claim that the protocol removes the main
+argument against fast sharing rests on these unconditional
+quantities, not on the (denominator-sensitive) conditional rates.}
+\label{p2:fig:drive}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\caption{Unconditional results, 840 episodes (scarcity cells
+$\times$ random/asymmetric layouts $\times$ 20 seeds). Success rate
+rises under Warp Drive at every cadence with disjoint CIs, censored
+time falls, and fast sharing with the protocol beats the $K{=}8$
+sweet-spot baseline (Figure~\ref{p2:fig:drive}). Lock census shows the
+conditional-metric denominator shrinking --- which is why the claim is
+stated on unconditional quantities.}
+\label{p2:tab:wd}
+\small
+\begin{tabular}{lccc}
+\toprule
+Arm & success rate & $t_{\text{cens}}$ (fail $=120$) & lock census \\
+\midrule
+$K{=}1$ base & 0.592 [0.574, 0.608] & 55.3 [53.7, 57.2] & 0.986 \\
+$K{=}1$ +WD  & \textbf{0.620} [0.609, 0.629] & 53.1 [52.0, 54.4] & 0.985 \\
+$K{=}2$ base & 0.572 [0.549, 0.592] & 57.2 [55.1, 59.7] & 0.973 \\
+$K{=}2$ +WD  & \textbf{0.614} [0.601, 0.624] & \textbf{53.2} [52.0, 54.6] & 0.926 \\
+$K{=}4$ base & 0.577 [0.554, 0.598] & 57.3 [55.1, 59.8] & 0.944 \\
+$K{=}4$ +WD  & \textbf{0.620} [0.609, 0.630] & \textbf{52.2} [50.9, 53.7] & 0.739 \\
+$K{=}8$ base & 0.583 [0.558, 0.604] & 55.2 [52.9, 57.9] & 0.682 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On the conditional axis, recovery is measured against the scarcity
+ceiling $\min(m,M)/m$ (no protocol conjures extra water): $0.90 / 2.15
+/ 6.6$ of the recoverable collapse at $K{=}1/2/4$; values above 1
+arise because reservation suppression removes doomed locks from the
+$\mstar$ population. Together with Table~\ref{p2:tab:taxi}, this completes
+the arc: raw warp fails at completion (\S\ref{p2:sec:raw}); with a
+coordination contract attached, warp at fast cadence becomes the best
+regime. The cadence sweet spot of the companion paper is
+reinterpreted: moderate $K$ was never about information freshness ---
+it was an implicit rate limiter on warp collisions, and an explicit
+contract does the job better.
+
+
+\section{Cross-session warp on an LLM substrate}
+\label{p2:sec:llm}
+
+Finally, the strict warp crosses both an agent boundary and a session
+boundary on a language substrate. In session 1, agent A (a local
+LLM tag extractor over natural-language observations; Ollama
+\method{llama3.1}, deterministic caching, zero API cost) sweeps a
+three-room text household and its symbolic memory is dumped to disk.
+In session 2, agent B --- a fresh agent in a fresh environment
+instance, with the stock directional oracle removed so that long-range
+knowledge can only come from memory --- loads A's dump as foreign
+provenance and solves ``bring the apple to the table.'' Every lock B
+makes on the apple or the table is $\varphi{=}1.0$ strict $\wstar$;
+execution is layered (the LLM makes the semantic decisions --- which
+remembered place to pursue, when to take/put --- while locomotion to
+the locked waypoint is a deterministic motor primitive, matching the
+substrate's planner stack).
+
+\begin{table}[h]
+\centering
+\caption{Cross-session warp over 10 randomised layouts. Completion is
+attributed at the environment's affordance radius (take/put act within
+Manhattan distance 1, and the witness tags anchors on within-reach
+cells).}
+\label{p2:tab:llm}
+\small
+\begin{tabular}{lccc}
+\toprule
+ & success & mean $t_{\text{succ}}$ & layouts with completed strict $\wstar$ \\
+\midrule
+warp (A's memory) & \textbf{10/10} & 8.3 & \textbf{10/10} \\
+control (empty memory) & 0/10 & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This experiment provides a controlled demonstration of cross-session,
+cross-agent strict semantic warp on an LLM substrate. The $10/10$
+versus $0/10$ contrast shows that foreign memory is necessary for completion in this controlled task.
+
+\paragraph{Scaling to a live collective.} With $N{=}3$ LLM agents
+sharing by peer broadcast under scarcity ($M{=}2$ apples, four
+layouts, $K\in\{2,8\}$), the full warp phenomenology reproduces on the
+language substrate (all predictions registered before the runs):
+strict $\wstar$ locks occur; warp share falls with cadence
+($0.417$ at $K{=}2$ vs.\ $0.083$ at $K{=}8$ --- the same shape as the
+grid $0.554\!\to\!0.105$ and VMAS $0.723\!\to\!0.000$); warp
+collisions appear in $7/8$ episodes. A paired comparison against the
+no-communication baseline on identical layouts shows raw sharing
+\emph{lowering} success from $2/3$ to $1/3$ per episode --- the
+collision cost exceeds the information value on the LLM substrate
+exactly as in \S\ref{p2:sec:gain}. Attaching the unchanged Warp Drive
+protocol to the LLM collective provides a corresponding language-agent evaluation: pooled
+success rises from $0.333$ to $0.417$ at both cadences with rollback
+latencies again ${\approx}K$ ($1$ tick at $K{=}2$, $7$ at $K{=}8$).
+The recovery is partial (${\approx}25\%$ of the collapse, vs.\
+$90$--$100\%$ on the grid): on a language substrate the collision
+pathology is compounded by semantic-level losses (hallucinated anchor
+tags, noisy locks) that no reservation can cure --- a measurable
+decomposition we leave to future work. The distance law also survives LLM-produced
+evidence: with the gate constant $c$ set to the confidence the
+extractor actually emitted ($c_{\text{meas}}{=}0.900$), all four
+registered breakpoints land within one tick of prediction.
+
+Two interface findings transfer to any LLM-over-symbolic-memory
+design: the LLM query former free-generates retrieval tags outside the
+memory's vocabulary (requiring an any-of gate), and small local models
+are reliable at semantic commitment but not at coordinate arithmetic
+or systematic exploration (requiring the layered execution above and
+an explicit exploration tier --- without one, discovery never happens
+and the warp has nothing to feed on).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\linewidth]{figures/fig_warp_universality}
+\caption{One quantity, three substrates: warp share
+$P(\wstar|\mstar)$ vs.\ broadcast cadence $K$ on the symbolic grid,
+the continuous VMAS scenario, and the LLM text-world. The curves
+nearly coincide --- how much of a collective's materialization runs
+on foreign evidence is set by the sharing cadence, not by the
+substrate. (LLM arm: 8 episodes, point estimates only.)}
+\label{p2:fig:universality}
+\end{figure}
+
+Figure~\ref{p2:fig:universality} overlays the warp-share--cadence curve
+across all three substrates: the quantity behaves as an
+architecture-level pattern that remains qualitatively consistent
+across the three tested substrates.
+
+
+\section{From target commitments to relational routes}
+
+This first movement introduced semantic warp as a provenance-conditioned
+annotation of a memory-based commitment. The annotation makes it
+possible to distinguish direct observation from peer-supported action,
+to estimate the counterfactual contribution of foreign memory, and to
+derive an explicit temporal boundary for its authority under a
+trust--staleness gate.
+
+The experiments show that foreign evidence should not be evaluated
+only by the direct completion rate of foreign locks. Such locks are
+fragile under scarce targets, but they can provide substantial
+downstream value by transporting recipients into self-confirmation
+range. The same analysis localizes the principal cost of fast sharing
+to duplicated commitments rather than to evidence quality. A minimal
+reservation-and-rollback protocol addresses this failure and improves
+unconditional success across the tested fast cadences.
+
+The resulting conclusion is narrower than a general claim that shared
+memory is beneficial. Foreign evidence becomes useful when its source,
+age, and authority are represented explicitly and when its use is
+coupled to a coordination protocol. The remaining sections extend this
+result from isolated target commitments to provenance-bearing route
+structures and remove the shared-frame assumption.
+
+\paragraph{Outlook: the contract as one function among several.}
+The contract perspective suggests a reading we state as a
+falsifiable program rather than a conclusion: memory is not one
+mechanism but several functions with distinct failure signatures.
+The trust$\times$staleness gate studied here implements
+\emph{memory-for-trust} (ablate it and completion collapses through
+stale and poisoned commits --- the trust-flip and the raw-exchange
+negative are exactly that signature); it is distinct from
+\emph{memory-for-return} (own consolidation; its ablation starves
+candidate generation) and from \emph{memory-for-telling} (what is
+worth broadcasting at all; its ablation leaves receivers'
+retrieval unimproved on tags they undersample). Under this reading
+the right validity criterion for shared memory is not direct
+verification of content but \emph{ecological viability}: whether a
+commitment formed on foreign evidence can still be carried to
+completion under the contract --- which is precisely the quantity
+$P(\cstar \mid \wstar)$ and its law make measurable.
+
+\FloatBarrier
+
+
+
+\section{Routes and meaning-based identity: the transferable unit}
+\label{p3:sec:routes-lead}
+\emph{What transfers between agents is the song: edge-provenanced routes, landmark-anchored place identity without shared frames, the vocabulary ablation, and the song anatomy.}
+
+Transferring the location of a target does not necessarily transfer an
+executable navigation strategy. In environments with obstacles,
+hazards, or private coordinate frames, a recipient may know where a
+target is believed to be while lacking both the route required to
+reach it and a reliable correspondence between the sender's places and
+its own observations. We therefore model the transferable memory unit
+as a provenance-bearing relational route. Semantic landmarks identify
+corresponding places, route edges encode transport between them, and
+edge-level provenance records which parts of the route are known only
+through another agent. A strict route-warp event is defined as the
+execution of a connected foreign subpath that the recipient has not
+previously traversed. Experiments show a clear transition between
+place-only and route-level transfer: isolated target records fail at
+the first obstructing structure and can perform worse than unguided
+exploration, whereas transferred routes remain executable. Because
+route edges are observed at different times, their trust-weighted
+evidence decays non-uniformly. The resulting rupture law predicts the
+first inadmissible edge in all $110$ tested regimes and with zero
+index error on $21$ intermediate ruptures. Semantic landmark
+constellations recover place correspondence across translations and
+quarter-turn rotations, while ambiguous configurations are rejected
+rather than materialized as phantom targets. A representation
+ablation further separates the two informational functions of the
+route: landmarks provide identity and edges provide transport; only
+their composition reaches an unseen target. In the tested codec, this
+composition uses $6.4\%$ of the bits of a full snapshot before protocol
+metadata. The results support relational, provenance-conditioned route
+transfer as the appropriate unit for executable foreign memory. The
+study remains limited to controlled semantic observations and discrete
+frame transformations; continuous pose estimation and open-ended
+perceptual landmark discovery are outside its scope.
+
+\FloatBarrier
+\subsection{From target records to executable routes}
+\label{p3:sec:intro}
+
+Collective navigation memory is commonly represented as a set of
+places, coordinates, or target descriptors. Such representations can
+support target retrieval, but they omit two requirements of executable
+transfer. First, the recipient needs a transport structure that
+specifies how the relevant places are connected. Second, the sender
+and recipient must determine whether their local records refer to the
+same physical places, even when their coordinate frames differ. A
+shared target label or a nearby coordinate is insufficient when either
+of these conditions is absent.
+
+This section addresses both requirements by defining a song as a
+relational route with semantic landmarks, ordered transitions, and
+edge-level provenance. The term is used as a technical representation:
+landmarks provide candidate correspondences between local memories,
+whereas route edges specify the sequence of transitions that makes a
+target operationally reachable. Provenance indicates which route
+segments were acquired by the sender and remain unverified by the
+recipient.
+
+The first question is whether route structure provides measurable
+value beyond place-only transfer. We evaluate this through controlled
+mazes in which the target coordinate is correct but the direct path is
+blocked. The second question concerns temporal validity. Because the
+observations supporting different route edges have different ages,
+the transferred path can remain admissible only up to a finite prefix.
+We derive a rupture index by replaying the trust--staleness gate along
+the route. The third question is referential: can agents recover the
+same route when their private frames differ? We use semantic
+constellations around landmarks to generate mutually consistent
+correspondences and reject ambiguous matches.
+
+The route-level analysis contributes the following:
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item We extend provenance from target commitments to route edges and
+define strict route warp as the execution of a connected foreign
+subpath not previously traversed by the recipient.
+\item We quantify the performance difference between place-only and
+route-level transfer and identify the structural conditions under
+which target coordinates are insufficient.
+\item We derive a route-rupture boundary from edge-specific
+trust--staleness values and validate its predicted failure edge across
+the registered test regimes.
+\item We introduce meaning-based place correspondence through semantic
+landmark constellations and evaluate frame recovery and fail-closed
+behavior under ambiguity.
+\item We decompose the route representation into identity-bearing
+landmarks and transport-bearing edges and measure the storage cost of
+their composition relative to a full snapshot.
+\end{enumerate}
+
+The central claim is therefore not that relational or topological
+navigation is new in itself. The contribution is the composition of
+route structure, provenance, temporal validity, and semantic place
+correspondence into a measurable transfer object. The present
+experiments use controlled semantic vocabularies and discrete
+translations and quarter-turn rotations. Arbitrary continuous
+$SE(2)$ estimation, rich visual observations, and learned landmark
+proposal remain open.
+
+
+\section{Route-transfer setting}
+\label{p3:sec:setting}
+
+Grid worlds ($12{\times}10$ to $14{\times}12$) with semantic water
+targets, hazards, and walls; agents with symbolic place memory,
+peer broadcast on cadence $K$, and the common memory-grounded planner
+used in all experiments
+(target lock $=$ the Q/R/M/C $\mstar$ event; completion $\cstar$).
+The trust$\times$staleness inclusion rule defined in the companion
+collective-memory study is used throughout with unchanged constants: evidence
+mass $\text{trust}\cdot e^{-\alpha\,\text{age}}\cdot m$, threshold
+$\tau{=}0.30$, $\alpha{=}0.05$. Warp events follow the provenance
+analysis of the first part of this paper: provenance $\varphi$ frozen at lock time; completion attributed
+to a continuous lock from a foreign commit ($\varphi{=}1$ at first
+lock) to success.
+
+
+\section{Route-level transfer}
+\label{p3:sec:route}
+
+\paragraph{Edge provenance.} Broadcast snapshots additionally carry the
+sender's OWN traversed edges $(a,b,\text{count},\text{last tick})$;
+foreign edges are never re-broadcast (the same privacy contract as
+place snapshots: no agent reads another's graph, transport only). For
+the path $P$ a planner commits,
+\[
+\phiroute(P) \;=\;
+\frac{\sum_{e\in P,\;\pi(e)\neq\mathrm{self}} w(e)}
+     {\sum_{e\in P} w(e)},
+\qquad w(e) = \text{trust}\cdot e^{-\alpha\,\text{age}(e)}\cdot
+\log(1{+}\text{count}(e)),
+\]
+the same weights the route gate uses. A \textbf{strict $\rwstar$} is a
+committed, traversed, connected sub-path of $\ge 5$ edges with
+$\phiroute = 1$: the whole verse is someone else's. Place warp is the
+degenerate case (path length $0$: only the target is foreign), giving
+a two-dimensional provenance plane $(\varphi_{\mathrm{place}},
+\phiroute)$.
+
+\paragraph{First strict $\rwstar$.} On a comb maze with measured
+detour $D{=}2.65$, a traveler commits and walks a fully foreign
+$45$-edge route to completion in $54$ ticks; with the same foreign
+PLACE evidence but no edges, the standard planner never arrives
+(300-tick budget), and blind exploration takes $126$.
+
+\subsection{Performance transition under route transfer}
+\label{p3:sec:cliff}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_route_cliff}
+\caption{The cliff (paired arms on identical mazes, 20 seeds per
+measured-detour bucket). \textbf{(a)} Place-only transfer does not
+degrade with detour --- it collapses at the FIRST wall, located by the
+probe bucket between $D{=}1.00$ and $D{=}1.38$; route transfer
+completes everywhere. \textbf{(b)} Below the cliff, knowing WHERE
+without HOW is \emph{worse than knowing nothing}: the known-target
+manhattan pull pins the planner against walls ($-150$ to $-168$ ticks
+vs.\ blind exploration), while in the open world the same knowledge is
+worth $+57$.}
+\label{p3:fig:cliff}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\caption{Three arms on identical mazes (paired by seed), bucketed by
+MEASURED detour factor $D$; 20 seeds per bucket, censored gains
+(fail $=300$). Place-only transfer does not degrade with $D$ --- it
+collapses at the first wall, and is worse than blind exploration
+there (the known-target manhattan pull pins the planner against
+walls). Route transfer completes everywhere; every completion is a
+strict $\rwstar$ with $\phiroute=1$.}
+\label{p3:tab:cliff}
+\small
+\begin{tabular}{lcccc}
+\toprule
+$D$ & gain route-vs-place [CI] & gain route-vs-blind [CI] & succ r/p/b \\
+\midrule
+1.00 & $+4.7$ $[+3.4,+6.0]$ & $+62$ $[+44,+80]$ & 20/\textbf{20}/20 \\
+1.38 & $+281$ $[+279,+283]$ & $+113$ $[+77,+155]$ & 20/\textbf{0}/16 \\
+2.03 & $+273$ $[+271,+275]$ & $+123$ $[+91,+160]$ & 20/\textbf{0}/17 \\
+3.32 & $+262$ $[+259,+264]$ & $+110$ $[+72,+152]$ & 20/\textbf{0}/15 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{p3:fig:cliff} shows both faces of the result.
+Two pre-registered predictions failed here, in instructive ways.
+The negative control at $D{=}1$ was registered in ticks
+($|\text{gain}|\le 3$) and came out $+4.7$: the gap is \emph{turn
+economy} (BFS routes walk straight legs; the dominant-axis planner
+alternates axes), not route knowledge --- in path LENGTH the gap is
+exactly $0.0$ $[0.0,0.0]$ across all 20 open-grid cells. And ``gain
+grows with $D$'' is unmeasurable: with place success at $0$ the gain
+saturates at the censoring ceiling. The correct form of the law is a
+step located by the probe bucket at $D\in(1.00,1.38)$, i.e.\ the
+first wall.
+
+
+\section{Rupture law and route-validity boundary}
+\label{p3:sec:rupture}
+
+The witness stamps edge $i$ at tick $i$: its trace ages
+non-uniformly, the start of the route always older than the end, and
+a traveler delayed by $a_0$ \emph{chases a fading song}. Under the
+standard gate the binding edge is the CURRENT one (the oldest
+remaining), giving three regimes on the $a_0$ axis: complete;
+rupture at a predictable path index; dead on arrival. The predictor
+is fully deterministic --- a no-decay calibration run records the
+traveler's kinematics (path index per tick, turns included), and the
+registered prediction replays the closed-form gate over that
+trajectory, the same deterministic replay procedure used for the
+$6/6$ hold-out in Section~\ref{p2:sec:law}.
+
+Across 5 mazes $\times$ 11 delays $\times$ 2 trusts (110 cells,
+registered before execution): \textbf{110/110 regime matches; all 21
+mid-route ruptures at exactly the predicted edge index (error $0$)};
+and a route trust-flip --- at trust $0.7$ the single-traversal edge
+mass gives $\mathrm{age}_{\max} = 9.6 < L$, so \emph{no route ever
+commits} (0 commits observed; the discrete off-switch of the
+warp distance law of Section~\ref{p2:sec:law}, now for paths). The rupture of a transferred route is
+thus not noise but a law: the same constants
+$(\alpha,\tau,\text{trust})$ that set WHEN a place-warp gate closes
+set WHERE a route-warp breaks.
+
+
+\section{Hazard preservation along the valid route prefix}
+\label{p3:sec:hazard}
+
+\begin{table}[h]
+\centering
+\caption{Open fields dense with passable-but-punished hazards
+(density $0.20$), the witness's route hazard-avoiding by experience;
+20 paired worlds, decay off (the safety axis isolated from the aging
+axis). Both transfer modes COMPLETE --- the wall axis
+(Table~\ref{p3:tab:cliff}) and the hazard axis are independent; they
+differ in the price.}
+\label{p3:tab:hazard}
+\small
+\begin{tabular}{lccc}
+\toprule
+Arm & hazard hits [CI] & completion & mean $t$ \\
+\midrule
+route (foreign safe path) & \textbf{0} (all 20 cells) & 20/20 & 16.6 \\
+place (WHERE only) & 3.25 $[2.45, 4.10]$ & 20/20 & 15.9 \\
+blind & 28.7 & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/fig_route_hazard}
+\caption{The song protects. \textbf{(a)} Hazard hits per episode: the
+traveler on the witness's route preserves the witness's measured risk profile within the validated route prefix ($0$ in
+all 20 worlds); the place-only traveler pays $3.25$ hits for the same
+completion; blind exploration pays $28.7$. \textbf{(b)} Composition
+with the rupture law: in the rupture regime the traveler takes zero
+hits while the song lasts, and the risk resumes after the break ---
+which occurs at the predicted rupture index in all $19/19$ cells.}
+\label{p3:fig:hazard}
+\end{figure}
+
+The traveler following the witness's path preserves the witness's
+measured risk profile within the validated route prefix, at a time premium of $+0.7$ ticks
+(Figure~\ref{p3:fig:hazard}a). Composing with \S\ref{p3:sec:rupture}: in the rupture regime (19/20 worlds) the
+traveler takes \textbf{0 hits before the rupture} and $0.58$
+$[0.11,1.32]$ after it, when it falls back on place knowledge and
+re-enters the field --- with all 19 ruptures again at the
+predicted rupture index (error $0$; the edge-exact predictor replicated on
+a new world class with no adjustment). The song protects while it
+lasts, and the measured protection ends at the edge predicted by the rupture law.
+
+
+\section{Meaning-based place correspondence}
+\label{p3:sec:identity}
+
+Everything so far in this paper rides
+on a shared coordinate frame. We now remove it: each agent's private
+frame is the true grid under a secret translation (later: plus a
+secret $90^\circ$-multiple rotation), and broadcasts carry private
+coordinates that are meaningless to the receiver until it decides
+what the sender's places MEAN.
+
+\paragraph{Two levels of `the same', and what a landmark is.}
+Cross-agent place identity has two levels that must not be conflated.
+The \emph{semantic predicate} says two cells belong to the same
+desired class (\texttt{water\_source}, GOOD): it travels in every
+snapshot, and it is what task satisfaction is defined over. But no
+predicate can decide \emph{entity correspondence} --- that two memory
+entries denote the same world referent --- because a predicate is
+exactly what aliases: all water looks like water. Route-relative
+description (`$n$ steps past the last GOOD') does not decide it
+either: it is provenance of a path, not identity of its endpoints
+(\S\ref{p3:sec:route}--\S\ref{p3:sec:rupture} measure what it buys and
+where it breaks). What decides correspondence in this series is a
+\emph{landmark}: a place whose local semantic constellation supports
+a mutually-unique match across agents. Landmark is a \emph{role}, not
+a cell type --- which tag classes can play it is itself measured
+below (\S\ref{p3:sec:ablation}).
+
+\paragraph{Fingerprints and the handshake.} A place fingerprint is the
+local semantic constellation around a visited cell --- which content
+tags (hazards, walls, water) sit at which relative offsets ---
+translation-invariant and coordinate-free. Matching is
+\emph{mutually unique} (a pair is accepted only if each side is the
+other's sole candidate above an exact-equality threshold; the sender
+knows far more places than the receiver, and one-directional
+uniqueness aliases distant look-alikes into the receiver's
+neighborhood), fingerprints need $\ge 2$ salient keys, and the frame
+translation is the modal delta of $\ge 3$ agreeing pairs. Landmarks
+must carry at least one CONTENT tag: border-only (`void') patterns
+describe the shape of the world, not a place, and are excluded ---
+the lesson of the corner trap below.
+
+\paragraph{Witness--traveler results.} Over 4 offsets $\times$ 2
+hazard densities $\times$ 10 seeds: the semantic aligner recovers the
+secret offset \emph{exactly in 100\%} of landmark-world runs
+(mean $15.1$ mutual pairs) and completes with strict $\wstar$
+($\varphi{=}1$) every time; the coordinate baseline under any nonzero
+offset locks a non-water cell in $100\%$ of runs (its rare
+`successes', $6.7\%$, are the displaced route accidentally crossing
+the true water). In the aliased world (featureless interior band) the
+two identity regimes break in OPPOSITE directions: semantic identity
+makes \emph{zero} locks --- it fails closed --- while coordinate
+identity keeps confidently locking wrong cells --- it fails open.
+This asymmetry, not raw accuracy, is the deepest argument for
+meaning-based identity: when the world does not support
+identification, the semantic system knows it.
+
+\subsection{Integrated correspondence and route-transfer stack}
+\label{p3:sec:stack}
+
+\paragraph{Online alignment in the peer stack.} With $N{=}4$ agents
+under scarcity, all in distinct secret frames, alignment develops
+DURING the episode: agents explore, co-visited landmarks accumulate,
+and per-sender frames lock in mid-run (onset in $100\%$ of episodes,
+mean tick ${\approx}15$). Pooled success: shared-frame oracle
+$0.456$, coordinate under misalignment $0.350$, semantic $0.444$ ---
+\textbf{88\% of the gap recovered}, with strict $\wstar$ functioning
+through recovered frames.
+
+\paragraph{Validity law under recovered frames.} Re-running the warp
+distance law of Section~\ref{p2:sec:law} with the trust$\times$staleness gate ON TOP of semantic
+identity under a frame offset gives breakpoints $20/14/9$ ---
+\emph{the same integers as the shared-frame closed form, exactly}.
+The gate and the frame recovery are orthogonal layers: the law does
+not notice that the shared grid is gone.
+
+\paragraph{No shared north: translations and quarter-turn rotations.} With secret rotations added,
+one rotation hypothesis per $90^\circ$ reuses the translation aligner
+and the winner must \emph{dominate} ($\ge 2\times$ the runner-up's
+consensus). Results: exact $(r^\ast,\delta^\ast)$ recovery in
+\textbf{80/80} rotation$\times$offset$\times$seed combinations with
+$100\%$ strict-$\wstar$ completion; in a $180^\circ$-symmetric world
+--- where the frame is unrecoverable \emph{in principle} --- the
+aligner refuses ($0/10$ locks) while coordinates fail open ($10/10$
+wrong locks); and the distance law again does not notice
+($\mathrm{bp}=20$ under a $90^\circ$-rotated witness). The
+translation-only aligner, for contrast, never recovers a rotated
+frame ($0/60$) but does not always fail closed: in $2/60$ cells a
+$180^\circ$-symmetric hazard substructure lets it fail OPEN --- the
+empirical motivation for the dominance rule.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/fig_route_identity}
+\caption{Meaning-based identity under discrete rigid-frame transformations ($\mathbb{Z}^2\rtimes C_4$: translations and quarter-turn rotations). \textbf{(a)}
+Every strict-$\wstar$ lock the semantic stack makes points at real
+water ($8/8$); the coordinate stack makes $992$ locks, all phantoms
+($0/992$); frame recovery itself is exact in $80/80$
+witness--traveler combinations. \textbf{(b)} The failure asymmetry in
+worlds where identification is impossible (featureless band; a
+$180^\circ$-symmetric layout where the frame is unrecoverable in
+principle): semantic identity refuses to lock --- fails closed ---
+while coordinate identity keeps confidently locking wrong cells ---
+fails open.}
+\label{p3:fig:identity}
+\end{figure}
+
+\paragraph{The corner trap.} In the full stack, raw success is
+non-discriminating under rotations (rotated coordinate poison mostly
+maps off-grid and degrades into pseudo-exploration), so the
+registered discriminator is \emph{warp-lock precision}: the share of
+strict $\wstar$ locks pointing at real water. Before the void filter,
+early border fingerprints (agents start in corners; rectangle borders
+are $180^\circ$-symmetric) fed wrong-frame hypotheses and semantic
+precision was $0.159$; with borders excluded as non-landmarks it is
+\textbf{$1.000$ ($8/8$) vs.\ $0.000$ ($0/992$ phantom locks) for
+coordinates}, with alignment onset in $100\%$ of episodes and clean
+regressions on all earlier experiments
+(Figure~\ref{p3:fig:identity}).
+
+\subsection{Causal contribution of the landmark vocabulary}
+\label{p3:sec:ablation}
+
+The identity machinery rides on a fixed landmark vocabulary $\Sigma =
+\{\texttt{wall}, \texttt{hazard}, \texttt{water}, \texttt{void}\}$:
+the tag classes allowed into a fingerprint. Every claim above is
+therefore conditional on a hand-chosen alphabet. The last experiment
+makes the alphabet the treatment: witness--traveler frame recovery
+(worlds carrying both scattered walls and scattered hazards; $3$
+offsets $\times$ $12$ seeds per arm) under seven vocabularies, from
+full $\Sigma$ down to single classes.
+
+\begin{table}[h]
+\centering
+\caption{Landmark-vocabulary ablation ($36$ cells per arm, $252$
+total; registered predictions A1--A4, all PASS). Impoverishing the
+alphabet costs \emph{coverage} --- recovery converts into refusal ---
+but never \emph{correctness}: every transported lock, under every
+vocabulary, goes through the exactly-recovered frame. Attribution =
+share of consensus-pair key mass under full $\Sigma$.}
+\label{p3:tab:ablation}
+\small
+\begin{tabular}{lcccc}
+\toprule
+Vocabulary & exact recovery & mean pairs & lock precision & fail-open \\
+\midrule
+full $\Sigma$ & $1.00$ & $33.2$ & $1.00$ & $0$ \\
+$-$ void & $1.00$ & $32.0$ & $1.00$ & $0$ \\
+$-$ hazards & $0.92$ & $11.8$ & $1.00$ & $0$ \\
+$-$ walls & $1.00$ & $15.5$ & $1.00$ & $0$ \\
+hazards only & $1.00$ & $13.7$ & $1.00$ & $0$ \\
+walls only & $0.83$ & $10.8$ & $1.00$ & $0$ \\
+void only & $0.00$ & $0.0$ & --- & $0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Four registered predictions, four passes (Table~\ref{p3:tab:ablation}).
+\textbf{(A1) The ablation is fail-safe:} in $252$ cells there is not
+one fail-open transport, consistent with the fail-closed asymmetry of
+\S\ref{p3:sec:identity} holds not just against ambiguous \emph{worlds}
+but against impoverished \emph{alphabets}. \textbf{(A2) Void is
+scaffolding, not identity:} border patterns carry $0.000$ of the
+consensus key mass, and dropping them changes nothing --- consistent
+with the corner trap, where they actively poisoned rotation
+hypotheses. \textbf{(A3) One content class suffices:} hazards alone
+recover every frame; walls alone recover $0.83$ and refuse the rest.
+Correspondence needs only $\ge 3$ mutually-unique constellations over
+\emph{some} content class --- a bounded-rationality budget, not a rich
+ontology. \textbf{(A4) Attribution is measurable:} hazard
+constellations carry $0.56$ of the consensus mass, walls $0.44$.
+Which features function as landmarks is thus not a modelling
+assumption that happened to work --- it is a measurable property of
+the world$\times$vocabulary pair, and the machinery degrades along
+the safe axis whenever the vocabulary is wrong.
+
+\subsection{Functional decomposition of the route representation}
+\label{p3:sec:anatomy}
+
+\S\ref{p3:sec:identity} opened with a claim we have so far only argued:
+route-relative description (`$n$ steps past the last GOOD') is
+provenance of a path, not identity of its endpoints. The last
+experiment measures it. A witness compresses its route to the water
+into a purely \emph{relational} song --- a sequence of couplets
+$(\sigma, e)$, where $\sigma$ is the landmark constellation signature
+and $e$ the exact beat vector from the previous couplet --- carrying
+\emph{no global coordinates whatsoever}. A band-limited traveler who
+has never seen the water receives it. Four registered arms (bit codec
+fixed before the runs; $12$ paired worlds):
+
+\begin{itemize}[leftmargin=16pt,itemsep=2pt,topsep=2pt]
+\item \textbf{Beats only} (the pure `$n$ steps from the last GOOD'):
+  usable only by \emph{assuming} the anchor. With a shared anchor it
+  is exact ($11/11$, the negative control); with anchor disagreement
+  it locks every time and is right \emph{never} ($11/11$ fail-open
+  mislocks, displaced by exactly the anchor offset). Beats do not
+  carry identity --- they parasitise on the identity of the anchor.
+\item \textbf{Signatures only}: re-identifies co-visited places but
+  has no edges to walk --- \emph{zero} transports of the never-seen
+  target. Nodes alone cannot reach the unseen.
+\item \textbf{Signatures $+$ beats}: couplets matched mutually-uniquely,
+  the beat chain checked for metric consistency between matched
+  couplets (a loop-closure test), the target dead-reckoned from the
+  last matched landmark. Coverage $1.0$, every transport exact, zero
+  fail-open --- at $366$ bits per song.
+\item \textbf{Full snapshots} (the machinery of
+  \S\ref{p3:sec:identity}): the information upper bound --- same
+  correctness at $5{,}690$ bits.
+\end{itemize}
+
+All four registered predictions passed. The song is not a lighter
+snapshot; it is a different \emph{kind} of object: identity lives in
+the nodes (landmarks), transport lives in the edges (beats), and
+their composition delivers full-snapshot transport at $6.4\%$ of the
+bit cost while inheriting the fail-safe property of
+\S\ref{p3:sec:ablation} --- everything that goes wrong goes wrong as a
+refusal. (This $6.4\%$ is the \emph{pure song codec}: nodes and
+edges only. A deployed collective-memory protocol adds provenance,
+timestamps, world versions, and a utility certificate; the
+full-protocol payload ratio, measured in the companion formation
+paper, is correspondingly larger.)
+
+
+\section{Related work}
+\label{p2:sec:related}
+
+\paragraph{Shared memory in agent collectives.} Generative
+Agents~\cite{park2023generative} and multi-agent LLM frameworks share
+memory streams or context but expose no lock interface and no
+per-source decomposition of a merged belief, so provenance-conditioned
+completion is not measurable there. Vector memories (e.g.\
+MemGPT~\cite{packer2023memgpt}) merge by embedding arithmetic;
+the merge is not source-decomposable, which blocks both $\varphi$ and
+the masked-replay counterfactual.
+\paragraph{Emergent communication.} CommNet~\cite{sukhbaatar2016commnet}
+and TarMAC~\cite{das2019tarmac} learn continuous channels; the
+companion paper shows such channels collapse stage observability. Warp
+requires an explicit materialization event, which these architectures
+do not expose.
+\paragraph{Stigmergy.} Pheromone-style coordination is an
+\emph{anonymous} warp: evidence transfers without provenance. Our
+results quantify what anonymity costs (shared-bus warp share is
+maximal while its warp completion is minimal) and what
+provenance buys (trust gates, reservations, rollback).
+\paragraph{Optimistic concurrency.} The rollback primitive is Time
+Warp~\cite{jefferson1985} transplanted from parallel simulation to
+memory-driven navigation: locks are optimistic computations,
+occupancy evidence is a straggler message, anti-$\mstar$ is the
+anti-message. To our knowledge this transplant is new.
+
+
+\label{p3:sec:related}
+
+\paragraph{Map merging and place recognition.} Multi-robot SLAM
+treats inter-map data association as an estimation problem over
+metric features~\cite{cadena2016slam}; visual place
+recognition~\cite{lowry2016vpr} matches appearance. Our contribution
+is not a competing matcher but the measurement layer on top:
+provenance-conditioned completion through recovered frames, the
+fail-closed/fail-open asymmetry as a registered prediction, and law
+invariance under frame removal.
+\paragraph{Route sharing.} Stigmergy transfers paths anonymously
+(pheromone gradients); learned communication (e.g.\
+CommNet~\cite{sukhbaatar2016commnet}) transfers policies opaquely.
+Neither exposes an edge-provenance decomposition, so neither can
+state --- let alone predict --- where a transferred route breaks.
+The rupture predictor is Time Warp~\cite{jefferson1985} thinking
+applied to memory decay: deterministic replay of a gate over
+calibrated kinematics.
+\paragraph{Songlines.} The narrative framing corresponds to a functional distinction in
+both directions: the song is a sequence (route warp), its places are
+recognised by meaning (semantic identity), it fades verse by verse
+(rupture law), and it protects the walker while it lasts (hazard
+stratification).
+
+
+\section{Limitations}
+\label{p2:sec:limits}
+
+The provenance analysis is subject to six main limitations. First,
+the primary experiments use a shared coordinate frame and therefore
+do not solve cross-agent entity correspondence; the route-level
+analysis in the following sections addresses this assumption with
+semantic landmark matching. Second, the evidence
+is based mainly on controlled grid environments, with a directional
+VMAS study and a small text-world LLM demonstration rather than a
+photorealistic benchmark. Third, the sign of counterfactual warp gain
+is regime-dependent and should not be summarized as a universal
+benefit of foreign memory. Fourth, the closed-form distance law is
+specific to the explicit exponential trust--staleness gate and its
+pruning schedule. Fifth, the co-lock-pressure analysis is exploratory
+and is reported as mechanism evidence rather than as a confirmed
+predictive law. Sixth, the LLM experiment uses a limited model and task
+family. All deviations from the registered design and all failed
+predictions are retained in Appendix~\ref{p2:app:deviations}.
+
+
+\label{p3:sec:limits}
+
+The route-transfer experiments use controlled navigation substrates
+and a predefined semantic vocabulary. Place correspondence is tested
+under translations and quarter-turn rotations; this setting should be
+described as discrete frame recovery rather than arbitrary continuous
+$SE(2)$ estimation. The semantic fingerprints are sufficiently rich
+to support exact correspondence in the reported environments, but
+open-world appearance variation, perceptual uncertainty, and learned
+symbol alignment remain unresolved. The rupture law is exact for the
+specified edge-wise trust--staleness mechanism and does not by itself
+provide a universal safety guarantee. The claim concerning risk is
+therefore restricted to preservation of the witness's measured hazard
+profile within the validated route prefix. Finally, the $6.4\%$ figure
+refers to the pure route representation; a complete deployment cost
+must additionally include provenance, timestamps, correspondence
+hypotheses, and coordination metadata.
+
+
+\section{Conclusion}
+
+Taken together, the two movements of this paper give a single answer to
+what makes foreign navigation memory executable. The first showed that a
+peer-supported \emph{commitment} carries value only under a provenance,
+validity, and coordination contract --- direct completion understates
+it, a trust--staleness horizon bounds it, and a reservation protocol
+makes fast sharing net-positive. The second identifies a
+provenance-bearing relational route as the
+transferable unit of executable navigation memory. A target record by
+itself can identify a destination without specifying a feasible path,
+and an edge sequence without a reliable landmark correspondence can
+transport the agent toward the wrong referent. The experiments show
+that these functions are distinct: semantic landmarks provide
+identity, route edges provide transport, and only their composition
+supports transfer to an unseen target.
+
+The route representation also exposes a temporal boundary. By
+applying the trust--staleness gate to each edge, the method predicts
+the route prefix that remains admissible and the edge at which the
+transfer should be rejected or replanned. In the controlled studies,
+this rupture index matches the observed failure location exactly.
+Meaning-based landmark correspondence further removes the shared
+coordinate assumption for discrete translations and quarter-turn
+rotations and fails closed when the observations are ambiguous.
+
+The results support a precise interpretation of foreign navigation
+memory: it must preserve referential identity, transport structure,
+provenance, and a validity boundary together. How such memory is
+\emph{formed}, consolidated, and admitted into a collective over long
+horizons --- with explicit merge, trust, and staleness rules --- is the
+subject of a companion paper on utility-certified collective memory.
+
+
+\clearpage
+\appendix
+
+\section{Deviations from the pre-registered design}
+\label{p2:app:deviations}
+\begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
+\item Reservation tie-break extended to (lock tick, \emph{distance at
+  lock}, agent id): a pure id tie-break hands simultaneous locks to a
+  distant agent over the target's near-discoverer.
+\item Protocol recovery is measured against the scarcity ceiling
+  $\min(m,M)/m$ rather than the $K{=}8$ reference, separating
+  structural from coordination collapse; unconditional metrics are
+  reported alongside (Table~\ref{p2:tab:wd}).
+\item Completion breakpoints use the discrete-time refinement of
+  \S\ref{p2:sec:law} (law constants unchanged; hold-out registered).
+\item Collision pressure is operationalized as co-lock count rather
+  than co-recipients (structurally constant $N{-}2$ under broadcast).
+\item LLM demo: layered execution (LLM semantics, deterministic
+  locomotion); completion attributed at the affordance radius.
+\end{enumerate}
+
+
+\section{Reproducibility}
+\label{p2:app:repro}
+All experiments run on CPU in minutes-to-tens-of-minutes; the LLM demo
+uses a local Ollama model with deterministic caching.
+\begin{verbatim}
+PYTHONPATH=. python experiments/warp/exp_warp_anchor.py
+PYTHONPATH=. python experiments/warp/exp_warp_gain.py --seeds 20
+PYTHONPATH=. python experiments/warp/analyze_warp_chains.py
+PYTHONPATH=. python experiments/warp/exp_warp_gain_individual.py
+PYTHONPATH=. python experiments/warp/exp_warp_age_law.py
+PYTHONPATH=. python experiments/warp/exp_warp_age_law_holdout.py
+PYTHONPATH=. python experiments/warp/exp_warp_drive.py --seeds 20
+PYTHONPATH=. python experiments/warp/exp_warp_cross_session.py --layouts 10
+\end{verbatim}
+
+
+\label{p3:app:repro}
+\begin{verbatim}
+PYTHONPATH=. python experiments/warp/exp_route_warp_r0.py
+PYTHONPATH=. python experiments/warp/exp_route_warp_r1.py --seeds 20
+PYTHONPATH=. python experiments/warp/exp_route_warp_r2.py --seeds 5
+PYTHONPATH=. python experiments/warp/exp_route_warp_r3.py --seeds 20
+PYTHONPATH=. python experiments/warp/exp_warp_semantic_identity.py
+PYTHONPATH=. python experiments/warp/exp_warp_semantic_stack.py --seeds 20
+PYTHONPATH=. python experiments/warp/exp_warp_rotation.py --seeds 10
+PYTHONPATH=. python experiments/warp/exp_warp_landmark_ablation.py
+PYTHONPATH=. python experiments/song_grammar/exp_s0_song_smoke.py
+\end{verbatim}
+\FloatBarrier
+
+
+\section{Full counterfactual sign map}
+\label{p2:app:signmap}
+\FloatBarrier
+
+\clearpage
+
+\section{Registered predictions and revisions}
+\label{p3:app:registered}
+All predictions were written to disk before execution; the artifact
+retains both versions wherever an operationalisation was revised.
+Revisions: R1 negative control re-measured in path length; R1 gain
+monotonicity re-formulated as cliff detection; W9 full-stack
+discriminator changed from success to warp-lock precision; W8
+strict-$\wstar$ functioning extended to include warp-assisted own
+completions (taxi chains). The vocabulary ablation (A1--A4,
+\S\ref{p3:sec:ablation}) and the song-anatomy experiment (S0.1--S0.4,
+\S\ref{p3:sec:anatomy}, bit codec registered with the predictions)
+passed as registered, with no revisions.
+
+
+\begin{thebibliography}{99}
+\bibitem[Packer et~al.(2023)]{packer2023memgpt}
+C.~Packer, V.~Fang, S.~Patil, K.~Lin, S.~Wooders, and J.~Gonzalez.
+\newblock MemGPT: Towards LLMs as operating systems.
+\newblock \emph{arXiv:2310.08560}, 2023.
+\bibitem[Park et~al.(2023)]{park2023generative}
+J.~S. Park, J.~C. O'Brien, C.~J. Cai, M.~R. Morris, P.~Liang, and M.~S. Bernstein.
+\newblock Generative agents: Interactive simulacra of human behavior.
+\newblock \emph{arXiv:2304.03442}, 2023.
+\bibitem[Sukhbaatar et~al.(2016)]{sukhbaatar2016commnet}
+S.~Sukhbaatar, A.~Szlam, and R.~Fergus.
+\newblock Learning multiagent communication with backpropagation.
+\newblock In \emph{NeurIPS}, 2016.
+\bibitem[Das et~al.(2019)]{das2019tarmac}
+A.~Das, T.~Gervet, J.~Romoff, D.~Batra, D.~Parikh, M.~Rabbat, and
+J.~Pineau.
+\newblock TarMAC: Targeted multi-agent communication.
+\newblock In \emph{ICML}, 2019.
+\bibitem[Jefferson(1985)]{jefferson1985}
+D.~R. Jefferson.
+\newblock Virtual time.
+\newblock \emph{ACM Transactions on Programming Languages and Systems},
+7(3):404--425, 1985.
+\bibitem[Cadena et~al.(2016)]{cadena2016slam}
+C.~Cadena, L.~Carlone, H.~Carrillo, Y.~Latif, D.~Scaramuzza,
+J.~Neira, I.~Reid, and J.~J. Leonard.
+\newblock Past, present, and future of simultaneous localization and
+mapping: Toward the robust-perception age.
+\newblock \emph{IEEE Transactions on Robotics}, 32(6):1309--1332, 2016.
+\bibitem[Lowry et~al.(2016)]{lowry2016vpr}
+S.~Lowry, N.~S\"underhauf, P.~Newman, J.~J. Leonard, D.~Cox,
+P.~Corke, and M.~J. Milford.
+\newblock Visual place recognition: A survey.
+\newblock \emph{IEEE Transactions on Robotics}, 32(1):1--19, 2016.
+\end{thebibliography}
+\end{document}

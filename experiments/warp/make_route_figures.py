@@ -7,8 +7,9 @@ Fig 2  fig_route_hazard    the song protects: hazard hits by arm, and
                            the risk resuming after the predicted
                            rupture (R3 x R2 composition).
 Fig 3  fig_route_identity  meaning-based identity: warp-lock precision
-                           under SE(2) frames, and the fail-closed vs
-                           fail-open asymmetry in unrecoverable worlds.
+                           under translations and quarter-turn rotations,
+                           and the fail-closed vs fail-open asymmetry in
+                           unrecoverable worlds.
 
 Data: tmp/warp/{r1_route_gain,r3_hazard,w9_rotation,
 w7_semantic_identity}/*.json.
@@ -147,9 +148,9 @@ def fig_identity() -> None:
           label="coordinate identity")
     a.bar([1 - 0.17], [8 / 8], width=0.34, color=C_SEM)
     a.set_xticks(x)
-    a.set_xticklabels(["strict-$W^\\star$ lock precision\n(full stack, "
-                       "random $SE(2)$ frames)",
-                       "frame recovery\n($80/80$ exact, se2)"])
+    a.set_xticklabels(["strict-$W^\\star$ lock precision\n(full stack,\n"
+                       "translations + quarter-turn rotations)",
+                       "frame recovery\n($80/80$ exact)"])
     a.set_ylim(0, 1.15)
     a.text(-0.17, prec["semantic"] + 0.03, "8/8", ha="center", fontsize=8)
     a.text(0.17, 0.03, "0/992\nphantom", ha="center", fontsize=7,
