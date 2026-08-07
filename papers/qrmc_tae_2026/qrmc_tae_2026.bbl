@@ -1,0 +1,115 @@
+\begin{thebibliography}{15}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Bean et~al.(2025)Bean, Kearns, Romanou, Hafner, Mayne, Batzner,
+  Foroutan~Eghlidi, Schmitz, Korgul, Batra, Deb, et~al.]{bean2025construct}
+Andrew~M. Bean, Ryan~Othniel Kearns, Angelika Romanou, Franziska~Sofia Hafner,
+  Harry Mayne, Jan Batzner, Negar Foroutan~Eghlidi, Chris Schmitz, Karolina
+  Korgul, Hunar Batra, Oishi Deb, et~al.
+\newblock Measuring what matters: Construct validity in large language model
+  benchmarks.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~38, 2025.
+
+\bibitem[Bjarnason et~al.(2026)Bjarnason, Silva, and
+  Monperrus]{bjarnason2026randomness}
+Bjarni~Haukur Bjarnason, Andr{\'e} Silva, and Martin Monperrus.
+\newblock On randomness in agentic evals.
+\newblock \emph{arXiv preprint arXiv:2602.07150}, 2026.
+
+\bibitem[Boyd et~al.(2006)Boyd, Ghosh, Prabhakar, and Shah]{boyd2006gossip}
+Stephen Boyd, Arpita Ghosh, Balaji Prabhakar, and Devavrat Shah.
+\newblock Randomized gossip algorithms.
+\newblock \emph{IEEE Transactions on Information Theory}, 52\penalty0
+  (6):\penalty0 2508--2530, 2006.
+
+\bibitem[Carmona et~al.(2018)Carmona, van Dongen, Solti, and
+  Weidlich]{carmona2018conformance}
+Josep Carmona, Boudewijn van Dongen, Andreas Solti, and Matthias Weidlich.
+\newblock \emph{Conformance Checking: Relating Processes and Models}.
+\newblock Springer, 2018.
+
+\bibitem[Es et~al.(2024)Es, James, Espinosa-Anke, and Schockaert]{es2024ragas}
+Shahul Es, Jithin James, Luis Espinosa-Anke, and Steven Schockaert.
+\newblock {RAGAs}: Automated evaluation of retrieval augmented generation.
+\newblock In \emph{EACL System Demonstrations}, 2024.
+
+\bibitem[Foerster et~al.(2018)Foerster, Farquhar, Afouras, Nardelli, and
+  Whiteson]{foerster2018counterfactual}
+Jakob Foerster, Gregory Farquhar, Triantafyllos Afouras, Nantas Nardelli, and
+  Shimon Whiteson.
+\newblock Counterfactual multi-agent policy gradients.
+\newblock In \emph{AAAI}, 2018.
+
+\bibitem[Lin et~al.(2026)Lin, Wang, Kwok, Guo, Nale, Fleming, and
+  Cheng]{lin2026reflect}
+Xiaofeng Lin, Yingxu Wang, Tung Sum~Thomas Kwok, Daniel Guo, Sahil~Arun Nale,
+  Charles Fleming, and Guang Cheng.
+\newblock {REFLECT}: Intervention-supported error attribution for silent
+  failures in {LLM} agent traces.
+\newblock \emph{arXiv preprint arXiv:2606.09071}, 2026.
+
+\bibitem[Ma et~al.(2024)Ma, Zhang, Zhu, Yang, Yang, Jin, Lan, Kong, and
+  He]{ma2024agentboard}
+Chang Ma, Junlei Zhang, Zhihao Zhu, Cheng Yang, Yujiu Yang, Yaohui Jin,
+  Zhenzhong Lan, Lingpeng Kong, and Junxian He.
+\newblock {AgentBoard}: An analytical evaluation board of multi-turn {LLM}
+  agents.
+\newblock In \emph{NeurIPS}, 2024.
+
+\bibitem[Packer et~al.(2023)Packer, Fang, Patil, Lin, Wooders, and
+  Gonzalez]{packer2023memgpt}
+Charles Packer, Vivian Fang, Shishir~G. Patil, Kevin Lin, Sarah Wooders, and
+  Joseph~E. Gonzalez.
+\newblock {MemGPT}: Towards {LLMs} as operating systems.
+\newblock \emph{arXiv preprint arXiv:2310.08560}, 2023.
+
+\bibitem[Park et~al.(2023)Park, O'Brien, Cai, Morris, Liang, and
+  Bernstein]{park2023generative}
+Joon~Sung Park, Joseph O'Brien, Carrie~Jun Cai, Meredith~Ringel Morris, Percy
+  Liang, and Michael~S. Bernstein.
+\newblock Generative agents: Interactive simulacra of human behavior.
+\newblock In \emph{UIST}, 2023.
+
+\bibitem[Raji et~al.(2021)Raji, Denton, Bender, Hanna, and
+  Paullada]{raji2021everything}
+Deborah Raji, Emily Denton, Emily~M. Bender, Alex Hanna, and Amandalynne
+  Paullada.
+\newblock {AI} and the everything in the whole wide world benchmark.
+\newblock In \emph{Proceedings of the Neural Information Processing Systems
+  Track on Datasets and Benchmarks}, 2021.
+
+\bibitem[Ru et~al.(2024)Ru, Qiu, Hu, Zhang, Shi, Chang,
+  et~al.]{ru2024ragchecker}
+Dongyu Ru, Lin Qiu, Xiangkun Hu, Tianhang Zhang, Peng Shi, Shuaichen Chang,
+  et~al.
+\newblock {RAGChecker}: A fine-grained framework for diagnosing
+  retrieval-augmented generation.
+\newblock In \emph{NeurIPS Datasets and Benchmarks}, 2024.
+
+\bibitem[Shinn et~al.(2023)Shinn, Cassano, Gopinath, Narasimhan, and
+  Yao]{shinn2023reflexion}
+Noah Shinn, Federico Cassano, Ashwin Gopinath, Karthik Narasimhan, and Shunyu
+  Yao.
+\newblock Reflexion: Language agents with verbal reinforcement learning.
+\newblock In \emph{NeurIPS}, 2023.
+
+\bibitem[van~der Aalst(2016)]{vanderaalst2016process}
+Wil M.~P. van~der Aalst.
+\newblock \emph{Process Mining: Data Science in Action}.
+\newblock Springer, 2016.
+
+\bibitem[Wu et~al.(2023)Wu, Bansal, Zhang, Wu, Li, Zhu, Jiang, Zhang, Zhang,
+  Liu, Awadallah, White, Burger, and Wang]{wu2023autogen}
+Qingyun Wu, Gagan Bansal, Jieyu Zhang, Yiran Wu, Beibin Li, Erkang Zhu,
+  Li~Jiang, Xiaoyun Zhang, Shaokun Zhang, Jiale Liu, Ahmed~Hassan Awadallah,
+  Ryen~W. White, Doug Burger, and Chi Wang.
+\newblock Autogen: Enabling next-gen {LLM} applications via multi-agent
+  conversation.
+\newblock \emph{arXiv preprint arXiv:2308.08155}, 2023.
+
+\end{thebibliography}

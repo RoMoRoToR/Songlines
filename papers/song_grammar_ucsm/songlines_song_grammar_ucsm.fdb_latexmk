@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1785791693.0163 "songlines_song_grammar_ucsm.tex" "songlines_song_grammar_ucsm.pdf" "songlines_song_grammar_ucsm" 1785791693.72992 0
+["pdflatex"] 1786065037.40299 "songlines_song_grammar_ucsm.tex" "songlines_song_grammar_ucsm.pdf" "songlines_song_grammar_ucsm" 1786065038.16644 0
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -137,10 +137,12 @@
   "/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1768821275 5467155 19efa205003f9ecad95fbbaa6ff24da1 ""
   "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1768821195 3345739 f0bccb307d96c570b40452a8c4e9f4cb ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
+  "figures/reviewer/fig1_noise_robustness.pdf" 1786050743.05036 27349 38952c041a7b113ccd85a5c0d2f5948b ""
+  "figures/reviewer/fig4_cross_substrate.pdf" 1786050744.0378 30060 05f9d1ee3767c5e7d7f4431507bdf879 ""
   "neurips_2026.sty" 1773770160 13462 818d80447f57703e59b8270885421e82 ""
-  "songlines_song_grammar_ucsm.aux" 1785791693.64864 8161 b6effebd8b53a37ea06ef132a351eb97 "pdflatex"
-  "songlines_song_grammar_ucsm.out" 1785791693.64982 3881 7f1d4b07915239eff2d1e6049109ba27 "pdflatex"
-  "songlines_song_grammar_ucsm.tex" 1785791529.28502 49932 27a1e419b49ebc259daf24b969858d51 ""
+  "songlines_song_grammar_ucsm.aux" 1786065038.08274 10363 c11fbdbcdafd75709139e417fea4ffcd "pdflatex"
+  "songlines_song_grammar_ucsm.out" 1786065038.08362 3881 7f1d4b07915239eff2d1e6049109ba27 "pdflatex"
+  "songlines_song_grammar_ucsm.tex" 1786064993.85678 51175 32fc14522d945b57bf5a71c90c7911e5 ""
   (generated)
   "songlines_song_grammar_ucsm.aux"
   "songlines_song_grammar_ucsm.log"

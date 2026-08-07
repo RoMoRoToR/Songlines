@@ -120,12 +120,12 @@ RULES = {"success_only": b1_success, "progress": b2_progress,
 
 # ── data loading ─────────────────────────────────────────────────────
 
-def load_cells():
+def load_cells(out_dir=OUT_DIR):
     """-> list of dicts: model, framework, variant, truth, bound,
     profile (means), ctrl (calibration control means)."""
     cells = []
     for model, fname in MODELS.items():
-        rows = json.load(open(os.path.join(OUT_DIR, fname)))
+        rows = json.load(open(os.path.join(out_dir, fname)))
         for fw in FRAMEWORKS:
             fwr = [r for r in rows if r["framework"] == fw]
 

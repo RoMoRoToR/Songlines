@@ -181,11 +181,12 @@ class _CSMAdapter:
     name = "csm"
 
     def __init__(self, agent_ids: List[str], env_id: str, *,
-                 broadcast_every_k: int = 8):
+                 broadcast_every_k: int = 8, merge_threshold: float = 0.30):
         from experiments.collective_semantic_memory.csm_memory import CSMMemory
         self.mem = CSMMemory(
             agent_ids=agent_ids, env_id=env_id,
             broadcast_every_k=broadcast_every_k,
+            merge_threshold=merge_threshold,
         )
 
     def observe(self, agent_id, cells, tick):
@@ -200,7 +201,7 @@ class _CSMAdapter:
 
 def build_memory(
     architecture: str, agent_ids: List[str], env_id: str,
-    *, broadcast_every_k: int = 4,
+    *, broadcast_every_k: int = 4, merge_threshold: float = 0.30,
 ):
     if architecture == "independent":
         return _IndependentAdapter(agent_ids, env_id)
@@ -211,5 +212,6 @@ def build_memory(
     if architecture == "peer":
         return _PeerAdapter(agent_ids, env_id, broadcast_every_k=broadcast_every_k)
     if architecture == "csm":
-        return _CSMAdapter(agent_ids, env_id, broadcast_every_k=broadcast_every_k)
+        return _CSMAdapter(agent_ids, env_id, broadcast_every_k=broadcast_every_k,
+                           merge_threshold=merge_threshold)
     raise ValueError(f"Unknown architecture: {architecture}")

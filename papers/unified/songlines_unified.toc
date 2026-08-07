@@ -1,272 +1,278 @@
-\contentsline {paragraph}{Research question.}{2}{section*.2}%
-\contentsline {paragraph}{Unified claim.}{2}{section*.3}%
-\contentsline {paragraph}{Relationship among the parts.}{2}{section*.4}%
-\contentsline {paragraph}{Evidence and reporting protocol.}{2}{section*.5}%
-\contentsline {paragraph}{Code and artifacts.}{2}{section*.6}%
+\contentsline {paragraph}{One sentence per part.}{2}{section*.2}%
+\contentsline {paragraph}{Lineage.}{2}{section*.3}%
+\contentsline {paragraph}{Measurement discipline.}{2}{section*.4}%
+\contentsline {paragraph}{Code and data.}{2}{section*.5}%
 \contentsline {part}{I\hspace {1em}The Q/R/M/C Measurement Framework}{8}{part.1}%
-\contentsline {paragraph}{Part abstract.}{8}{section*.8}%
+\contentsline {paragraph}{Part abstract.}{8}{section*.7}%
 \contentsline {section}{\numberline {1}Introduction}{8}{section.1}%
-\contentsline {section}{\numberline {2}The Q/R/M/C decomposition}{9}{section.2}%
-\contentsline {subsection}{\numberline {2.1}Problem formulation and notation}{9}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}Single-agent factorization}{10}{subsection.2.2}%
-\contentsline {paragraph}{Assumption 1 (conditional stage-Markov property).}{10}{section*.9}%
-\contentsline {paragraph}{Assumption 2 (positivity).}{10}{section*.10}%
-\contentsline {paragraph}{Definition 1 (single-agent stage estimability).}{10}{section*.11}%
-\contentsline {paragraph}{When Assumption~1 may fail.}{11}{section*.12}%
-\contentsline {paragraph}{Mechanism-level reading.}{11}{section*.13}%
-\contentsline {paragraph}{Relation to prior work.}{11}{section*.14}%
-\contentsline {subsection}{\numberline {2.3}Event semantics, bounded rationality, and an order-theoretic reading}{11}{subsection.2.3}%
-\contentsline {paragraph}{Observable-interaction reading.}{12}{section*.15}%
-\contentsline {paragraph}{Interpretive readings (all deferred).}{12}{section*.16}%
-\contentsline {section}{\numberline {3}Single agent: stage diagnostics localize failure}{12}{section.3}%
-\contentsline {subsection}{\numberline {3.1}System, tasks, and protocol}{12}{subsection.3.1}%
-\contentsline {paragraph}{Memory stack.}{12}{section*.17}%
-\contentsline {paragraph}{Tasks, baselines, protocol.}{13}{section*.18}%
-\contentsline {paragraph}{LLM diagnostic block.}{13}{section*.19}%
-\contentsline {subsection}{\numberline {3.2}Stage-estimator validation}{13}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}Success-only summary and what it hides}{13}{subsection.3.3}%
-\contentsline {paragraph}{Baseline comparison.}{13}{section*.20}%
-\contentsline {subsection}{\numberline {3.4}Oracle-stage interventions localize the bottleneck}{14}{subsection.3.4}%
-\contentsline {subsection}{\numberline {3.5}The logs refine the diagnosis: a memory-accumulation limit}{14}{subsection.3.5}%
-\contentsline {section}{\numberline {4}Multi-agent: memory as a shared resource}{14}{section.4}%
-\contentsline {subsection}{\numberline {4.1}Four memory architectures and the cadence axis}{14}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}Multi-agent factorization}{15}{subsection.4.2}%
-\contentsline {paragraph}{Definition 2 (multi-agent stage estimability).}{15}{section*.21}%
-\contentsline {paragraph}{When Definition~2 may fail.}{15}{section*.22}%
-\contentsline {subsection}{\numberline {4.3}Bottleneck shift}{16}{subsection.4.3}%
-\contentsline {paragraph}{Empirical Claim~1 (bottleneck shift M$\leftrightarrow $C, slope-level).}{16}{section*.23}%
-\contentsline {paragraph}{What this claim is and is not.}{16}{section*.24}%
-\contentsline {paragraph}{Chronology.}{16}{section*.25}%
-\contentsline {subsection}{\numberline {4.4}Sweep protocol}{16}{subsection.4.4}%
-\contentsline {subsection}{\numberline {4.5}Results: stage decomposition and bottleneck shift}{16}{subsection.4.5}%
-\contentsline {subsubsection}{\numberline {4.5.1}Conditional decomposition reveals where each architecture fails.}{17}{subsubsection.4.5.1}%
-\contentsline {subsubsection}{\numberline {4.5.2}Bottleneck shift and interior efficiency optimum.}{17}{subsubsection.4.5.2}%
-\contentsline {paragraph}{Provenance stratification: the mechanism behind the shift.}{18}{section*.26}%
-\contentsline {paragraph}{What we do not claim about $\Phi $.}{18}{section*.27}%
-\contentsline {paragraph}{Learned-communication baseline: stage events are structurally degenerate even at competitive success.}{18}{section*.28}%
-\contentsline {paragraph}{LLM model sweep: the logger localizes a real failure in language agents.}{18}{section*.29}%
-\contentsline {paragraph}{The multi-agent phenomenology reproduces on a live LLM collective.}{19}{section*.30}%
-\contentsline {paragraph}{Multi-agent oracle interventions close the diagnose$\to $intervene$\to $verify loop.}{19}{section*.31}%
-\contentsline {section}{\numberline {5}The contract on third-party agent stacks}{20}{section.5}%
-\contentsline {paragraph}{Model robustness: the structure transfers, the behavior is legible.}{21}{section*.32}%
-\contentsline {paragraph}{Comparison with diagnostic baselines.}{21}{section*.33}%
-\contentsline {paragraph}{Blinded fault-localization meta-evaluation (pre-specified).}{22}{section*.34}%
-\contentsline {section}{\numberline {6}Limitations and future work}{22}{section.6}%
-\contentsline {section}{\numberline {7}Broader impacts}{24}{section.7}%
-\contentsline {section}{\numberline {8}Conclusion}{24}{section.8}%
-\contentsline {section}{\numberline {9}Formal proofs}{25}{section.9}%
-\contentsline {subsection}{\numberline {9.1}Argument for Definition~1 (single-agent estimability)}{25}{subsection.9.1}%
-\contentsline {subsection}{\numberline {9.2}Argument for Definition~2 (multi-agent estimability)}{25}{subsection.9.2}%
-\contentsline {subsection}{\numberline {9.3}Argument for Empirical Claim~1 (slope-level statement)}{25}{subsection.9.3}%
-\contentsline {subsection}{\numberline {9.4}The query--retrieval Galois connection: statement, argument, scope}{25}{subsection.9.4}%
-\contentsline {paragraph}{Fact (standard).}{25}{section*.36}%
-\contentsline {paragraph}{Argument.}{25}{section*.37}%
-\contentsline {paragraph}{Instantiation and scope.}{26}{section*.38}%
-\contentsline {section}{\numberline {10}An options / hierarchical-MDP reading of the stages}{26}{section.10}%
-\contentsline {paragraph}{Q/R/M/C as an audit of an option.}{26}{section*.40}%
-\contentsline {paragraph}{Why the optimum lives on $t_{\mathrm {succ}}$ and not on $\Phi $: a semi-MDP reading.}{27}{section*.41}%
-\contentsline {paragraph}{The bottleneck shift as multi-agent option collision.}{27}{section*.42}%
-\contentsline {paragraph}{Belief--desire--intention gloss and scope.}{27}{section*.43}%
-\contentsline {section}{\numberline {11}Operational vs.\ nested stage estimators}{27}{section.11}%
-\contentsline {paragraph}{Operational diagnostic rates.}{27}{section*.44}%
-\contentsline {paragraph}{Nested stage estimators for factorization.}{27}{section*.45}%
-\contentsline {subsection}{\numberline {11.1}Multi-agent operational definitions}{28}{subsection.11.1}%
-\contentsline {section}{\numberline {12}Memory and task schema}{28}{section.12}%
-\contentsline {subsection}{\numberline {12.1}Full notation table}{28}{subsection.12.1}%
-\contentsline {subsection}{\numberline {12.2}Memory stack and task patterns}{28}{subsection.12.2}%
-\contentsline {subsection}{\numberline {12.3}Single-agent supporting tables and figures}{29}{subsection.12.3}%
-\contentsline {paragraph}{Seed robustness (30 seeds).}{29}{section*.46}%
-\contentsline {section}{\numberline {13}Portability and scale-up}{29}{section.13}%
-\contentsline {subsection}{\numberline {13.1}BabyAI portability transfer (10 seeds, full benchmark)}{29}{subsection.13.1}%
-\contentsline {subsection}{\numberline {13.2}Multi-agent scale-up at $N=12$}{30}{subsection.13.2}%
-\contentsline {subsection}{\numberline {13.3}Q/R/M/C under semantic, frame-free place matching}{30}{subsection.13.3}%
+\contentsline {paragraph}{Portability overview.}{11}{section*.8}%
+\contentsline {section}{\numberline {2}The Q/R/M/C decomposition}{11}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Problem formulation and notation}{11}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Single-agent factorization}{12}{subsection.2.2}%
+\contentsline {paragraph}{Assumption 1 (conditional stage-Markov property).}{12}{section*.9}%
+\contentsline {paragraph}{Assumption 2 (positivity).}{12}{section*.10}%
+\contentsline {paragraph}{Definition 1 (single-agent stage estimability).}{12}{section*.11}%
+\contentsline {paragraph}{When Assumption~1 may fail.}{12}{section*.12}%
+\contentsline {paragraph}{Mechanism-level reading.}{12}{section*.13}%
+\contentsline {paragraph}{Relation to prior work.}{12}{section*.14}%
+\contentsline {subsection}{\numberline {2.3}Event semantics, bounded rationality, and an order-theoretic reading}{13}{subsection.2.3}%
+\contentsline {paragraph}{Observable-interaction reading.}{13}{section*.15}%
+\contentsline {paragraph}{Interpretive readings (all deferred).}{13}{section*.16}%
+\contentsline {section}{\numberline {3}Single agent: stage diagnostics localize failure}{14}{section.3}%
+\contentsline {subsection}{\numberline {3.1}System, tasks, and protocol}{14}{subsection.3.1}%
+\contentsline {paragraph}{Memory stack.}{14}{section*.17}%
+\contentsline {paragraph}{Tasks, baselines, protocol.}{14}{section*.18}%
+\contentsline {paragraph}{LLM diagnostic block.}{14}{section*.19}%
+\contentsline {subsection}{\numberline {3.2}Stage-estimator validation}{14}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Success-only summary and what it hides}{15}{subsection.3.3}%
+\contentsline {paragraph}{Baseline comparison.}{15}{section*.20}%
+\contentsline {subsection}{\numberline {3.4}Oracle-stage interventions localize the bottleneck}{15}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}The logs refine the diagnosis: a memory-accumulation limit}{15}{subsection.3.5}%
+\contentsline {section}{\numberline {4}Multi-agent: memory as a shared resource}{16}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Four memory architectures and the cadence axis}{16}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Multi-agent factorization}{16}{subsection.4.2}%
+\contentsline {paragraph}{Definition 2 (multi-agent stage estimability).}{17}{section*.21}%
+\contentsline {paragraph}{When Definition~2 may fail.}{17}{section*.22}%
+\contentsline {subsection}{\numberline {4.3}Bottleneck shift}{17}{subsection.4.3}%
+\contentsline {paragraph}{Empirical Claim~1 (bottleneck shift M$\leftrightarrow $C, slope-level).}{17}{section*.23}%
+\contentsline {paragraph}{What this claim is and is not.}{17}{section*.24}%
+\contentsline {paragraph}{Chronology.}{17}{section*.25}%
+\contentsline {subsection}{\numberline {4.4}Sweep protocol}{17}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Results: stage decomposition and bottleneck shift}{18}{subsection.4.5}%
+\contentsline {subsubsection}{\numberline {4.5.1}Conditional decomposition reveals where each architecture fails.}{18}{subsubsection.4.5.1}%
+\contentsline {subsubsection}{\numberline {4.5.2}Bottleneck shift and interior efficiency optimum.}{19}{subsubsection.4.5.2}%
+\contentsline {paragraph}{Provenance stratification: the mechanism behind the shift.}{19}{section*.26}%
+\contentsline {paragraph}{What we do not claim about $\Phi $.}{19}{section*.27}%
+\contentsline {paragraph}{Learned-communication baseline: stage events are structurally degenerate even at competitive success.}{20}{section*.28}%
+\contentsline {paragraph}{LLM model sweep: the logger localizes a real failure in language agents.}{20}{section*.29}%
+\contentsline {paragraph}{The multi-agent phenomenology reproduces on a live LLM collective.}{20}{section*.30}%
+\contentsline {paragraph}{Multi-agent oracle interventions close the diagnose$\to $intervene$\to $verify loop.}{20}{section*.31}%
+\contentsline {section}{\numberline {5}The contract on third-party agent stacks}{21}{section.5}%
+\contentsline {paragraph}{Model robustness: the structure transfers, the behaviour is legible.}{22}{section*.32}%
+\contentsline {paragraph}{Comparison with diagnostic baselines.}{22}{section*.33}%
+\contentsline {paragraph}{Blinded fault-localization meta-evaluation (pre-specified).}{23}{section*.34}%
+\contentsline {section}{\numberline {6}Limitations and future work}{23}{section.6}%
+\contentsline {section}{\numberline {7}Broader impacts}{25}{section.7}%
+\contentsline {section}{\numberline {8}Conclusion}{25}{section.8}%
+\contentsline {section}{\numberline {9}Formal proofs}{26}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Argument for Definition~1 (single-agent estimability)}{26}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Argument for Definition~2 (multi-agent estimability)}{26}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Argument for Empirical Claim~1 (slope-level statement)}{26}{subsection.9.3}%
+\contentsline {subsection}{\numberline {9.4}The query--retrieval Galois connection: statement, argument, scope}{26}{subsection.9.4}%
+\contentsline {paragraph}{Fact (standard).}{26}{section*.36}%
+\contentsline {paragraph}{Argument.}{27}{section*.37}%
+\contentsline {paragraph}{Instantiation and scope.}{27}{section*.38}%
+\contentsline {section}{\numberline {10}An options / hierarchical-MDP reading of the stages}{27}{section.10}%
+\contentsline {paragraph}{Q/R/M/C as an audit of an option.}{27}{section*.40}%
+\contentsline {paragraph}{Why the optimum lives on $t_{\mathrm {succ}}$ and not on $\Phi $: a semi-MDP reading.}{28}{section*.41}%
+\contentsline {paragraph}{The bottleneck shift as multi-agent option collision.}{28}{section*.42}%
+\contentsline {paragraph}{Belief--desire--intention gloss and scope.}{28}{section*.43}%
+\contentsline {section}{\numberline {11}Operational vs.\ nested stage estimators}{28}{section.11}%
+\contentsline {paragraph}{Operational diagnostic rates.}{28}{section*.44}%
+\contentsline {paragraph}{Nested stage estimators for factorization.}{29}{section*.45}%
+\contentsline {subsection}{\numberline {11.1}Multi-agent operational definitions}{29}{subsection.11.1}%
+\contentsline {section}{\numberline {12}Memory and task schema}{29}{section.12}%
+\contentsline {subsection}{\numberline {12.1}Full notation table}{29}{subsection.12.1}%
+\contentsline {subsection}{\numberline {12.2}Memory stack and task patterns}{29}{subsection.12.2}%
+\contentsline {subsection}{\numberline {12.3}Single-agent supporting tables and figures}{30}{subsection.12.3}%
+\contentsline {paragraph}{Seed robustness (30 seeds).}{30}{section*.46}%
+\contentsline {section}{\numberline {13}Portability and scale-up}{31}{section.13}%
+\contentsline {subsection}{\numberline {13.1}BabyAI portability transfer (10 seeds, full benchmark)}{31}{subsection.13.1}%
+\contentsline {subsection}{\numberline {13.2}Multi-agent scale-up at $N=12$}{31}{subsection.13.2}%
+\contentsline {subsection}{\numberline {13.3}Q/R/M/C under semantic, frame-free place matching}{31}{subsection.13.3}%
 \contentsline {section}{\numberline {14}Extended diagnostics}{32}{section.14}%
 \contentsline {subsection}{\numberline {14.1}Conditional-product detail and the Jensen gap}{32}{subsection.14.1}%
-\contentsline {subsection}{\numberline {14.2}Design decomposition and run-count reconciliation}{32}{subsection.14.2}%
-\contentsline {subsection}{\numberline {14.3}Effect sizes and cluster-robust inference}{32}{subsection.14.3}%
-\contentsline {subsection}{\numberline {14.4}Construct validity: task success $Y$ vs.\ semantic-path completion $C^\star $}{34}{subsection.14.4}%
-\contentsline {subsection}{\numberline {14.5}Threshold sensitivity of the Q/R/M/C event definitions ($\theta $ and $\epsilon $)}{34}{subsection.14.5}%
-\contentsline {paragraph}{The match/lock tolerance $\epsilon $.}{35}{section*.47}%
-\contentsline {subsection}{\numberline {14.6}Robustness to Assumption~1 violations}{35}{subsection.14.6}%
-\contentsline {subsection}{\numberline {14.7}Continuous-substrate validation (VMAS): both slopes with cluster-robust CIs}{36}{subsection.14.7}%
-\contentsline {subsection}{\numberline {14.8}External language-agent substrate: ALFWorld}{36}{subsection.14.8}%
-\contentsline {subsection}{\numberline {14.9}Cadence-robustness: the shift tracks scarcity, not grid design}{37}{subsection.14.9}%
-\contentsline {subsection}{\numberline {14.10}Open problems suggested by the diagnostics}{37}{subsection.14.10}%
-\contentsline {subsection}{\numberline {14.11}Extended related work}{38}{subsection.14.11}%
-\contentsline {paragraph}{Stage-wise evaluation.}{38}{section*.48}%
-\contentsline {subsection}{\numberline {14.12}SOTA baseline and coverage matrix}{38}{subsection.14.12}%
-\contentsline {paragraph}{Positioning against SOTA memory designs.}{38}{section*.49}%
-\contentsline {subsection}{\numberline {14.13}Multi-agent oracle-intervention numerics}{39}{subsection.14.13}%
-\contentsline {subsection}{\numberline {14.14}Oracle C: definition and reading}{39}{subsection.14.14}%
-\contentsline {subsection}{\numberline {14.15}Stage-agnostic cadence hypotheses and what the framework changes}{39}{subsection.14.15}%
-\contentsline {section}{\numberline {15}Assist on/off analysis}{40}{section.15}%
-\contentsline {section}{\numberline {16}Retrained retriever and CommNet baseline}{40}{section.16}%
-\contentsline {subsection}{\numberline {16.1}Retrained candidate-generation MLP (\S \ref {p1:sec:refined-attribution})}{40}{subsection.16.1}%
-\contentsline {subsection}{\numberline {16.2}CommNet-style learned communication baseline (\S \ref {p1:sec:multi-agent-results})}{40}{subsection.16.2}%
-\contentsline {paragraph}{PPO variant: structural degeneracy verified at competitive success.}{41}{section*.50}%
-\contentsline {paragraph}{MAPPO: the collapse persists on a stronger CTDE baseline.}{42}{section*.51}%
-\contentsline {section}{\numberline {17}Reproducibility commands}{42}{section.17}%
-\contentsline {paragraph}{Computing infrastructure.}{42}{section*.52}%
-\contentsline {section}{\numberline {18}Asset and license note}{43}{section.18}%
-\contentsline {part}{II\hspace {1em}Semantic Warp: Provenance-Conditioned Completion}{46}{part.2}%
-\contentsline {paragraph}{Part abstract.}{46}{section*.57}%
-\contentsline {section}{\numberline {19}Introduction}{46}{section.19}%
-\contentsline {section}{\numberline {20}Setting}{47}{section.20}%
-\contentsline {paragraph}{Substrate and task.}{47}{section*.58}%
-\contentsline {paragraph}{Q/R/M/C instrumentation.}{47}{section*.59}%
-\contentsline {section}{\numberline {21}The warp event}{47}{section.21}%
-\contentsline {paragraph}{Provenance and foreignness.}{47}{section*.60}%
-\contentsline {paragraph}{Freezing rule.}{47}{section*.61}%
-\contentsline {paragraph}{Warp events and strata.}{48}{section*.62}%
-\contentsline {paragraph}{Regression anchor.}{48}{section*.63}%
-\contentsline {section}{\numberline {22}Direct and downstream effects of foreign evidence}{48}{section.22}%
-\contentsline {paragraph}{Design.}{48}{section*.64}%
-\contentsline {subsection}{\numberline {22.1}Downstream transport through lock chains}{49}{subsection.22.1}%
-\contentsline {subsection}{\numberline {22.2}Counterfactual warp gain}{49}{subsection.22.2}%
-\contentsline {paragraph}{Exploratory: collision pressure.}{49}{section*.65}%
-\contentsline {section}{\numberline {23}The warp distance law}{49}{section.23}%
-\contentsline {paragraph}{Witness--traveller protocol.}{49}{section*.66}%
-\contentsline {paragraph}{Completion breakpoint.}{50}{section*.67}%
-\contentsline {paragraph}{Portability to continuous dynamics.}{50}{section*.68}%
-\contentsline {section}{\numberline {24}The Warp Drive protocol}{51}{section.24}%
-\contentsline {paragraph}{Decentralisation check.}{51}{section*.69}%
-\contentsline {paragraph}{Misled-A anchor.}{51}{section*.70}%
-\contentsline {section}{\numberline {25}Cross-session warp on an LLM substrate}{52}{section.25}%
-\contentsline {paragraph}{Scaling to a live collective.}{52}{section*.71}%
-\contentsline {section}{\numberline {26}Related work}{53}{section.26}%
-\contentsline {paragraph}{Shared memory in agent collectives.}{53}{section*.72}%
-\contentsline {paragraph}{Emergent communication.}{53}{section*.73}%
-\contentsline {paragraph}{Stigmergy.}{53}{section*.74}%
-\contentsline {paragraph}{Optimistic concurrency.}{53}{section*.75}%
-\contentsline {section}{\numberline {27}Limitations}{53}{section.27}%
-\contentsline {section}{\numberline {28}Conclusion}{54}{section.28}%
-\contentsline {paragraph}{Outlook: the contract as one function among several.}{54}{section*.76}%
-\contentsline {section}{\numberline {29}Deviations from the pre-registered design}{54}{section.29}%
-\contentsline {section}{\numberline {30}Reproducibility}{54}{section.30}%
-\contentsline {section}{\numberline {31}Full counterfactual sign map}{55}{section.31}%
-\contentsline {part}{III\hspace {1em}The Song, Not the Pin: Routes and Meaning-Based Identity}{56}{part.3}%
-\contentsline {paragraph}{Part abstract.}{56}{section*.77}%
-\contentsline {section}{\numberline {32}Introduction}{56}{section.32}%
-\contentsline {section}{\numberline {33}Setting}{57}{section.33}%
-\contentsline {section}{\numberline {34}Route-level transfer}{57}{section.34}%
-\contentsline {paragraph}{Edge provenance.}{57}{section*.78}%
-\contentsline {paragraph}{First strict $RW^{\star }$.}{57}{section*.79}%
-\contentsline {subsection}{\numberline {34.1}Performance transition under route transfer}{57}{subsection.34.1}%
-\contentsline {section}{\numberline {35}Rupture law and route-validity boundary}{58}{section.35}%
-\contentsline {section}{\numberline {36}Hazard preservation along the valid route prefix}{58}{section.36}%
-\contentsline {section}{\numberline {37}Meaning-based place correspondence}{59}{section.37}%
-\contentsline {paragraph}{Two levels of `the same', and what a landmark is.}{59}{section*.80}%
-\contentsline {paragraph}{Fingerprints and the handshake.}{59}{section*.81}%
-\contentsline {paragraph}{Witness--traveler results.}{60}{section*.82}%
-\contentsline {subsection}{\numberline {37.1}Integrated correspondence and route-transfer stack}{60}{subsection.37.1}%
-\contentsline {paragraph}{Online alignment in the peer stack.}{60}{section*.83}%
-\contentsline {paragraph}{Validity law under recovered frames.}{60}{section*.84}%
-\contentsline {paragraph}{No shared north: translations and quarter-turn rotations.}{60}{section*.85}%
-\contentsline {paragraph}{The corner trap.}{60}{section*.86}%
-\contentsline {subsection}{\numberline {37.2}Causal contribution of the landmark vocabulary}{61}{subsection.37.2}%
-\contentsline {subsection}{\numberline {37.3}Functional decomposition of the route representation}{61}{subsection.37.3}%
-\contentsline {section}{\numberline {38}Related work}{62}{section.38}%
-\contentsline {paragraph}{Map merging and place recognition.}{62}{section*.87}%
-\contentsline {paragraph}{Route sharing.}{62}{section*.88}%
-\contentsline {paragraph}{Songlines.}{62}{section*.89}%
-\contentsline {section}{\numberline {39}Limitations}{62}{section.39}%
-\contentsline {section}{\numberline {40}Conclusion}{62}{section.40}%
-\contentsline {section}{\numberline {41}Registered predictions and revisions}{63}{section.41}%
-\contentsline {section}{\numberline {42}Reproducibility}{63}{section.42}%
-\contentsline {part}{IV\hspace {1em}Collective Semantic Memory: Merge, Trust, and Staleness}{64}{part.4}%
-\contentsline {paragraph}{Part abstract.}{64}{section*.90}%
-\contentsline {section}{\numberline {43}Introduction}{64}{section.43}%
-\contentsline {section}{\numberline {44}Memory substrate and task}{65}{section.44}%
-\contentsline {section}{\numberline {45}Four collective-memory topologies}{65}{section.45}%
-\contentsline {section}{\numberline {46}Cadence-dependent materialization--completion trade-off}{66}{section.46}%
-\contentsline {section}{\numberline {47}Minimal collective semantic memory}{67}{section.47}%
-\contentsline {subsection}{\numberline {47.1}Results}{68}{subsection.47.1}%
-\contentsline {paragraph}{Mechanism: gated consumption rather than unrestricted sharing.}{68}{section*.91}%
-\contentsline {section}{\numberline {48}Place identity from meaning: removing the shared frame}{68}{section.48}%
-\contentsline {paragraph}{Mechanism.}{68}{section*.92}%
-\contentsline {paragraph}{Results.}{68}{section*.93}%
-\contentsline {paragraph}{The categorical indicator: adjunction round-trip defect.}{69}{section*.94}%
-\contentsline {section}{\numberline {49}Categorical BDI reading of collective semantic memory}{69}{section.49}%
-\contentsline {paragraph}{What parameterizes commonality of interpretation.}{69}{section*.95}%
-\contentsline {paragraph}{Belief.}{70}{section*.96}%
-\contentsline {paragraph}{Desire.}{70}{section*.97}%
-\contentsline {paragraph}{Intention.}{71}{section*.98}%
-\contentsline {subsection}{\numberline {49.1}Colimit merge and its invariants}{71}{subsection.49.1}%
-\contentsline {subsection}{\numberline {49.2}Collective memory as a coherent gluing of local place categories}{72}{subsection.49.2}%
-\contentsline {paragraph}{Setup.}{72}{section*.99}%
-\contentsline {paragraph}{Definition (coherent alignment system).}{72}{section*.100}%
-\contentsline {paragraph}{Proposition (two agents).}{72}{section*.101}%
-\contentsline {paragraph}{Theorem (collective memory = colimit of the alignment diagram).}{72}{section*.102}%
-\contentsline {paragraph}{Corollary (two computable witnesses).}{73}{section*.103}%
-\contentsline {paragraph}{Scope.}{73}{section*.104}%
-\contentsline {subsection}{\numberline {49.3}Protocol parameters as categorical structure: a trust$\times $cadence phase diagram}{73}{subsection.49.3}%
-\contentsline {subsection}{\numberline {49.4}Toward symbol alignment: grounding tag alphabets through shared places}{74}{subsection.49.4}%
-\contentsline {paragraph}{Grounding mechanism.}{74}{section*.105}%
-\contentsline {paragraph}{Preliminary result.}{74}{section*.106}%
-\contentsline {section}{\numberline {50}Limitations and future work}{75}{section.50}%
-\contentsline {section}{\numberline {51}Conclusion}{75}{section.51}%
-\contentsline {section}{\numberline {52}The coalgebraic layer: individuals as codata, the collective as a final coalgebra}{75}{section.52}%
-\contentsline {paragraph}{Signature.}{75}{section*.107}%
-\contentsline {paragraph}{State.}{76}{section*.108}%
-\contentsline {paragraph}{Definition (codata: the agent's cotype).}{76}{section*.109}%
-\contentsline {paragraph}{Definition (indexed family).}{76}{section*.110}%
-\contentsline {paragraph}{Definition (codependence: the collective coalgebra).}{76}{section*.111}%
-\contentsline {paragraph}{Definition (behavior and bisimulation).}{76}{section*.112}%
-\contentsline {paragraph}{Definition (society / culture).}{77}{section*.113}%
-\contentsline {paragraph}{Remark (communication = lazy, depth-one corecursion).}{77}{section*.114}%
-\contentsline {paragraph}{Remark (algebra--coalgebra bridge to \S \ref {p4:sec:categorical}--\ref {p4:sec:colimit}).}{77}{section*.115}%
-\contentsline {paragraph}{Coalgebraic reading of the bottleneck shift.}{77}{section*.116}%
-\contentsline {section}{\numberline {53}Structured memory versus raw context under a fixed model}{77}{section.53}%
-\contentsline {paragraph}{Axis 1: volume and integration (one witness log).}{77}{section*.117}%
-\contentsline {paragraph}{Axis 2: time (sessions).}{78}{section*.118}%
-\contentsline {paragraph}{Axis 3: system size (multi-agent, private frames).}{78}{section*.119}%
-\contentsline {paragraph}{Summary.}{79}{section*.120}%
-\contentsline {section}{\numberline {54}Reproducibility commands}{79}{section.54}%
-\contentsline {section}{\numberline {55}Asset and license note}{79}{section.55}%
-\contentsline {part}{V\hspace {1em}Song Grammar and Utility-Certified Memory: the Ontogenesis of What Is Remembered}{80}{part.5}%
-\contentsline {paragraph}{Part abstract.}{80}{section*.121}%
-\contentsline {section}{\numberline {56}Introduction: learning what to retain}{80}{section.56}%
-\contentsline {section}{\numberline {57}The model}{81}{section.57}%
-\contentsline {paragraph}{Counterfactual marginal utility.}{81}{section*.122}%
-\contentsline {paragraph}{Analogy cost.}{82}{section*.123}%
-\contentsline {paragraph}{The memory unit is a conditional program, not a fact.}{82}{section*.124}%
-\contentsline {paragraph}{Four storage layers.}{82}{section*.125}%
-\contentsline {subsection}{\numberline {57.1}The runtime as one algorithm}{82}{subsection.57.1}%
-\contentsline {paragraph}{Quantities in one place.}{82}{section*.126}%
-\contentsline {paragraph}{Hyperparameters (frozen; test seeds never used to tune).}{83}{section*.127}%
-\contentsline {section}{\numberline {58}U1: the matrix, measured deterministically}{83}{section.58}%
-\contentsline {section}{\numberline {59}U2: the matrix is learnable --- and improves itself}{83}{section.59}%
-\contentsline {section}{\numberline {60}U3: optimization of grammar parameters within a fixed family}{83}{section.60}%
-\contentsline {section}{\numberline {61}U7: seven policies, two bodies, three horizons}{84}{section.61}%
-\contentsline {paragraph}{Failure analysis.}{84}{section*.128}%
-\contentsline {paragraph}{Results stable across horizons.}{84}{section*.129}%
-\contentsline {paragraph}{U7b: testing the staleness diagnosis.}{84}{section*.130}%
-\contentsline {section}{\numberline {62}Addressing staleness, landmark selection, and abstraction}{85}{section.62}%
-\contentsline {paragraph}{Staleness in consumption (U7c).}{85}{section*.131}%
-\contentsline {paragraph}{Causally promoted landmarks (E1).}{85}{section*.132}%
-\contentsline {paragraph}{First-order cross-family abstraction (X1).}{85}{section*.133}%
-\contentsline {paragraph}{The LLM end-to-end cycle (L1).}{85}{section*.134}%
-\contentsline {section}{\numberline {63}Extensions: structural matching, social exchange, and delayed credit}{85}{section.63}%
-\contentsline {paragraph}{Graph-matching analogy (G1).}{85}{section*.135}%
-\contentsline {paragraph}{Terminal credit (M1).}{86}{section*.136}%
-\contentsline {paragraph}{Long-horizon social exchange without admission (S1).}{86}{section*.137}%
-\contentsline {paragraph}{The world-clock contract (S2) --- necessary, not sufficient.}{86}{section*.138}%
-\contentsline {paragraph}{Admission control (S3) --- the reversal reverses.}{86}{section*.139}%
-\contentsline {section}{\numberline {64}One method: the integrated runtime and its benchmark}{87}{section.64}%
-\contentsline {paragraph}{Single-run integration (R1).}{87}{section*.140}%
-\contentsline {paragraph}{The integration benchmark (I1).}{87}{section*.141}%
-\contentsline {paragraph}{Ablation matrix and failure modes.}{87}{section*.142}%
-\contentsline {paragraph}{Utility without the oracle (UE1).}{87}{section*.143}%
-\contentsline {paragraph}{The margin lesson (N1).}{87}{section*.144}%
-\contentsline {section}{\numberline {65}Integrated evaluation under equal budgets, adversarial provenance, and continuous transfer}{87}{section.65}%
-\contentsline {paragraph}{Statistical footing.}{88}{section*.145}%
-\contentsline {paragraph}{Equal budgets (B1).}{88}{section*.146}%
-\contentsline {paragraph}{Adversarial provenance (P1).}{88}{section*.147}%
-\contentsline {paragraph}{Safety under noise (N1, revised).}{88}{section*.148}%
-\contentsline {paragraph}{A second substrate (C1).}{88}{section*.149}%
-\contentsline {paragraph}{External substrate (VMAS physics).}{88}{section*.150}%
-\contentsline {section}{\numberline {66}Related work}{89}{section.66}%
-\contentsline {section}{\numberline {67}Limitations and open problems}{89}{section.67}%
-\contentsline {section}{\numberline {68}Conclusion}{89}{section.68}%
-\contentsline {section}{\numberline {69}Reproducibility}{90}{section.69}%
-\contentsline {paragraph}{Tables, figures, environment, and expected cost.}{91}{section*.151}%
+\contentsline {subsection}{\numberline {14.2}Design decomposition and run-count reconciliation}{33}{subsection.14.2}%
+\contentsline {subsection}{\numberline {14.3}Effect sizes and cluster-robust inference}{34}{subsection.14.3}%
+\contentsline {subsection}{\numberline {14.4}Construct validity: task success $Y$ vs.\ semantic-path completion $C^\star $}{35}{subsection.14.4}%
+\contentsline {subsection}{\numberline {14.5}Threshold sensitivity of the Q/R/M/C event definitions ($\theta $ and $\epsilon $)}{36}{subsection.14.5}%
+\contentsline {paragraph}{The match/lock tolerance $\epsilon $.}{37}{section*.47}%
+\contentsline {subsection}{\numberline {14.6}Robustness to Assumption~1 violations}{37}{subsection.14.6}%
+\contentsline {subsection}{\numberline {14.7}Continuous-substrate validation (VMAS): both slopes with cluster-robust CIs}{37}{subsection.14.7}%
+\contentsline {subsection}{\numberline {14.8}External language-agent substrate: ALFWorld}{38}{subsection.14.8}%
+\contentsline {subsection}{\numberline {14.9}Cadence-robustness: the shift tracks scarcity, not grid design}{38}{subsection.14.9}%
+\contentsline {subsection}{\numberline {14.10}Open problems suggested by the diagnostics}{39}{subsection.14.10}%
+\contentsline {subsection}{\numberline {14.11}Extended related work}{39}{subsection.14.11}%
+\contentsline {paragraph}{Stage-wise evaluation.}{39}{section*.48}%
+\contentsline {subsection}{\numberline {14.12}SOTA baseline and coverage matrix}{40}{subsection.14.12}%
+\contentsline {paragraph}{Positioning against SOTA memory designs.}{40}{section*.49}%
+\contentsline {subsection}{\numberline {14.13}Multi-agent oracle-intervention numerics}{41}{subsection.14.13}%
+\contentsline {subsection}{\numberline {14.14}Oracle C: definition and reading}{41}{subsection.14.14}%
+\contentsline {subsection}{\numberline {14.15}Stage-agnostic cadence hypotheses and what the framework changes}{41}{subsection.14.15}%
+\contentsline {section}{\numberline {15}Assist on/off analysis}{41}{section.15}%
+\contentsline {section}{\numberline {16}Retrained retriever and CommNet baseline}{42}{section.16}%
+\contentsline {subsection}{\numberline {16.1}Retrained candidate-generation MLP (\S \ref {p1:sec:refined-attribution})}{42}{subsection.16.1}%
+\contentsline {subsection}{\numberline {16.2}CommNet-style learned communication baseline (\S \ref {p1:sec:multi-agent-results})}{42}{subsection.16.2}%
+\contentsline {paragraph}{PPO variant: structural degeneracy verified at competitive success.}{43}{section*.50}%
+\contentsline {paragraph}{MAPPO: the collapse persists on a stronger CTDE baseline.}{43}{section*.51}%
+\contentsline {section}{\numberline {17}Reproducibility commands}{44}{section.17}%
+\contentsline {paragraph}{Computing infrastructure.}{44}{section*.52}%
+\contentsline {section}{\numberline {18}Asset and license note}{45}{section.18}%
+\contentsline {part}{II\hspace {1em}Semantic Warp: Provenance-Conditioned Completion}{48}{part.2}%
+\contentsline {paragraph}{Part abstract.}{48}{section*.57}%
+\contentsline {section}{\numberline {19}Introduction}{48}{section.19}%
+\contentsline {paragraph}{What we claim.}{49}{section*.58}%
+\contentsline {paragraph}{Contributions.}{49}{section*.59}%
+\contentsline {paragraph}{Relation to the companion papers.}{49}{section*.60}%
+\contentsline {section}{\numberline {20}Setting}{49}{section.20}%
+\contentsline {paragraph}{Substrate and task.}{49}{section*.61}%
+\contentsline {paragraph}{Q/R/M/C instrumentation.}{50}{section*.62}%
+\contentsline {section}{\numberline {21}The warp event}{50}{section.21}%
+\contentsline {paragraph}{Provenance and foreignness.}{50}{section*.63}%
+\contentsline {paragraph}{Freezing rule.}{50}{section*.64}%
+\contentsline {paragraph}{Warp events and strata.}{50}{section*.65}%
+\contentsline {paragraph}{Regression anchor.}{50}{section*.66}%
+\contentsline {section}{\numberline {22}Raw warp rarely completes --- but transports}{50}{section.22}%
+\contentsline {paragraph}{Design.}{50}{section*.67}%
+\contentsline {subsection}{\numberline {22.1}Warp as transport: lock chains}{50}{subsection.22.1}%
+\contentsline {subsection}{\numberline {22.2}Counterfactual warp gain}{51}{subsection.22.2}%
+\contentsline {paragraph}{Exploratory: collision pressure.}{51}{section*.68}%
+\contentsline {section}{\numberline {23}The warp distance law}{52}{section.23}%
+\contentsline {paragraph}{Witness--traveller protocol.}{52}{section*.69}%
+\contentsline {paragraph}{Completion breakpoint.}{52}{section*.70}%
+\contentsline {paragraph}{Portability to continuous dynamics.}{53}{section*.71}%
+\contentsline {section}{\numberline {24}The Warp Drive protocol}{53}{section.24}%
+\contentsline {paragraph}{Decentralisation check.}{53}{section*.72}%
+\contentsline {paragraph}{Misled-A anchor.}{53}{section*.73}%
+\contentsline {section}{\numberline {25}Cross-session warp on an LLM substrate}{53}{section.25}%
+\contentsline {paragraph}{Scaling to a live collective.}{54}{section*.74}%
+\contentsline {section}{\numberline {26}Related work}{55}{section.26}%
+\contentsline {paragraph}{Shared memory in agent collectives.}{55}{section*.75}%
+\contentsline {paragraph}{Emergent communication.}{55}{section*.76}%
+\contentsline {paragraph}{Stigmergy.}{55}{section*.77}%
+\contentsline {paragraph}{Optimistic concurrency.}{55}{section*.78}%
+\contentsline {section}{\numberline {27}Limitations and honest negatives}{56}{section.27}%
+\contentsline {section}{\numberline {28}Conclusion}{56}{section.28}%
+\contentsline {paragraph}{Outlook: the contract as one function among several.}{56}{section*.79}%
+\contentsline {section}{\numberline {29}Deviations from the pre-registered design}{56}{section.29}%
+\contentsline {section}{\numberline {30}Reproducibility}{57}{section.30}%
+\contentsline {section}{\numberline {31}Full counterfactual sign map}{57}{section.31}%
+\contentsline {part}{III\hspace {1em}The Song, Not the Pin: Routes and Meaning-Based Identity}{58}{part.3}%
+\contentsline {paragraph}{Part abstract.}{58}{section*.80}%
+\contentsline {section}{\numberline {32}Introduction}{58}{section.32}%
+\contentsline {paragraph}{What we claim.}{59}{section*.81}%
+\contentsline {paragraph}{Contributions.}{59}{section*.82}%
+\contentsline {section}{\numberline {33}Setting}{60}{section.33}%
+\contentsline {section}{\numberline {34}Route warp: transferring the HOW}{60}{section.34}%
+\contentsline {paragraph}{Edge provenance.}{60}{section*.83}%
+\contentsline {paragraph}{First strict $RW^{\star }$.}{60}{section*.84}%
+\contentsline {subsection}{\numberline {34.1}The cliff: what route knowledge buys}{60}{subsection.34.1}%
+\contentsline {section}{\numberline {35}The rupture law: where the song breaks}{61}{section.35}%
+\contentsline {section}{\numberline {36}Hazard stratification: the song protects}{61}{section.36}%
+\contentsline {section}{\numberline {37}Meaning-based place identity}{62}{section.37}%
+\contentsline {paragraph}{Two levels of `the same', and what a landmark is.}{62}{section*.85}%
+\contentsline {paragraph}{Fingerprints and the handshake.}{62}{section*.86}%
+\contentsline {paragraph}{Witness--traveler results.}{62}{section*.87}%
+\contentsline {subsection}{\numberline {37.1}The full stack, and removing the last axis}{63}{subsection.37.1}%
+\contentsline {paragraph}{Online alignment in the peer stack.}{63}{section*.88}%
+\contentsline {paragraph}{The law without the frame.}{63}{section*.89}%
+\contentsline {paragraph}{$SE(2)$: no shared north.}{63}{section*.90}%
+\contentsline {paragraph}{The corner trap.}{63}{section*.91}%
+\contentsline {subsection}{\numberline {37.2}What makes a landmark: the vocabulary ablation}{63}{subsection.37.2}%
+\contentsline {subsection}{\numberline {37.3}Song anatomy: nodes carry identity, edges carry transport}{64}{subsection.37.3}%
+\contentsline {section}{\numberline {38}Related work}{65}{section.38}%
+\contentsline {paragraph}{Map merging and place recognition.}{65}{section*.92}%
+\contentsline {paragraph}{Route sharing.}{65}{section*.93}%
+\contentsline {paragraph}{Songlines.}{65}{section*.94}%
+\contentsline {section}{\numberline {39}Limitations and honest negatives}{65}{section.39}%
+\contentsline {section}{\numberline {40}Conclusion}{65}{section.40}%
+\contentsline {section}{\numberline {41}Registered predictions and revisions}{66}{section.41}%
+\contentsline {section}{\numberline {42}Reproducibility}{66}{section.42}%
+\contentsline {part}{IV\hspace {1em}Collective Semantic Memory: Merge, Trust, and Staleness}{67}{part.4}%
+\contentsline {paragraph}{Part abstract.}{67}{section*.95}%
+\contentsline {section}{\numberline {43}Introduction}{67}{section.43}%
+\contentsline {paragraph}{Relation to the companion Q/R/M/C paper.}{67}{section*.96}%
+\contentsline {section}{\numberline {44}Memory substrate and task}{68}{section.44}%
+\contentsline {section}{\numberline {45}Four collective-memory topologies}{68}{section.45}%
+\contentsline {section}{\numberline {46}Cadence exposes the failure mode}{69}{section.46}%
+\contentsline {section}{\numberline {47}Minimal collective semantic memory}{69}{section.47}%
+\contentsline {subsection}{\numberline {47.1}Results}{70}{subsection.47.1}%
+\contentsline {paragraph}{Why CSM wins: the gate, not the sharing.}{70}{section*.97}%
+\contentsline {section}{\numberline {48}Place identity from meaning: removing the shared frame}{71}{section.48}%
+\contentsline {paragraph}{Mechanism.}{71}{section*.98}%
+\contentsline {paragraph}{Results.}{71}{section*.99}%
+\contentsline {paragraph}{The categorical indicator: adjunction round-trip defect.}{72}{section*.100}%
+\contentsline {section}{\numberline {49}Categorical BDI reading of collective semantic memory}{72}{section.49}%
+\contentsline {paragraph}{What parametrises commonality of interpretation.}{72}{section*.101}%
+\contentsline {paragraph}{Belief.}{73}{section*.102}%
+\contentsline {paragraph}{Desire.}{73}{section*.103}%
+\contentsline {paragraph}{Intention.}{74}{section*.104}%
+\contentsline {subsection}{\numberline {49.1}Colimit merge and its invariants}{74}{subsection.49.1}%
+\contentsline {subsection}{\numberline {49.2}Collective memory as a coherent gluing of local place categories}{75}{subsection.49.2}%
+\contentsline {paragraph}{Setup.}{75}{section*.105}%
+\contentsline {paragraph}{Definition (coherent alignment system).}{75}{section*.106}%
+\contentsline {paragraph}{Proposition (two agents).}{75}{section*.107}%
+\contentsline {paragraph}{Theorem (collective memory = colimit of the alignment diagram).}{75}{section*.108}%
+\contentsline {paragraph}{Corollary (two computable witnesses).}{76}{section*.109}%
+\contentsline {paragraph}{Scope.}{76}{section*.110}%
+\contentsline {subsection}{\numberline {49.3}Protocol parameters as categorical structure: a trust$\times $cadence phase diagram}{76}{subsection.49.3}%
+\contentsline {subsection}{\numberline {49.4}Toward symbol alignment: grounding tag alphabets through shared places}{77}{subsection.49.4}%
+\contentsline {paragraph}{Grounding mechanism.}{77}{section*.111}%
+\contentsline {paragraph}{Preliminary result.}{77}{section*.112}%
+\contentsline {section}{\numberline {50}Limitations and next experiments}{78}{section.50}%
+\contentsline {section}{\numberline {51}Conclusion}{78}{section.51}%
+\contentsline {section}{\numberline {52}The coalgebraic layer: individuals as codata, the collective as a final coalgebra}{78}{section.52}%
+\contentsline {paragraph}{Signature.}{79}{section*.114}%
+\contentsline {paragraph}{State.}{79}{section*.115}%
+\contentsline {paragraph}{Definition (codata: the agent's cotype).}{79}{section*.116}%
+\contentsline {paragraph}{Definition (indexed family).}{79}{section*.117}%
+\contentsline {paragraph}{Definition (codependence: the collective coalgebra).}{79}{section*.118}%
+\contentsline {paragraph}{Definition (behaviour and bisimulation).}{80}{section*.119}%
+\contentsline {paragraph}{Definition (society / culture).}{80}{section*.120}%
+\contentsline {paragraph}{Remark (communication = lazy, depth-one corecursion).}{80}{section*.121}%
+\contentsline {paragraph}{Remark (algebra--coalgebra bridge to \S \ref {p4:sec:categorical}--\ref {p4:sec:colimit}).}{80}{section*.122}%
+\contentsline {paragraph}{Coalgebraic reading of the bottleneck shift.}{80}{section*.123}%
+\contentsline {section}{\numberline {53}Context is not memory: raw context vs.\ the Songlines graph under one model}{80}{section.53}%
+\contentsline {paragraph}{Axis 1: volume and integration (one witness log).}{81}{section*.124}%
+\contentsline {paragraph}{Axis 2: time (sessions).}{81}{section*.125}%
+\contentsline {paragraph}{Axis 3: system size (multi-agent, private frames).}{82}{section*.126}%
+\contentsline {paragraph}{Summary.}{82}{section*.127}%
+\contentsline {section}{\numberline {54}Reproducibility commands}{82}{section.54}%
+\contentsline {section}{\numberline {55}Asset and license note}{82}{section.55}%
+\contentsline {part}{V\hspace {1em}Song Grammar and Utility-Certified Memory: the Ontogenesis of What Is Remembered}{83}{part.5}%
+\contentsline {paragraph}{Part abstract.}{83}{section*.128}%
+\contentsline {section}{\numberline {56}Introduction: from coordination to ontogenesis}{84}{section.56}%
+\contentsline {paragraph}{The key idea.}{84}{section*.129}%
+\contentsline {section}{\numberline {57}The model}{84}{section.57}%
+\contentsline {paragraph}{Counterfactual marginal utility.}{84}{section*.130}%
+\contentsline {paragraph}{Analogy cost.}{84}{section*.131}%
+\contentsline {paragraph}{The memory unit is a conditional programme, not a fact:}{84}{section*.132}%
+\contentsline {paragraph}{Four storage layers.}{85}{section*.133}%
+\contentsline {subsection}{\numberline {57.1}The runtime as one algorithm}{85}{subsection.57.1}%
+\contentsline {paragraph}{Quantities in one place.}{85}{section*.134}%
+\contentsline {paragraph}{Hyperparameters (frozen; test seeds never used to tune).}{85}{section*.135}%
+\contentsline {section}{\numberline {58}U1: the matrix, measured deterministically}{85}{section.58}%
+\contentsline {section}{\numberline {59}U2: the matrix is learnable --- and improves itself}{86}{section.59}%
+\contentsline {section}{\numberline {60}U3: the grammar's parameters are evolvable --- and the constants are an attractor}{86}{section.60}%
+\contentsline {section}{\numberline {61}U7: seven policies, two bodies, three horizons}{86}{section.61}%
+\contentsline {paragraph}{What failed, and what it means.}{87}{section*.136}%
+\contentsline {paragraph}{The robust positives.}{87}{section*.137}%
+\contentsline {paragraph}{U7b: testing the staleness diagnosis.}{87}{section*.138}%
+\contentsline {section}{\numberline {62}Closing three gaps: staleness, emergence, abstraction}{87}{section.62}%
+\contentsline {paragraph}{Staleness in consumption (U7c).}{87}{section*.139}%
+\contentsline {paragraph}{Causally promoted landmarks (E1).}{87}{section*.140}%
+\contentsline {paragraph}{First-order cross-family abstraction (X1).}{88}{section*.141}%
+\contentsline {paragraph}{The LLM end-to-end cycle (L1).}{88}{section*.142}%
+\contentsline {section}{\numberline {63}The third echelon: structure, society, terminal credit}{88}{section.63}%
+\contentsline {paragraph}{Graph-matching analogy (G1).}{88}{section*.143}%
+\contentsline {paragraph}{Terminal credit (M1).}{88}{section*.144}%
+\contentsline {paragraph}{The social process (S1) --- the honest negative.}{88}{section*.145}%
+\contentsline {paragraph}{The world-clock contract (S2) --- necessary, not sufficient.}{89}{section*.146}%
+\contentsline {paragraph}{Admission control (S3) --- the reversal reverses.}{89}{section*.147}%
+\contentsline {section}{\numberline {64}One method: the integrated runtime and its benchmark}{89}{section.64}%
+\contentsline {paragraph}{Single-run integration (R1).}{89}{section*.148}%
+\contentsline {paragraph}{The integration benchmark (I1).}{89}{section*.149}%
+\contentsline {paragraph}{The ablation matrix --- and its honest half.}{90}{section*.150}%
+\contentsline {paragraph}{Utility without the oracle (UE1).}{90}{section*.151}%
+\contentsline {paragraph}{The margin lesson (N1).}{90}{section*.152}%
+\contentsline {section}{\numberline {65}Closing the acceptance test: budgets, adversary, safety, a second substrate}{90}{section.65}%
+\contentsline {paragraph}{Statistical footing.}{90}{section*.153}%
+\contentsline {paragraph}{Equal budgets (B1).}{90}{section*.154}%
+\contentsline {paragraph}{Adversarial provenance (P1).}{90}{section*.155}%
+\contentsline {paragraph}{Safety under noise (N1, revised).}{90}{section*.156}%
+\contentsline {paragraph}{A second substrate (C1).}{91}{section*.157}%
+\contentsline {paragraph}{External substrate (VMAS physics).}{91}{section*.158}%
+\contentsline {section}{\numberline {66}Related work}{92}{section.66}%
+\contentsline {section}{\numberline {67}Limitations and open problems}{92}{section.67}%
+\contentsline {section}{\numberline {68}Conclusion}{93}{section.68}%
+\contentsline {section}{\numberline {69}Reproducibility}{93}{section.69}%

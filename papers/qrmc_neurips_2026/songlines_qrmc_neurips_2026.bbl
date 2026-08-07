@@ -1,0 +1,142 @@
+\begin{thebibliography}{20}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Andrychowicz et~al.(2017)Andrychowicz, Wolski, Ray, Schneider, Fong,
+  Welinder, McGrew, Tobin, Abbeel, and Zaremba]{andrychowicz2017hindsight}
+Marcin Andrychowicz, Filip Wolski, Alex Ray, Jonas Schneider, Rachel Fong,
+  Peter Welinder, Bob McGrew, Josh Tobin, Pieter Abbeel, and Wojciech Zaremba.
+\newblock Hindsight experience replay.
+\newblock In \emph{NeurIPS}, 2017.
+
+\bibitem[Boyd et~al.(2006)Boyd, Ghosh, Prabhakar, and Shah]{boyd2006gossip}
+Stephen Boyd, Arpita Ghosh, Balaji Prabhakar, and Devavrat Shah.
+\newblock Randomized gossip algorithms.
+\newblock \emph{IEEE Transactions on Information Theory}, 52\penalty0
+  (6):\penalty0 2508--2530, 2006.
+
+\bibitem[Carmona et~al.(2018)Carmona, van Dongen, Solti, and
+  Weidlich]{carmona2018conformance}
+Josep Carmona, Boudewijn van Dongen, Andreas Solti, and Matthias Weidlich.
+\newblock \emph{Conformance Checking: Relating Processes and Models}.
+\newblock Springer, 2018.
+
+\bibitem[Es et~al.(2024)Es, James, Espinosa-Anke, and Schockaert]{es2024ragas}
+Shahul Es, Jithin James, Luis Espinosa-Anke, and Steven Schockaert.
+\newblock {RAGAs}: Automated evaluation of retrieval augmented generation.
+\newblock In \emph{EACL System Demonstrations}, 2024.
+
+\bibitem[Foerster et~al.(2018)Foerster, Farquhar, Afouras, Nardelli, and
+  Whiteson]{foerster2018ctde}
+Jakob Foerster, Gregory Farquhar, Triantafyllos Afouras, Nantas Nardelli, and
+  Shimon Whiteson.
+\newblock Counterfactual multi-agent policy gradients.
+\newblock In \emph{AAAI}, 2018.
+
+\bibitem[Gupta et~al.(2017)Gupta, Davidson, Levine, Sukthankar, and
+  Malik]{gupta2017cognitive}
+Saurabh Gupta, James Davidson, Sergey Levine, Rahul Sukthankar, and Jitendra
+  Malik.
+\newblock Cognitive mapping and planning for visual navigation.
+\newblock In \emph{CVPR}, 2017.
+
+\bibitem[Leucker and Schallhart(2009)]{leucker2009runtime}
+Martin Leucker and Christian Schallhart.
+\newblock A brief account of runtime verification.
+\newblock \emph{Journal of Logic and Algebraic Programming}, 78\penalty0
+  (5):\penalty0 293--303, 2009.
+
+\bibitem[Lightman et~al.(2024)Lightman, Kosaraju, Burda, Edwards, Baker, Lee,
+  Leike, Schulman, Sutskever, and Cobbe]{lightman2024verify}
+Hunter Lightman, Vineet Kosaraju, Yuri Burda, Harrison Edwards, Bowen Baker,
+  Teddy Lee, Jan Leike, John Schulman, Ilya Sutskever, and Karl Cobbe.
+\newblock Let's verify step by step.
+\newblock In \emph{ICLR}, 2024.
+
+\bibitem[Lin et~al.(2026)Lin, Wang, Kwok, Guo, Nale, Fleming, and
+  Cheng]{lin2026reflect}
+Xiaofeng Lin, Yingxu Wang, Tung Sum~Thomas Kwok, Daniel Guo, Sahil~Arun Nale,
+  Charles Fleming, and Guang Cheng.
+\newblock {REFLECT}: Intervention-supported error attribution for silent
+  failures in {LLM} agent traces.
+\newblock \emph{arXiv preprint arXiv:2606.09071}, 2026.
+
+\bibitem[Ma et~al.(2024)Ma, Zhang, Zhu, Yang, Yang, Jin, Lan, Kong, and
+  He]{ma2024agentboard}
+Chang Ma, Junlei Zhang, Zhihao Zhu, Cheng Yang, Yujiu Yang, Yaohui Jin,
+  Zhenzhong Lan, Lingpeng Kong, and Junxian He.
+\newblock {AgentBoard}: An analytical evaluation board of multi-turn {LLM}
+  agents.
+\newblock In \emph{NeurIPS}, 2024.
+
+\bibitem[Packer et~al.(2023)Packer, Fang, Patil, Lin, Wooders, and
+  Gonzalez]{packer2023memgpt}
+Charles Packer, Vivian Fang, Shishir~G. Patil, Kevin Lin, Sarah Wooders, and
+  Joseph~E. Gonzalez.
+\newblock {MemGPT}: Towards {LLMs} as operating systems.
+\newblock \emph{arXiv preprint arXiv:2310.08560}, 2023.
+
+\bibitem[Park et~al.(2023)Park, O'Brien, Cai, Morris, Liang, and
+  Bernstein]{park2023generative}
+Joon~Sung Park, Joseph O'Brien, Carrie~Jun Cai, Meredith~Ringel Morris, Percy
+  Liang, and Michael~S. Bernstein.
+\newblock Generative agents: Interactive simulacra of human behavior.
+\newblock In \emph{UIST}, 2023.
+
+\bibitem[Ru et~al.(2024)Ru, Qiu, Hu, Zhang, Shi, Chang,
+  et~al.]{ru2024ragchecker}
+Dongyu Ru, Lin Qiu, Xiangkun Hu, Tianhang Zhang, Peng Shi, Shuaichen Chang,
+  et~al.
+\newblock {RAGChecker}: A fine-grained framework for diagnosing
+  retrieval-augmented generation.
+\newblock In \emph{NeurIPS Datasets and Benchmarks}, 2024.
+
+\bibitem[Savinov et~al.(2018)Savinov, Dosovitskiy, and Koltun]{savinov2018semi}
+Nikolay Savinov, Alexey Dosovitskiy, and Vladlen Koltun.
+\newblock Semi-parametric topological memory for navigation.
+\newblock In \emph{ICLR}, 2018.
+
+\bibitem[Shinn et~al.(2023)Shinn, Cassano, Gopinath, Narasimhan, and
+  Yao]{shinn2023reflexion}
+Noah Shinn, Federico Cassano, Ashwin Gopinath, Karthik Narasimhan, and Shunyu
+  Yao.
+\newblock Reflexion: Language agents with verbal reinforcement learning.
+\newblock In \emph{NeurIPS}, 2023.
+
+\bibitem[Sukhbaatar et~al.(2016)Sukhbaatar, Szlam, and
+  Fergus]{sukhbaatar2016commnet}
+Sainbayar Sukhbaatar, Arthur Szlam, and Rob Fergus.
+\newblock Learning multiagent communication with backpropagation.
+\newblock In \emph{NeurIPS}, 2016.
+
+\bibitem[Tolman(1948)]{tolman1948cognitive}
+Edward~C. Tolman.
+\newblock Cognitive maps in rats and men.
+\newblock \emph{Psychological Review}, 55\penalty0 (4):\penalty0 189--208,
+  1948.
+
+\bibitem[van~der Aalst(2016)]{vanderaalst2016process}
+Wil M.~P. van~der Aalst.
+\newblock \emph{Process Mining: Data Science in Action}.
+\newblock Springer, 2016.
+
+\bibitem[Wang et~al.(2024)Wang, Xie, Jiang, Mandlekar, Xiao, Zhu, Fan, and
+  Anandkumar]{wang2023voyager}
+Guanzhi Wang, Yuqi Xie, Yunfan Jiang, Ajay Mandlekar, Chaowei Xiao, Yuke Zhu,
+  Linxi Fan, and Anima Anandkumar.
+\newblock Voyager: An open-ended embodied agent with large language models.
+\newblock \emph{Transactions on Machine Learning Research}, 2024.
+
+\bibitem[Wu et~al.(2023)Wu, Bansal, Zhang, Wu, Li, Zhu, Jiang, Zhang, Zhang,
+  Liu, Awadallah, White, Burger, and Wang]{wu2023autogen}
+Qingyun Wu, Gagan Bansal, Jieyu Zhang, Yiran Wu, Beibin Li, Erkang Zhu,
+  Li~Jiang, Xiaoyun Zhang, Shaokun Zhang, Jiale Liu, Ahmed~Hassan Awadallah,
+  Ryen~W. White, Doug Burger, and Chi Wang.
+\newblock Autogen: Enabling next-gen {LLM} applications via multi-agent
+  conversation.
+\newblock \emph{arXiv preprint arXiv:2308.08155}, 2023.
+
+\end{thebibliography}

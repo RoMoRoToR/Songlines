@@ -53,7 +53,7 @@ PART_TITLES_EN = {
            "third regime on the M-by-C plane -- and the categorical "
            "frame in which commonality of interpretation is a "
            "parameter, not an assumption."),
-    "p5": ("Song Grammar and Utility-Certified Memory: the Ontogenesis "
+    "p5": ("Song Grammar and Utility-Gated Memory: the Ontogenesis "
            "of What Is Remembered",
            "Memory formation as a two-axis decision (counterfactual "
            "utility times simplicity of analogy): measured "
@@ -79,7 +79,7 @@ PART_TITLES_RU = {
            "Механика peer-памяти — три явных правила, третий режим на "
            "плоскости M×C — и категорная рамка, в которой общность "
            "интерпретации — параметр, а не предположение."),
-    "p5": ("Грамматика песни и Utility-Certified Memory: онтогенез "
+    "p5": ("Грамматика песни и Utility-Gated Memory: онтогенез "
            "запоминаемого",
            "Формирование памяти как двухосевое решение "
            "(контрфактическая полезность × простота аналогии): "

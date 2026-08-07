@@ -1,0 +1,136 @@
+{
+  "methods": {
+    "success_only": {
+      "accuracy": 0.095,
+      "ci": [
+        0.0,
+        0.286
+      ],
+      "macro_f1": 0.077,
+      "control_fpr": 0.0,
+      "per_model": {
+        "llama": 0.1,
+        "qwen": 0.091
+      }
+    },
+    "progress": {
+      "accuracy": 0.73,
+      "ci": [
+        0.485,
+        0.952
+      ],
+      "macro_f1": 0.698,
+      "control_fpr": 0.0,
+      "per_model": {
+        "llama": 0.733,
+        "qwen": 0.727
+      }
+    },
+    "two_stage": {
+      "accuracy": 0.651,
+      "ci": [
+        0.365,
+        0.909
+      ],
+      "macro_f1": 0.45,
+      "control_fpr": 0.0,
+      "per_model": {
+        "llama": 0.667,
+        "qwen": 0.636
+      }
+    },
+    "conformance": {
+      "accuracy": 0.778,
+      "ci": [
+        0.545,
+        0.955
+      ],
+      "macro_f1": 0.755,
+      "control_fpr": 0.167,
+      "per_model": {
+        "llama": 0.767,
+        "qwen": 0.788
+      }
+    },
+    "qrmc": {
+      "accuracy": 0.873,
+      "ci": [
+        0.712,
+        0.983
+      ],
+      "macro_f1": 0.835,
+      "control_fpr": 0.167,
+      "per_model": {
+        "llama": 0.867,
+        "qwen": 0.879
+      }
+    },
+    "learned_lr_leave_fault_out": {
+      "accuracy": 0.444,
+      "control_fpr": 1.0
+    },
+    "learned_lr_leave_framework_out": {
+      "accuracy": 0.825,
+      "control_fpr": 1.0
+    },
+    "learned_lr_leave_model_out": {
+      "accuracy": 0.794,
+      "control_fpr": 0.5
+    }
+  },
+  "two_stage_side_level_accuracy": 0.873,
+  "mcnemar_vs_qrmc": {
+    "success_only": {
+      "p": 0.0,
+      "qrmc_only_correct": 50,
+      "baseline_only_correct": 1
+    },
+    "progress": {
+      "p": 0.0117,
+      "qrmc_only_correct": 10,
+      "baseline_only_correct": 1
+    },
+    "two_stage": {
+      "p": 0.0005,
+      "qrmc_only_correct": 15,
+      "baseline_only_correct": 1
+    },
+    "conformance": {
+      "p": 0.0312,
+      "qrmc_only_correct": 6,
+      "baseline_only_correct": 0
+    },
+    "learned_lr_leave_fault_out": {
+      "p": 0.0,
+      "qrmc_only_correct": 27,
+      "baseline_only_correct": 0
+    }
+  },
+  "cost": {
+    "success_only": {
+      "training": false,
+      "reruns": 0
+    },
+    "progress": {
+      "training": false,
+      "reruns": 0
+    },
+    "two_stage": {
+      "training": false,
+      "reruns": 0
+    },
+    "conformance": {
+      "training": false,
+      "reruns": 0
+    },
+    "learned_lr": {
+      "training": true,
+      "needs_fault_labels": true,
+      "reruns": 0
+    },
+    "qrmc": {
+      "training": false,
+      "reruns": 0
+    }
+  }
+}

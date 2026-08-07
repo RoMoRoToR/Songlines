@@ -11,7 +11,8 @@ Q\*/R\*/M\*/C\* (маргинальные частоты — tool trace не д�
 произведение не заявляется). Один адаптер на три стека — OpenAI SDK
 function-calling loop, LangGraph ReAct, AutoGen classic
 (`run_external_validation.py`), 4 варианта × 20 сидов × 2 модели
-(llama3.1, qwen3:4b).
+(`llama3.1:latest`, Ollama ID `46e0c10c039e`;
+`qwen3:4b`, Ollama ID `359d7dd4bcda`).
 
 Главное: структурные отказы локализуются идентично на всех стеках
 (consolidation gap → R=0.00; tight budget → C=0.00; 20/20), а
@@ -28,7 +29,7 @@ hold-out control меряет false positives, manipulation check исключа
 несвязавшиеся фолты. Метрики: stage-level accuracy, confusion matrix,
 межфреймворковое согласие.
 
-llama3.1 (720 эпизодов): openai_sdk 8/10, langgraph 8/10, autogen
+`llama3.1:latest` (720 эпизодов): openai_sdk 8/10, langgraph 8/10, autogen
 10/10; структурные 15/15; hold-out → none 3/3; промахи — в
 зарегистрированных рисках (M-семейство на слабом коммиттере).
 
@@ -38,6 +39,18 @@ llama3.1 (720 эпизодов): openai_sdk 8/10, langgraph 8/10, autogen
 `rows_*/summary_*` (llama20/qwen20), `rows_meta_*/meta_verdict_meta_*`
 (мета-оценка), `meta_run.log`.
 
+## 3. Reliability-анализ для TAE
+
+`analyze_reliability.py` пересчитывает Section 5.3 TAE-версии без новых
+LLM-прогонов: берёт существующие episode-level rows
+`tmp/qrmc_external/rows_meta_llama.json` (`llama3.1:latest`, Ollama ID
+`46e0c10c039e`) и `tmp/qrmc_external/rows_meta_qwen.json`
+(`qwen3:4b`, Ollama ID `359d7dd4bcda`), фиксирует 63
+scored cells из blind benchmark, делает 1000 subsamples для
+`n={5,10,15,20}` и threshold sweep по drop-порогам R/M/C. Output
+`tmp/qrmc_external/reliability_verdict.json` содержит SHA-256 входных
+row-файлов, Ollama model IDs, row counts, seed и все числа из Section 5.3.
+
 ## Запуск
 
 ```bash
@@ -45,6 +58,7 @@ PYTHONPATH=. .venv/bin/python experiments/qrmc_external/run_external_validation.
     --model llama3.1:latest --seeds 20
 PYTHONPATH=. .venv/bin/python experiments/qrmc_external/run_meta_evaluation.py \
     --model qwen3:4b --tag meta_qwen
+.venv/bin/python experiments/qrmc_external/analyze_reliability.py
 ```
 
 Нужен локальный Ollama. Многочасовые прогоны запускать через

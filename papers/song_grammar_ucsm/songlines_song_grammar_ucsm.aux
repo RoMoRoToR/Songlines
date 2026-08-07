@@ -57,6 +57,11 @@
 \newlabel{sec:acceptance}{{10}{8}{Closing the acceptance test: budgets, adversary, safety, a second substrate}{section.10}{}}
 \@writefile{toc}{\contentsline {paragraph}{Statistical footing.}{8}{section*.25}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Equal budgets (B1).}{8}{section*.26}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Fail-closed safety under sensor noise (measured N1 sweep, $24$ seeds/cell, diagonal FN$=$FP). Removing the anchor-consensus mechanism (min-anchors $=1$) lets the fail-open rate climb above the $5\%$ bar as tag noise grows; anchor consensus $\ge 2$ and the full consensus $\ge 3$ + safe-prefix arm hold fail-open at $0.000$ across the whole sweep --- degrading into refusals (a coverage cost) rather than wrong commitments.}}{9}{figure.1}\protected@file@percent }
+\newlabel{fig:noise}{{1}{9}{Fail-closed safety under sensor noise (measured N1 sweep, $24$ seeds/cell, diagonal FN$=$FP). Removing the anchor-consensus mechanism (min-anchors $=1$) lets the fail-open rate climb above the $5\%$ bar as tag noise grows; anchor consensus $\ge 2$ and the full consensus $\ge 3$ + safe-prefix arm hold fail-open at $0.000$ across the whole sweep --- degrading into refusals (a coverage cost) rather than wrong commitments}{figure.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Adversarial provenance (P1).}{9}{section*.27}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Safety under noise (N1, revised).}{9}{section*.28}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{A second substrate (C1).}{9}{section*.29}\protected@file@percent }
 \citation{rdd2026}
 \citation{genagents2023}
 \citation{memrl2026}
@@ -64,12 +69,13 @@
 \citation{memgas2025}
 \citation{trustmem2026}
 \citation{faulty2026}
-\@writefile{toc}{\contentsline {paragraph}{Adversarial provenance (P1).}{9}{section*.27}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Safety under noise (N1, revised).}{9}{section*.28}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{A second substrate (C1).}{9}{section*.29}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{External substrate (VMAS physics).}{9}{section*.30}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {11}Related work}{9}{section.11}\protected@file@percent }
-\newlabel{sec:related}{{11}{9}{Related work}{section.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces The integrated runtime keeps its advantage across substrates (measured summaries): MiniGrid team cost and VMAS physics team steps (lower is better), and ALFWorld task grounding (single measured point; no convergence curve was measured). The fourth panel is the measured MAPPO baseline training curve, which plateaus at success $\approx 0.65$ --- the symbolic-peer $K{=}8$ level --- confirming the multi-agent-RL baseline is trained to convergence, so the runtime's advantage is not an artefact of an undertrained baseline.}}{10}{figure.2}\protected@file@percent }
+\newlabel{fig:crosssub}{{2}{10}{The integrated runtime keeps its advantage across substrates (measured summaries): MiniGrid team cost and VMAS physics team steps (lower is better), and ALFWorld task grounding (single measured point; no convergence curve was measured). The fourth panel is the measured MAPPO baseline training curve, which plateaus at success $\approx 0.65$ --- the symbolic-peer $K{=}8$ level --- confirming the multi-agent-RL baseline is trained to convergence, so the runtime's advantage is not an artefact of an undertrained baseline}{figure.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{External substrate (VMAS physics).}{10}{section*.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {11}Related work}{10}{section.11}\protected@file@percent }
+\newlabel{sec:related}{{11}{10}{Related work}{section.11}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {12}Limitations and open problems}{10}{section.12}\protected@file@percent }
+\newlabel{sec:limits}{{12}{10}{Limitations and open problems}{section.12}{}}
 \bibcite{rdd2026}{{1}{2026a}{{Anonymous}}{{}}}
 \bibcite{genagents2023}{{2}{2023}{{Park et~al.}}{{}}}
 \bibcite{memrl2026}{{3}{2026b}{{Anonymous}}{{}}}
@@ -77,9 +83,7 @@
 \bibcite{memgas2025}{{5}{2025b}{{Anonymous}}{{}}}
 \bibcite{trustmem2026}{{6}{2026c}{{Anonymous}}{{}}}
 \bibcite{faulty2026}{{7}{2026d}{{Anonymous}}{{}}}
-\@writefile{toc}{\contentsline {section}{\numberline {12}Limitations and open problems}{10}{section.12}\protected@file@percent }
-\newlabel{sec:limits}{{12}{10}{Limitations and open problems}{section.12}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {13}Conclusion}{10}{section.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {13}Conclusion}{11}{section.13}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {A}Reproducibility}{11}{appendix.A}\protected@file@percent }
 \newlabel{app:repro}{{A}{11}{Reproducibility}{appendix.A}{}}
-\gdef \@abspage@last{11}
+\gdef \@abspage@last{12}

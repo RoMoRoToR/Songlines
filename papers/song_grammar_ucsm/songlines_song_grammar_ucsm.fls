@@ -258,6 +258,14 @@ INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/jknappen/ec/ectt0800.tfm
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/jknappen/ec/ectt0800.tfm
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/vf/adobe/times/ptmr8t.vf
 INPUT /usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmr8r.tfm
+INPUT ./figures/reviewer/fig1_noise_robustness.pdf
+INPUT ./figures/reviewer/fig1_noise_robustness.pdf
+INPUT ./figures/reviewer/fig1_noise_robustness.pdf
+INPUT ./figures/reviewer/fig1_noise_robustness.pdf
+INPUT ./figures/reviewer/fig4_cross_substrate.pdf
+INPUT ./figures/reviewer/fig4_cross_substrate.pdf
+INPUT ./figures/reviewer/fig4_cross_substrate.pdf
+INPUT ./figures/reviewer/fig4_cross_substrate.pdf
 INPUT songlines_song_grammar_ucsm.aux
 INPUT ./songlines_song_grammar_ucsm.out
 INPUT ./songlines_song_grammar_ucsm.out

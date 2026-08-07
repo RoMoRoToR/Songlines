@@ -1,0 +1,50 @@
+{
+  "comment": "Full-run grid for the H context-baseline suite. Models match the published L1 numbers: llama3.1 (local ollama, as in tmp/song_grammar/l1_llama31 + l1b_llama31) and Qwen2.5-3B-Instruct (cluster hf, offline weights in $HF_HOME). Budget 0 = no cap (ties back to the article's unbounded regime); the capped budgets span ~5%-50% of a long-mode raw transcript.",
+  "runs": [
+    {
+      "name": "qwen3b_short",
+      "backend": "hf",
+      "model": "Qwen/Qwen2.5-3B-Instruct",
+      "mode": "short",
+      "layouts": 12,
+      "budgets": [0, 96, 192, 384],
+      "out": "tmp/cluster/llm_context_baselines/qwen3b_short"
+    },
+    {
+      "name": "qwen3b_long",
+      "backend": "hf",
+      "model": "Qwen/Qwen2.5-3B-Instruct",
+      "mode": "long",
+      "layouts": 12,
+      "budgets": [0, 96, 192, 384, 768],
+      "out": "tmp/cluster/llm_context_baselines/qwen3b_long"
+    },
+    {
+      "name": "llama31_short",
+      "backend": "ollama",
+      "model": "llama3.1:latest",
+      "mode": "short",
+      "layouts": 12,
+      "budgets": [0, 96, 192, 384],
+      "out": "tmp/llm_context_baselines/llama31_short"
+    },
+    {
+      "name": "llama31_long",
+      "backend": "ollama",
+      "model": "llama3.1:latest",
+      "mode": "long",
+      "layouts": 12,
+      "budgets": [0, 96, 192, 384, 768],
+      "out": "tmp/llm_context_baselines/llama31_long"
+    },
+    {
+      "name": "smoke",
+      "backend": "ollama",
+      "model": "llama3.1:latest",
+      "mode": "long",
+      "layouts": 3,
+      "budgets": [128, 512],
+      "out": "tmp/llm_context_baselines/smoke"
+    }
+  ]
+}

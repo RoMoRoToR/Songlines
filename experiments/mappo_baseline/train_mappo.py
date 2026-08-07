@@ -21,6 +21,7 @@ import argparse
 import os
 import sys
 import time
+import json
 from typing import List
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -137,6 +138,7 @@ def main():
     opt = torch.optim.Adam(list(policy.parameters()) + list(critic.parameters()),
                            lr=a.lr)
     t0 = time.time(); seed_iter = 0; running: List[float] = []
+    curve = []
     for upd in range(a.total_updates):
         rolls = []
         for _ in range(a.rollouts_per_update):
@@ -147,9 +149,16 @@ def main():
         mappo_update(policy, critic, opt, rolls)
         succ = float(np.mean([r["n_succeeded"] / r["n_agents"] for r in rolls]))
         running = (running + [succ])[-50:]
+        curve.append({"update": upd, "success": succ,
+                      "success_smooth50": float(np.mean(running))})
         if upd % 5 == 0:
             print(f"  upd {upd:4d}  succ={succ:.3f}  last50={np.mean(running):.3f}"
                   f"  {time.time()-t0:.0f}s", flush=True)
+    with open(os.path.join(a.out_dir, "mappo_curve.json"), "w") as f:
+        json.dump({"total_updates": a.total_updates,
+                   "rollouts_per_update": a.rollouts_per_update,
+                   "n_agents": a.n_agents, "n_targets": a.n_targets,
+                   "curve": curve}, f, indent=2)
     torch.save(policy.state_dict(), os.path.join(a.out_dir, "mappo_policy.pt"))
     torch.save(critic.state_dict(), os.path.join(a.out_dir, "mappo_critic.pt"))
     print(f"saved -> {a.out_dir}/mappo_policy.pt  "

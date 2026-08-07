@@ -4,7 +4,7 @@
 % equations, tables, labels, references, and reported numerical results.
 \documentclass{article}
 
-\usepackage[preprint]{neurips_2026}
+\usepackage{neurips_2026}
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -56,9 +56,15 @@ architectures, learned communication policies, local LLM agents, and
 three third-party agent stacks. In the single-agent benchmark, oracle
 interventions distinguish retrieval-limited hazard recovery from
 downstream-limited goal-region rejoin. Log analysis further shows that
-the apparent retrieval failure is primarily a memory-accumulation
+the apparent retrieval failure is a candidate-availability
 problem: eligible candidates are absent at $91\%$ of decision points,
-while ranking precision is $96.9\%$ when candidates are present. In
+while ranking precision is $96.9\%$ when candidates are present. A
+stage-wise oracle ladder then separates the causes per task: on
+hazard recovery the absences are phrase-graph grounding failures
+whose repair removes the symptom but not the failure --- the binding
+constraint is the semantic quality of the designated candidates ---
+whereas on goal-region rejoin they are genuine coverage-driven
+retrieval emptiness. In
 the multi-agent benchmark, communication cadence changes the location
 of the bottleneck. Faster exchange improves materialization but
 reduces completion under scarce targets because agents commit to the
@@ -138,7 +144,9 @@ not. Goal-region rejoin is instead limited downstream of retrieval.
 Within the retrieval-limited task, the detailed logs further identify
 candidate generation as the principal failure: the memory returns no
 eligible record at most decision points, despite near-perfect ranking
-when a record exists. The multi-agent analysis shows a different
+when a record exists --- and a stage-wise oracle ladder splits these
+absences into phrase-graph grounding failures and true coverage
+emptiness (\S\ref{p1:sec:refined-attribution}). The multi-agent analysis shows a different
 phenomenon. As broadcast cadence increases, fresher peer memory
 improves materialization, but the same information synchronizes
 commitments and reduces completion under target scarcity. The result
@@ -151,8 +159,11 @@ The contributions of this paper are as follows:
 single- and multi-agent memory-based navigation and state the
 conditions under which their conditional rates are estimable.
 \item We validate the protocol through stage-specific oracle
-interventions and identify a memory-accumulation limitation that is
-not visible in end-to-end success or candidate-ranking precision.
+interventions and dissect a candidate-availability limitation that is
+invisible to end-to-end success: a stage-wise oracle ladder splits it
+into phrase-graph grounding failures (whose repair does not restore
+success) and coverage-driven retrieval emptiness, excluding ranking,
+thresholding, and perception as causes.
 \item We characterize a cadence-dependent materialization--completion
 trade-off in a large multi-agent sweep and relate it to foreign
 evidence and target occupancy.
@@ -204,12 +215,21 @@ evaluating memory-grounded agent decisions beyond navigation.
 
 The central empirical question is therefore not just whether the agent
 succeeds, but \emph{which stage fails first} when it does not. Two
-related measurement layers are used. \textbf{Operational rates} count,
-per query attempt, whether the query yielded a non-empty candidate
-set, whether the chosen candidate satisfied the semantic predicate,
-and whether it was materialized into an actionable target;
-\emph{completion after retrieval} is an episode-level indicator.
-\textbf{Nested episode-level events}
+related measurement layers are used, with distinct notation.
+\textbf{Operational events} (lowercase) are counted per query attempt:
+$q_t$ --- a valid query object was emitted; $r^{\mathrm{set}}_t$ ---
+the returned candidate set is non-empty, i.e.\ at least one stored
+record satisfies the query predicate on the \emph{agent's} side;
+$r_t$ --- a retrieved candidate is correct on the \emph{evaluator's}
+side, under the evaluation correspondence $\Gamma$ between memory
+records and world entities (\S\ref{p1:sec:event-semantics});
+$m_t$ --- a candidate was materialized into an actionable target.
+Separating $r^{\mathrm{set}}$ from $r$ keeps two different retrieval
+failures apart: an empty candidate set (nothing satisfies the
+predicate) and an incorrect candidate set (something satisfies the
+predicate but does not correspond to a true target).
+\emph{Completion after retrieval} is an episode-level indicator.
+\textbf{Nested episode-level events} (starred)
 $Q^\star \Rightarrow R^\star \Rightarrow M^\star \Rightarrow C^\star$
 are used in the factorization below and audited in
 \S\ref{p1:sec:validation}. Full operational definitions are given in
@@ -227,47 +247,71 @@ completion} rather than raw task success:
 \[
 Q^\star \rightarrow R^\star \rightarrow M^\star \rightarrow C^\star.
 \]
-For any query $q$ and memory state $\mathcal{M}$,
-\begin{align*}
-P(C^\star = 1 \mid q, \mathcal{M})
-&=
-P(Q^\star = 1 \mid q, \mathcal{M})\;
-P(R^\star = 1 \mid Q^\star = 1, q, \mathcal{M}) \\
-&\quad \cdot
-P(M^\star = 1 \mid R^\star = 1, q, \mathcal{M})\;
-P(C^\star = 1 \mid M^\star = 1, q, \mathcal{M}).
-\end{align*}
-Overall task success $Y$ can exceed $C^\star$ because some episodes
-succeed without traversing the full semantic retrieval path.
+We deliberately separate three claims of different strength: an
+algebraic identity that holds by construction, a statistical statement
+about estimation, and a structural assumption that is needed only for
+a mechanism-level reading.
 
-\paragraph{Assumption 1 (conditional stage-Markov property).}
-Conditioned on the current stage being successful, the probability of
-the next stage depends only on the current successful stage, the
-current query, and the current memory state. Formally,
+\paragraph{Proposition 1 (algebraic decomposition; no assumptions).}
+Because the starred events are nested
+($C^\star \subseteq M^\star \subseteq R^\star \subseteq Q^\star$), the
+chain rule gives, identically,
 \[
-P(R^\star \mid Q^\star, q, \mathcal{M}, \text{history}) = P(R^\star \mid Q^\star, q, \mathcal{M}),
+P(C^\star)
+=
+P(Q^\star)\,
+P(R^\star \mid Q^\star)\,
+P(M^\star \mid R^\star)\,
+P(C^\star \mid M^\star).
 \]
-and analogously for $M^\star$ and $C^\star$.
+This holds for any distribution over episodes; no Markov or
+independence property is invoked. Overall task success $Y$ can exceed
+$C^\star$ because some episodes succeed without traversing the full
+semantic retrieval path.
 
-\paragraph{Assumption 2 (positivity).}
-Each conditioning event used above has non-zero probability on the
-support of the benchmark.
+\paragraph{Proposition 2 (statistical consistency).}
+The empirical-frequency estimators of the four factors converge to the
+population quantities provided that (i) each conditioning event has
+non-zero probability on the support of the benchmark (positivity), and
+(ii) episodes are drawn i.i.d.\ or form a stationary cluster process
+whose dependence (shared seeds, layouts, agents within a world) is
+respected at the uncertainty-quantification level --- which is how all
+confidence intervals in this paper are computed (cluster bootstrap
+over design cells, \S\ref{p1:sec:multi-agent-results}). The argument
+is elementary --- Proposition~1 plus consistency of frequency
+estimators on Bernoulli events --- and the value of stating it is
+operational, not mathematical: it pins down the \emph{logging
+discipline} (which events, conditioned on what) under which the
+decomposition is readable from standard trajectory logs, and it is the
+contract that every experiment in this paper audits against
+(\S\ref{p1:sec:validation}). Full statement in
+Appendix~\ref{p1:app:proofs}.
 
-\paragraph{Definition 1 (single-agent stage estimability).}
-Under Assumptions 1--2, the four conditional rates in the factorization above are well-defined population quantities and the empirical-frequency estimators are consistent estimators of them; their product converges to semantic-path completion. The argument is elementary --- the chain-rule factorization plus consistency of frequency estimators on Bernoulli events --- and the value of stating it is operational, not mathematical: it pins down the \emph{logging discipline} (which events, conditioned on what) under which the decomposition is readable from standard trajectory logs, and it is the contract that every experiment in this paper audits against (\S\ref{p1:sec:validation}). Full statement and elementary argument in Appendix~\ref{p1:app:proofs}.
+\paragraph{Assumption 1 (stage-local structural reading; optional).}
+Propositions 1--2 make the four rates well-defined and estimable
+descriptive quantities. Reading a conditional rate as a property of a
+stage-local \emph{mechanism} --- ``the materialization step, given
+what retrieval handed it'' --- additionally requires that relevant
+between-stage state changes be logged: conditioned on the previous
+stage and the logged $(q, \mathcal{M})$ at that stage's event, the
+next-stage probability does not depend on unlogged history. This
+assumption is \emph{not} needed for the factorization or for
+estimation; it is needed only when a stage rate is interpreted as
+localizing a mechanism, as in the oracle analysis of
+\S\ref{p1:sec:oracle}.
 
 \paragraph{When Assumption~1 may fail.}
-Assumption~1 holds tightly here because $q$ and $\mathcal{M}$ are
+The assumption holds tightly here because $q$ and $\mathcal{M}$ are
 explicitly logged at every stage event. Two practically relevant
 violations remain: adaptive in-episode query rewrites not surfaced to
 the logger, and hidden between-stage memory updates. In those cases
-the factorization should be read as a projection onto observable
-traces rather than as a full structural identification claim.
-Appendix~\ref{p1:app:assumption1-stress} quantifies the estimator bias
-under a controlled violation of this kind: it is negligible for mild
-unlogged couplings and one-signed (an upward bias on
-$P(C^\star|M^\star)$), which bounds the framework's exposure when it is
-applied to learned or LLM agents.
+the mechanism-level reading should be replaced by a projection onto
+observable traces; the descriptive factorization of Proposition~1 is
+unaffected. Appendix~\ref{p1:app:assumption1-stress} quantifies the
+bias of the mechanism-level reading under a controlled violation of
+this kind: it is negligible for mild unlogged couplings and one-signed
+(an upward bias on $P(C^\star|M^\star)$), which bounds the framework's
+exposure when it is applied to learned or LLM agents.
 
 \paragraph{Mechanism-level reading.}
 The same decomposition admits a stage-structured mechanism
@@ -314,9 +358,9 @@ Empirical Claim~1 will predict the slope shift.
 The four starred events anchor at concrete logged triggers. We state the triggers once, because every empirical claim in the paper is a claim about them (per-regime formal definitions in Appendix~\ref{p1:app:estimators}), and we give each stage its reading in terms of the resource it bounds.
 
 \begin{description}[leftmargin=10pt,topsep=2pt,itemsep=2pt]
-\item[$Q^\star$ (intent issued).] The planner emits a semantic intent $q=(q^{\mathrm{req}},q^{\mathrm{pref}},q^{\mathrm{pen}})$: small sets of required, preferred, and penalty tags. The episode-level event fires on emission, so it is saturated whenever the task is semantic ($\hat P(Q^\star){=}1.00$ in Table~\ref{p1:tab:consistency}); the multi-agent per-tick logger additionally requires a non-empty candidate set (Appendix~\ref{p1:app:multi-agent-defs}), a bookkeeping difference we record rather than hide. Resource bound: attention --- the intent is a few tags, not the full state.
-\item[$R^\star$ (memory answers).] Retrieval evaluates $q$ against the memory and returns a candidate set; the event fires when the set contains a candidate satisfying the task predicate (within $\epsilon$ of a true target in the multi-agent logger). The 91\% empty-candidate-set failures of \S\ref{p1:sec:refined-attribution} are $R$-side events: no stored place clears the required-tag threshold. Resource bound: memory --- retrieval can only surface what consolidation has stored.
-\item[$M^\star$ (target lock).] The planner materializes one candidate into a concrete actionable cell. Candidacy itself is threshold-gated (a place enters the candidate set only if its score clears the planner's gate, Appendix~\ref{p1:app:schemas}), and the lock commits to a single candidate once per query rather than re-optimizing against the full memory at every tick. The event fires on lock acquisition (within $\epsilon$ of a true target in the multi-agent logger). Resource bound: deliberation.
+\item[$Q^\star$ (intent issued).] The planner emits a semantic intent $q=(q^{\mathrm{req}},q^{\mathrm{pref}},q^{\mathrm{pen}})$: small sets of required, preferred, and penalty tags. The event is \emph{query emission}, not retrieval outcome: it fires when a valid query object is issued, so it is saturated whenever the task is semantic ($\hat P(Q^\star){=}1.00$ in Table~\ref{p1:tab:consistency}). A saturated stage is itself a diagnostic result --- it certifies that no failure mass sits at query formation. The multi-agent per-tick logger instruments the first \emph{retrieval} sub-event (a non-empty candidate set, $r^{\mathrm{set}}$) under the label $Q$ for historical reasons; since queries are emitted at every tick by construction there, the conditional rates are unchanged, but we record the relabeling explicitly (Appendix~\ref{p1:app:multi-agent-defs}). Resource bound: attention --- the intent is a few tags, not the full state.
+\item[$R^\star$ (memory answers).] Retrieval evaluates $q$ against the memory and returns a candidate set. Two layers must be kept apart. \emph{Agent-side satisfaction} ($r^{\mathrm{set}}$): the set contains a record satisfying the query predicate --- the agent can verify this internally. \emph{Evaluator-side correctness} ($R^\star$): a retrieved candidate corresponds to a true satisfying place, verified through the \textbf{evaluation correspondence} $\Gamma \subseteq \mathcal{M} \times \mathcal{W}$ between memory records and world entities --- in our instrumented environments, $\Gamma$ is realised as spatial proximity ($\|c - w\| \le \epsilon$) to a ground-truth target, which only the evaluator can check. $R^\star$ as reported everywhere in this paper is the evaluator-side event. $\Gamma$ is part of the measurement contract: applying Q/R/M/C to a new substrate requires an explicit correspondence between internal referents and world entities, and errors in $\Gamma$ propagate to $R$ and $M$ (\S\ref{p1:sec:limitations}). The 91\% empty-candidate-set failures of \S\ref{p1:sec:refined-attribution} are \emph{logged} as $r^{\mathrm{set}}$-side events; the oracle ladder of Appendix~\ref{p1:app:oracle-ladder} shows the label conflates genuine retrieval emptiness (goal-region) with phrase-graph grounding failures recorded under the same taxonomy entry (hazard recovery). Resource bound: memory --- retrieval can only surface what consolidation has stored.
+\item[$M^\star$ (target lock).] The planner materializes one candidate into a concrete actionable cell. Candidacy itself is threshold-gated (a place enters the candidate set only if its score clears the planner's gate, Appendix~\ref{p1:app:schemas}), and the lock commits to a single candidate once per query rather than re-optimizing against the full memory at every tick. The event fires on lock acquisition (correct under $\Gamma$, i.e.\ within $\epsilon$ of a true target, in the multi-agent logger). Resource bound: deliberation.
 \item[$C^\star$ (closed-loop completion).] The local controller executes until the locked cell is reached or the episode times out; the event fires on arrival. $C$ is the only stage whose failure modes are extra-semantic: controller competence and, in the multi-agent regime, occupancy $\mathcal{O}_{-i}$. Resource bound: control, and in a collective, shared targets.
 \end{description}
 
@@ -396,7 +440,7 @@ nested-estimator product tracks empirical semantic-path completion
 across sample sizes. On the real benchmark, the same product matches
 semantic-path completion rather than overall success
 (Table~\ref{p1:tab:consistency}) --- exactly the contract of
-Definition~1.
+Propositions~1--2.
 
 \begin{table*}[t]
   \caption{Stage-factor consistency audit for the best semantic method in each task family. The product of nested conditional estimators matches semantic-path completion; overall success can be higher because some episodes succeed without traversing the full semantic retrieval path.}
@@ -458,10 +502,12 @@ questions; this paper is about the second.
 
 On goal-region the semantic variants solve Empty-6x6 ($1.00$ success) but collapse on FourRooms ($0.075$). For hazard recovery (LavaGapS7), base success $0.39$ (bootstrap 95\% CI $[0.35,0.43]$) rises only to $0.43$ under oracle controller, but jumps to $0.59$ under oracle materialization and $0.60$ under oracle retrieval (CI $[0.51,0.69]$; per-seed paired deltas positive in $9/10$ seeds, exact sign test $p{=}0.004$); goal-region rejoin is downstream-limited (oracle R lifts semantic-path completion to $0.08$ without moving end-to-end success). The per-task attribution as a stacked waterfall is in Figure~\ref{p1:fig:oracle-waterfall} (Appendix~\ref{p1:app:single-results-table}). Two tasks identical under success-only evaluation fail at opposite ends of the Q/R/M/C chain.
 
-\subsection{The logs refine the diagnosis: a memory-accumulation limit}
+\paragraph{What an oracle intervention estimates.} Replacing a module changes everything downstream of it --- the visited state distribution, commitment times, subsequent memory accumulation, and the inputs the controller sees. An oracle contrast therefore estimates the \emph{total system-level effect} of replacing that module under the registered interface, $\mathbb{E}[Y^{do(R=\text{oracle})}] - \mathbb{E}[Y]$, not a surgical natural indirect effect through the stage event alone; Q/R/M/C is not a substitute for causal mediation analysis. Accordingly, ``retrieval-limited'' is used throughout in the operational sense: a task is \emph{retrieval-sensitive} when replacing retrieval (or materialization) under the registered interface produces a substantially larger success gain than replacing the downstream controller --- which is exactly the observed pattern on hazard recovery ($+0.21$/$+0.20$ vs $+0.04$ over the $0.39$ base) and its reverse on goal-region rejoin. Each oracle's replacement boundary (what is substituted, what remains native, and what hidden state it may read) is specified in Appendix~\ref{p1:app:oracle-c-def}.
+
+\subsection{The logs refine the diagnosis: a candidate-availability limit}
 \label{p1:sec:refined-attribution}
 
-Inspecting the framework's own logs sharpens the retrieval attribution. On the 10-seed hazard-recovery run, $349$ retrieval calls were logged: only $32$ ($9.2\%$) returned at least one candidate, and of these $31$ ($96.9\%$ precision) selected a semantically satisfied candidate. The bottleneck is therefore not candidate \emph{ranking} but candidate \emph{generation} --- the symbolic memory does not contain hazard-recovery-tagged nodes at 91\% of decision points. A retrained 2-layer candidate-generation MLP trained on per-state features (test accuracy $0.59$ vs majority-class $0.81$; Appendix~\ref{p1:app:learned-baselines}) confirms that instantaneous state features cannot substitute for the missing structure. The framework's ``retrieval-limited'' attribution thus refines to a \emph{memory-accumulation} limit: candidate generation cannot be solved from state features alone, and the binding constraint is how trajectory evidence is consolidated into persistent symbolic structure. This attribution is not an artefact of the required-tag threshold $\theta$: sweeping $\theta$ across the full range leaves the empty-candidate-set rate invariant (Appendix~\ref{p1:app:theta-robustness}), because the empties are absence of any stored candidate, not sub-threshold filtering. Nor is it an artefact of the weighting: the empty rate is $0.908$ pooled over calls, $0.909$ seed-weighted, and $0.891$ episode-weighted (mean over the 80 episodes of each episode's own empty share), so long failing episodes contributing more decision points do not inflate the figure. Accumulation itself is not one of the four stages: the protocol localized the failure to the R link, and this within-link forensics named the cause --- we read Q/R/M/C as coarse localisation with a designated drill-down, not as a complete causal ontology of memory failure. This sets up the multi-agent section: when consolidation becomes a shared process across $N$ agents, it acquires a measurable \emph{rate}.
+Inspecting the framework's own logs sharpens the retrieval attribution. On the 10-seed hazard-recovery run, $349$ retrieval calls were logged: only $32$ ($9.2\%$) returned at least one candidate, and of these $31$ ($96.9\%$ precision) selected a semantically satisfied candidate. The bottleneck is therefore not candidate \emph{ranking} but candidate \emph{availability} --- the symbolic memory does not contain hazard-recovery-tagged nodes at 91\% of decision points. A retrained 2-layer candidate-generation MLP trained on per-state features (test accuracy $0.59$ vs majority-class $0.81$; Appendix~\ref{p1:app:learned-baselines}) confirms that instantaneous state features cannot substitute for the missing structure. The framework's ``retrieval-limited'' attribution thus refines to a \emph{candidate-availability} limit. A stage-wise oracle ladder (Appendix~\ref{p1:app:oracle-ladder}) then separates the upstream causes along the perception $\to$ write $\to$ consolidation $\to$ grounding path, with a result that corrects our own initial reading. On hazard recovery the absences are predominantly \emph{grounding} failures, not storage failures: separate instrumentation shows the retrieval stage internally returns at least one candidate on $0.90$ of calls, but the planner fails to ground a path to it in the phrase graph on $0.80$ of calls --- and that grounding failure was logged as an empty candidate set. An oracle that writes ground-truth semantic tags at every observation changes nothing (perception and write are not the cause); oracles that bypass phrase-graph grounding (direct waypoint from the retrieved candidate, or from perfect raw history) eliminate the empty-set symptom almost entirely ($0.45 \to 0.05$ per-episode; per-query non-emptiness $0.11 \to 0.87$) yet do \emph{not} raise success ($0.36$ vs.\ $0.39$ base, CIs overlapping) --- whereas oracle retrieval raises success by $+0.21$. The binding constraint on this task is therefore the semantic \emph{quality} of the candidates the memory designates, not their availability. On goal-region the decomposition is different: there the retrieval stage itself is empty on $0.70$ of calls (genuine coverage-driven emptiness), and even oracle retrieval does not move end-to-end success, placing the constraint downstream in exploration and control. The taxonomy label ``empty candidate set'' thus conflated two mechanisms that the ladder now separates per task; what the original evidence correctly excluded --- and the ladder confirms --- is ranking, thresholding, and perception. This attribution is not an artefact of the required-tag threshold $\theta$: sweeping $\theta$ across the full range leaves the empty-candidate-set rate invariant (Appendix~\ref{p1:app:theta-robustness}), because the empties are absence of any stored candidate, not sub-threshold filtering. Nor is it an artefact of the weighting: the empty rate is $0.908$ pooled over calls, $0.909$ seed-weighted, and $0.891$ episode-weighted (mean over the 80 episodes of each episode's own empty share), so long failing episodes contributing more decision points do not inflate the figure. Accumulation itself is not one of the four stages: the protocol localized the failure to the R link, and this within-link forensics named the cause --- we read Q/R/M/C as coarse localisation with a designated drill-down, not as a complete causal ontology of memory failure. This sets up the multi-agent section: when consolidation becomes a shared process across $N$ agents, it acquires a measurable \emph{rate}.
 
 \section{Multi-agent: memory as a shared resource}
 \label{p1:sec:multi}
@@ -517,38 +563,38 @@ accessible to agent $i$; (ii) occupancy coupling $\mathcal{O}_{-i}$,
 the set of targets that other agents have already claimed by the time
 $i$ acts.
 
-\paragraph{Definition 2 (multi-agent stage estimability).}
-For each agent $i$,
+\paragraph{Definition 2 (multi-agent stage decomposition).}
+For each agent $i$, the per-agent starred events remain nested, so
+Proposition~1 applies verbatim:
 \[
-P(C^\star_i \mid q_i, \mathcal{M}_i, \mathcal{C}_K)
+P(C^\star_i)
 =
-P(Q^\star_i \mid q_i, \mathcal{M}_i)\;
-P(R^\star_i \mid Q^\star_i, q_i, \mathcal{M}_i, \mathcal{M}_{-i}^{(K)})
+P(Q^\star_i)\,
+P(R^\star_i \mid Q^\star_i)\,
+P(M^\star_i \mid R^\star_i)\,
+P(C^\star_i \mid M^\star_i),
 \]
-\[
-\quad \cdot\;
-P(M^\star_i \mid R^\star_i, q_i, \mathcal{M}_i, \mathcal{M}_{-i}^{(K)})\;
-P(C^\star_i \mid M^\star_i, q_i, \mathcal{O}_{-i}).
-\]
-Under a multi-agent stage-Markov assumption
-(Appendix~\ref{p1:app:estimators}), the four factors are estimable from
-per-agent trajectory logs and the empirical-frequency estimators are
-consistent.
+identically, with no assumption; and the estimators are consistent
+under the conditions of Proposition~2, with the cluster structure now
+including agents within a shared world realization. What is new in the
+multi-agent setting is the \emph{structural} reading: interpreting
+$P(M^\star_i|R^\star_i)$ as a property of agent $i$'s materialization
+mechanism requires that dependence on past peer decisions enter only
+through the logged couplings --- $\mathcal{M}_{-i}^{(K)}$ at the
+R$\to$M edge and $\mathcal{O}_{-i}$ at the M$\to$C edge.
 
-\paragraph{When Definition~2 may fail.}
-The single-agent stage-Markov property absorbs trajectory history into
-$(q, \mathcal{M})$. In the multi-agent setting, the analogous
-absorption requires that dependence on past peer decisions enters only
-through $\mathcal{M}_{-i}^{(K)}$ at the M stage and through
-$\mathcal{O}_{-i}$ at the C stage. This step is non-trivial:
-$\mathcal{O}_{-i}$ summarises target occupancy at decision time but
-loses information about \emph{how} peers arrived there. The
-factorization is therefore a projection onto observable per-agent
-traces under that summary. Two specific failure modes arise: (i)
-inter-agent communication side-channels not logged through
-$\mathcal{C}_K$; (ii) coordinated peer policies whose decision at the
-C stage depends on hidden peer state not summarised by
-$\mathcal{O}_{-i}$.
+\paragraph{When the structural reading of Definition~2 may fail.}
+The single-agent structural assumption absorbs trajectory history into
+the logged $(q, \mathcal{M})$. In the multi-agent setting, the
+analogous absorption is non-trivial: $\mathcal{O}_{-i}$ summarises
+target occupancy at decision time but loses information about
+\emph{how} peers arrived there. The mechanism-level reading is
+therefore a projection onto observable per-agent traces under that
+summary; the descriptive factorization above is unaffected. Two
+specific failure modes arise: (i) inter-agent communication
+side-channels not logged through $\mathcal{C}_K$; (ii) coordinated
+peer policies whose decision at the C stage depends on hidden peer
+state not summarised by $\mathcal{O}_{-i}$.
 
 \subsection{Bottleneck shift}
 \label{p1:sec:shift}
@@ -615,7 +661,7 @@ Figure~\ref{p1:fig:conditional-rates} shows per-architecture conditional Q/R/M/C
 
 
 \subsubsection{Bottleneck shift and interior efficiency optimum.}
-Across all peer runs, Spearman of $P(M^\star|R^\star)$ vs $K$ is $-0.53$ (95\% cluster-robust CI $[-0.59,-0.47]$) and of $P(C^\star|M^\star)$ vs $K$ is $+0.43$ (CI $[+0.37,+0.50]$); both are moderate effect sizes whose CIs exclude zero under resampling of the 81 configuration cells (Appendix~\ref{p1:app:effect-sizes}), matching the slope conditions of Empirical Claim~1. We report these rather than $p$-values, which are uninformative at this correlated sample size. Both slope signs are also robust to the two free thresholds of the logger --- candidacy $\theta$ and lock tolerance $\epsilon$ (Appendix~\ref{p1:app:theta-robustness}). The stronger empirical signature is at the per-configuration level: Pearson of $P(M^\star|R^\star)$ vs $P(C^\star|M^\star)$ \emph{within} a fixed $K$ is $-0.43, -0.54, -0.61, -0.19, -0.05, -0.04, -0.02, -0.02$ at $K{=}1,2,4,8,16,32,48,64$, peaking at $K{=}4$ and decaying to noise by $K{=}64$ (Figure~\ref{p1:fig:jensen-scatter}, Appendix~\ref{p1:app:phi-detail}). Configurations where M is high systematically have low C: the bottleneck migrates between the two stages within the same $(N,T,\text{layout},\text{hazard},\text{seed})$ cell as $K$ varies. On the efficiency metric, mean $t_{\mathrm{succ}}$ has a U-shape with interior minimum at $K{=}8$ (7.47 ticks vs 8.02 for the independent baseline); the minimum's location is robust but shallow --- its margin over the adjacent fast cadences ($K{=}1,4$) is not resolved under cell-level resampling (paired-bootstrap CIs in Appendices~\ref{p1:app:phi-detail} and \ref{p1:app:effect-sizes}). Both statements condition on success. Under a censoring-aware expected time that charges failed runs the full step limit, the fast flank reverses and the independent baseline is marginally best (cell-paired $\Delta(K{=}8-\text{independent}) = +0.32$, CI $[+0.05,+0.63]$; Appendix~\ref{p1:app:effect-sizes}): at fast cadence the completion decline reduces the success rate by more than the materialization gain increases it, so the interior optimum is a statement about conditional speed, not unconditional efficiency --- and closing the unconditional gap is what the reservation-and-rollback protocol (companion paper \emph{The Song, Not the Pin}) achieves (Appendix~\ref{p1:app:open-problems}). Scaling to $N{=}12$ \emph{sharpens} the signature: the peak Pearson rises to $-0.70$ and
+Across all peer runs, Spearman of $P(M^\star|R^\star)$ vs $K$ is $-0.53$ (95\% cluster-robust CI $[-0.59,-0.47]$) and of $P(C^\star|M^\star)$ vs $K$ is $+0.43$ (CI $[+0.37,+0.50]$); both are moderate effect sizes whose CIs exclude zero under resampling of the 81 configuration cells (Appendix~\ref{p1:app:effect-sizes}), matching the slope conditions of Empirical Claim~1. We report these rather than $p$-values, which are uninformative at this correlated sample size. Both slope signs are also robust to the two free thresholds of the logger --- candidacy $\theta$ and lock tolerance $\epsilon$ (Appendix~\ref{p1:app:theta-robustness}). The stronger empirical signature is at the per-configuration level: Pearson of $P(M^\star|R^\star)$ vs $P(C^\star|M^\star)$ \emph{within} a fixed $K$ is $-0.43, -0.54, -0.61, -0.19, -0.05, -0.04, -0.02, -0.02$ at $K{=}1,2,4,8,16,32,48,64$, peaking at $K{=}4$ and decaying to noise by $K{=}64$ (Figure~\ref{p1:fig:jensen-scatter}, Appendix~\ref{p1:app:phi-detail}). Configurations where M is high systematically have low C: the bottleneck migrates between the two stages within the same $(N,T,\text{layout},\text{hazard},\text{seed})$ cell as $K$ varies. On the efficiency metric, mean $t_{\mathrm{succ}}$ has a U-shape with interior minimum at $K{=}8$ (7.47 ticks vs 8.02 for the independent baseline); the minimum's location is robust but shallow --- its margin over the adjacent fast cadences ($K{=}1,4$) is not resolved under cell-level resampling (paired-bootstrap CIs in Appendices~\ref{p1:app:phi-detail} and \ref{p1:app:effect-sizes}). Both statements condition on success. Under a censoring-aware expected time that charges failed runs the full step limit, the fast flank reverses and the independent baseline is marginally best (cell-paired $\Delta(K{=}8-\text{independent}) = +0.32$, CI $[+0.05,+0.63]$; Appendix~\ref{p1:app:effect-sizes}): at fast cadence the completion decline reduces the success rate by more than the materialization gain increases it, so the interior optimum is a statement about conditional speed, not unconditional efficiency --- and closing the unconditional gap is what the reservation-and-rollback protocol (companion route-transfer study \citep{songlines2}) achieves (Appendix~\ref{p1:app:open-problems}). Scaling to $N{=}12$ \emph{sharpens} the signature: the peak Pearson rises to $-0.70$ and
 migrates outward to $K\!=\!8$, consistent with stronger occupancy
 coupling at higher $N$ delaying the cost-regime transition
 (Appendix~\ref{p1:app:babyai}, Figure~\ref{p1:fig:scale-n12}).
@@ -645,7 +691,7 @@ $0.26$--$0.50$, at every threshold and cadence. The two coupling
 channels also separate interventionally with arms already in the
 design: the independent arm removes peer evidence while leaving
 target contention in place, and the reservation-and-rollback protocol
-evaluated in the companion study \emph{The Song, Not the Pin} keeps peer evidence
+evaluated in the companion route-transfer study \citep{songlines2} keeps peer evidence
 while managing contention --- under it, unconditional success at fast
 cadence exceeds the $K{=}8$ baseline ($0.614$--$0.620$ vs.\
 $0.583$; paired improvement over the same cells without the mechanism
@@ -658,13 +704,13 @@ $K{=}2/8$), with the curves nearly coinciding across substrates. A
 full provenance-conditioned analysis (counterfactual attribution by
 masked replay, a closed-form staleness horizon with a pre-specified
 $6/6$-exact hold-out, and a decentralized repair protocol) appears in
-a companion paper \emph{The Song, Not the Pin}; here the stratification serves as the
+a companion route-transfer study \citep{songlines2}; here the stratification serves as the
 mechanistic reading of Empirical Claim~1.
 
 \paragraph{What we do not claim about $\Phi$.} The conditional product $\Phi = P(M^\star|R^\star)\!\cdot\!P(C^\star|M^\star)$ does \emph{not} have an interior peak in the tested range (mean-of-products estimator increases monotonically from $0.569$ at $K{=}4$ to $0.603$ at $K{=}64$, converging to the independent-agent boundary $0.605$). The slope-level statement of Empirical Claim~1 is on the conditional rates themselves, not on $\Phi$; we make no formal claim about the shape of $\Phi(K)$. Jensen-gap detail and POM--MOP comparison in Appendix~\ref{p1:app:phi-detail}.
 
 \paragraph{Learned-communication baseline: stage events are structurally degenerate even at competitive success.}
-A CommNet-style policy \citep{sukhbaatar2016commnet} trained with PPO~\citep{schulman2017proximal} on the same scenario ($N{=}3$, $T{=}2$) reaches $0.667$ held-out success ($n{=}100$ seeds) --- matching the symbolic peer architecture at $K{=}8$ ($0.65$). Despite this, the Q/R/M/C profile remains structurally degenerate: $Q^\star{=}1.00$ saturated by construction; $R^\star{=}0.997$, $M^\star{=}0.997$ collapsed together ($P(M^\star|R^\star){=}1.00$). This is the verified structural claim: a real-valued comm vector is never informatively empty (Q saturates) and lacks an explicit target-lock interface (R/M merge), regardless of training budget. The multi-agent counterpart of the single-agent learned-BC analysis (\S\ref{p1:sec:single-results}). Full architecture, PPO hyperparameters, and side-by-side REINFORCE vs PPO comparison in Appendix~\ref{p1:app:learned-baselines}.
+A CommNet-style policy \citep{sukhbaatar2016commnet} trained with PPO~\citep{schulman2017proximal} on the same scenario ($N{=}3$, $T{=}2$) reaches $0.667$ held-out success ($n{=}100$ seeds) --- matching the symbolic peer architecture at $K{=}8$ ($0.65$). Despite this, the Q/R/M/C profile remains structurally degenerate: $Q^\star{=}1.00$ saturated by construction; $R^\star{=}0.997$, $M^\star{=}0.997$ collapsed together ($P(M^\star|R^\star){=}1.00$). This is the verified structural claim, and it is a claim about the \emph{exposed interface}, not about the policy's internals: a real-valued comm vector is never informatively empty (Q saturates) and lacks an explicit target-lock interface, so R and M are not separately identifiable from the observable event mapping --- they collapse \emph{as logged events}. Whether functionally distinct retrieval- and commitment-like processes exist inside the learned policy is a separate question that this instrumentation cannot answer; probing hidden states for latent commitment times is the natural follow-up. The multi-agent counterpart of the single-agent learned-BC analysis (\S\ref{p1:sec:single-results}). Full architecture, PPO hyperparameters, and side-by-side REINFORCE vs PPO comparison in Appendix~\ref{p1:app:learned-baselines}.
 
 \paragraph{LLM model sweep: the logger localizes a real failure in language agents.}
 Table~\ref{p1:tab:llm-smoke} runs the same Q/R/M/C event contract on four LLM agents over two independent backends: qwen3:4b and llama3.1 via local Ollama ($8$ episodes/cell), and Qwen2.5-3B/7B-Instruct via HuggingFace transformers on SLURM GPU nodes ($25$ episodes/cell). The decomposition separates \emph{two different failure modes on two different stages}. \textbf{Budget $\to$ C:} below the task's step requirement, three models (qwen3:4b, llama3.1, Qwen2.5-7B) show the identical signature $Q^\star{=}R^\star{=}M^\star{=}1.00$, $C^\star{=}0.00$ --- a completion-limited failure that replicates across backends, model families, and hardware. \textbf{Capability $\to$ R:} Qwen2.5-3B fails at \emph{every} budget with $Q^\star{=}1.00$ but $R^\star{=}0.00$: it declares the target, emits well-formed actions (verified against the response cache, so not a parsing artifact), yet wanders without ever storing the evidence retrieval needs --- an exploration/grounding failure surfacing at the R stage, exactly the ``absence of evidence'' regime of \S\ref{p1:sec:refined-attribution}. An opaque scalar would report both models as $0.00$; the stage view shows they fail for different reasons at different stages. (Instrumentation note: a naive qwen3:4b/Ollama chat-template call initially returned empty \texttt{response} strings because the model spent the short structured-output budget in a separate thinking field; we use raw structured completion for qwen3:4b and a first-line parser, recorded for reproducibility.)
@@ -681,9 +727,9 @@ on identical layouts shows raw sharing \emph{lowering} success from
 $2/3$ to $1/3$ per episode --- the occupancy-racing C-collapse, now
 produced by agents whose queries, tag extraction, and commitments are
 LLM-made --- and target collisions appear in $7/8$ shared-memory
-episodes. Attaching the reservation-and-rollback repair protocol (the
-constructive answer to open problem~3 of
-Appendix~\ref{p1:app:open-problems}) recovers part of the loss
+episodes. Attaching the reservation-and-rollback repair protocol
+(Appendix~\ref{p1:app:open-problems}, evaluated independently in the
+companion route-transfer study \citep{songlines2}) recovers part of the loss
 ($0.333\to0.417$ at both cadences, rollback latency again
 ${\approx}K$). Two interface findings transfer to any
 LLM-over-symbolic-memory design: LLM query formers free-generate
@@ -691,7 +737,7 @@ retrieval tags outside the memory's vocabulary (requiring tolerant
 retrieval gates), and small local models are reliable at semantic
 commitment but not at coordinate arithmetic or systematic exploration
 (requiring layered execution). Full protocol and provenance analysis
-in the companion paper \emph{The Song, Not the Pin}.
+in the companion route-transfer study \citep{songlines2}.
 
 Scope: these are controlled studies on local models; scaling the same contract to full Voyager/MemGPT-style agents on richer tasks with multiple failure modes is developed next (external-framework validation) and in Appendix~\ref{p1:app:sota-coverage}.
 
@@ -1032,7 +1078,7 @@ interpret places in a common coordinate frame: cross-agent place
 identity is coordinate proximity, with semantic profiles as a
 tie-breaker inside a spatial radius. The place-correspondence problem
 --- whether two agents' records denote the same place at all --- is
-therefore bracketed here, not solved. A companion paper \emph{The Song, Not the Pin} removes
+therefore bracketed here, not solved. A companion route-transfer study \citep{songlines2} removes
 the assumption constructively (fingerprint-based place identity with
 consensus frame recovery up to translation and $90^\circ$ rotation)
 and shows the Q/R/M/C measurements, including the cadence slopes and
@@ -1062,7 +1108,7 @@ the setting of every study in this paper and the common case in
 multi-agent evaluation. It becomes a genuinely open problem for
 heterogeneous agents in open worlds, where deploying the protocol
 requires either an instrumented task or a correspondence mechanism
-with its own error model; the companion's meaning-based place identity
+with its own error model; the meaning-based place identity of the companion route-transfer study \citep{songlines2}
 is a candidate for grounding the \emph{evaluator's} correspondence,
 not only the agents', and we leave that construction open.
 
@@ -1126,20 +1172,20 @@ same source-of-truth benchmark artifacts.
 \section{Formal proofs}
 \label{p1:app:proofs}
 
-\subsection{Argument for Definition~1 (single-agent estimability)}
+\subsection{Argument for Propositions~1--2 (single-agent decomposition and consistency)}
 
-For each episode $i \in \{1,\dots,n\}$ let $Q_i^\star, R_i^\star, M_i^\star, C_i^\star$ denote the nested episode-level indicators. By construction these are measurable functions of the runtime trajectory log and satisfy $C_i^\star \Rightarrow M_i^\star \Rightarrow R_i^\star \Rightarrow Q_i^\star$. The empirical estimators
+For each episode $i \in \{1,\dots,n\}$ let $Q_i^\star, R_i^\star, M_i^\star, C_i^\star$ denote the nested episode-level indicators. By construction these are measurable functions of the runtime trajectory log and satisfy $C_i^\star \Rightarrow M_i^\star \Rightarrow R_i^\star \Rightarrow Q_i^\star$. \emph{Proposition~1} is then the chain rule for nested events: $P(C^\star) = P(Q^\star)P(R^\star|Q^\star)P(M^\star|R^\star)P(C^\star|M^\star)$ holds identically for any episode distribution, because each conditional is a ratio of probabilities of nested events. No Markov, independence, or structural property is used. For \emph{Proposition~2}, the empirical estimators
 \[
 \hat p_Q = \tfrac{1}{n}\sum_i Q_i^\star,\quad
 \hat p_{R|Q} = \tfrac{\sum_i R_i^\star}{\sum_i Q_i^\star},\quad
 \hat p_{M|R} = \tfrac{\sum_i M_i^\star}{\sum_i R_i^\star},\quad
 \hat p_{C|M} = \tfrac{\sum_i C_i^\star}{\sum_i M_i^\star}
 \]
-are consistent by the chain rule plus the conditional stage-Markov property, and the empirical product converges to semantic-path completion. \hfill$\square$
+are ratios of empirical means of bounded indicators; under positivity and i.i.d.\ sampling they are consistent by the law of large numbers and the continuous-mapping theorem, and under stationary cluster sampling the same holds with cluster-level resampling used for uncertainty (as done throughout the paper). The empirical product telescopes to $\tfrac{1}{n}\sum_i C_i^\star$, i.e.\ it \emph{equals} empirical semantic-path completion by construction --- which is why the consistency audit of \S\ref{p1:sec:validation} checks the logging pipeline (that the recorded events are in fact nested and correctly aggregated) rather than a substantive hypothesis. \hfill$\square$
 
-\subsection{Argument for Definition~2 (multi-agent estimability)}
+\subsection{Argument for Definition~2 (multi-agent decomposition)}
 
-Conditioning sets are enlarged by $\mathcal{M}_{-i}^{(K)}$ and $\mathcal{O}_{-i}$. Under the enlarged stage-Markov property, the proof of Definition~1 transfers verbatim and each enlarged conditional is a Bernoulli probability on a measurable event. The qualifications stated in \S\ref{p1:sec:multi-theory} (``When Definition~2 may fail'') describe two specific situations in which the enlarged stage-Markov property is violated. \hfill$\square$
+Per-agent starred events remain nested, so Proposition~1 applies verbatim per agent and Proposition~2 applies with the enlarged cluster structure (agents within a shared world realization are dependent; all resampling is at the design-cell level). The additional content of Definition~2 is the structural reading: that peer influence enters only through the logged couplings $\mathcal{M}_{-i}^{(K)}$ and $\mathcal{O}_{-i}$. The qualifications stated in \S\ref{p1:sec:multi-theory} (``When the structural reading of Definition~2 may fail'') describe two specific situations in which that reading is violated; the descriptive factorization is unaffected in both. \hfill$\square$
 
 \subsection{Argument for Empirical Claim~1 (slope-level statement)}
 
@@ -1238,7 +1284,7 @@ $\mathcal{C}_K$ acts on in Figure~\ref{p1:fig:causal}.
 \paragraph{Belief--desire--intention gloss and scope.}
 The high-level state audited above can be named in
 belief--desire--intention terms, which is the form used by the
-companion collective-memory study \emph{Utility-Certified Collective Semantic Memory}: \emph{belief} is the realized concept
+companion collective-memory study \citep{songlines3}: \emph{belief} is the realized concept
 lattice of \S\ref{p1:sec:event-semantics} (what is retrievable), \emph{desire}
 is the state-conditioned predicate that selects the query $q$ (e.g.\ a
 thirst variable switching the required tags to \method{water\_source}),
@@ -1274,9 +1320,9 @@ For the factorization, episode-level nested events from the first failure stage 
 \subsection{Multi-agent operational definitions}
 \label{p1:app:multi-agent-defs}
 
-For the multi-agent sweep, every metric is defined per agent and per tick, then aggregated. Let $\mathrm{Targets}_i(t)$ be the candidate set returned by the memory query of agent $i$ at tick $t$, $\mathrm{Locked}_i(t)$ be the agent's planner-internal locked target, and $\mathcal{W}$ the ground-truth target set.
+For the multi-agent sweep, every metric is defined per agent and per tick, then aggregated. Let $\mathrm{Targets}_i(t)$ be the candidate set returned by the memory query of agent $i$ at tick $t$, $\mathrm{Locked}_i(t)$ be the agent's planner-internal locked target, and $\mathcal{W}$ the ground-truth target set. The evaluation correspondence $\Gamma$ (\S\ref{p1:sec:event-semantics}) is realised as $\epsilon$-proximity to $\mathcal{W}$; $\mathcal{W}$ is available to the evaluator only, never to the agent.
 
-\textbf{Per-tick events.} $Q_i(t) = \mathbf{1}[\mathrm{Targets}_i(t) \ne \emptyset]$; $R_i(t) = \mathbf{1}[\exists w \in \mathcal{W}: \min_{c}\|c - w\| \le \epsilon]$ ($\epsilon = 0.6$); $M_i(t) = \mathbf{1}[\mathrm{Locked}_i(t) \ne \emptyset \land \min_w\|\mathrm{Locked}_i(t) - w\| \le \epsilon]$.
+\textbf{Per-tick events.} In this logger the planner emits a query at every tick by construction, so pure query emission is identically $1$ and carries no per-tick information; the logged event under the label $Q$ is therefore the first \emph{retrieval} sub-event --- candidate availability: $Q_i(t) = r^{\mathrm{set}}_i(t) = \mathbf{1}[\mathrm{Targets}_i(t) \ne \emptyset]$. The event under the label $R$ is evaluator-side correctness of the available set: $R_i(t) = \mathbf{1}[\mathrm{Targets}_i(t) \ne \emptyset \,\land\, \exists w \in \mathcal{W}: \min_{c \in \mathrm{Targets}_i(t)}\|c - w\| \le \epsilon]$ ($\epsilon = 0.6$). Finally $M_i(t) = \mathbf{1}[\mathrm{Locked}_i(t) \ne \emptyset \land \min_w\|\mathrm{Locked}_i(t) - w\| \le \epsilon]$. Consequently, the multi-agent conditional $P(R^\star|Q^\star)$ reads as \emph{correctness given availability}, and $P(M^\star|R^\star)$, $P(C^\star|M^\star)$ read as in the single-agent case. The relabeling shifts no probability mass and changes no reported number; it is recorded here so that the multi-agent $Q$ column is not mistaken for query formation, which is saturated by construction in this system.
 
 \textbf{Episode-level starred events.} $Q^\star_i = \bigvee_t Q_i(t)$; analogously for $R^\star, M^\star$; $C^\star_i = \mathbf{1}[\text{agent } i \text{ reached a target}]$.
 
@@ -1292,7 +1338,9 @@ Symbols are fixed throughout the paper.
 
 \newcommand{\notentry}[1]{\par\smallskip\noindent\textbf{#1}\ \ }
 
-\notentry{Stages.}$Q$, $R$, $M$, $C$ --- the four stages: \textbf{Q}uery formation, \textbf{R}etrieval, \textbf{M}aterialization, \textbf{C}ompletion after retrieval. They name both the stage and (in expressions like ``the M link'') the corresponding edge of the chain.
+\notentry{Stages.}$Q$, $R$, $M$, $C$ --- the four stages: \textbf{Q}uery formation, \textbf{R}etrieval, \textbf{M}aterialization, \textbf{C}ompletion after retrieval. They name both the stage and (in expressions like ``the M link'') the corresponding edge of the chain. Operational (lowercase) events: $q_t$ query emission, $r^{\mathrm{set}}_t$ candidate availability (agent-side predicate satisfaction), $r_t$ evaluator-side correctness, $m_t$ materialization.
+
+\notentry{Evaluation correspondence.}$\Gamma \subseteq \mathcal{M} \times \mathcal{W}$ --- the relation between memory records and world entities used by the \emph{evaluator} to score $R$ and $M$ events; realised in the instrumented environments as $\epsilon$-proximity to ground-truth targets ($\epsilon{=}0.6$). Part of the measurement contract, not of the agent.
 
 \notentry{Events.}$Q^\star, R^\star, M^\star, C^\star \in \{0, 1\}$ --- episode-level starred events recording whether each stage succeeded (Appendix~\ref{p1:app:estimators}). Nested by construction: $Q^\star{=}1 \Leftarrow R^\star{=}1 \Leftarrow M^\star{=}1 \Leftarrow C^\star{=}1$.
 
@@ -1465,6 +1513,23 @@ regime that produces the shift is the natural next integration.
 \subsection{Conditional-product detail and the Jensen gap}
 \label{p1:app:phi-detail}
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.72\linewidth]{figures/reviewer/fig3_qrmc_forensic}
+\caption{Forensic Q/R/M/C failure decomposition across configurations
+(share of episode failures, computed from the measured conditional
+stage rates of the $35{,}640$-run sweep: $R^\star$ failure
+$=1{-}P(R^\star|Q^\star)$, $M^\star$ failure
+$=P(R^\star|Q^\star)(1{-}P(M^\star|R^\star))$, $C^\star$ failure
+$=P(R^\star|Q^\star)P(M^\star|R^\star)(1{-}P(C^\star|M^\star))$,
+normalised over failures). Fast sharing (shared bus, $K{=}1$) never
+fails at retrieval but its completions collapse under occupancy
+contention ($C^\star$); independent and slow-cadence peers instead
+starve at materialization ($M^\star$). The decomposition localises the
+cadence bottleneck by failure type.}
+\label{p1:fig:forensic}
+\end{figure}
+
 \begin{table*}[h]
 \caption{Per-architecture conditional Q/R/M/C rates from the 35{,}640-run sweep (40 seeds). $P(R^\star|Q^\star)$ is saturated. POM = product-of-means; MOP = mean-of-products (the proper per-configuration expected product). The two summaries disagree systematically at small/intermediate $K$ because the within-cadence correlation between $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$ is strongly negative there (last column) --- the bottleneck-shift signature. \textbf{Bold}: MOP-best of the peer cadences. Mean $t_{\mathrm{succ}}$ (last column) is the practically relevant efficiency measure; its interior minimum at $K=8$ is the predicted-shape result, robust in location but shallow in margin (adjacent fast cadences not resolved; Appendix~\ref{p1:app:effect-sizes}).}
 \label{p1:tab:multi-agent-cond}
@@ -1543,7 +1608,43 @@ The $p<10^{-4}$ figures quoted in \S\ref{p1:sec:multi-agent-results} are reporte
 
 The two slopes of Empirical Claim~1 survive as genuine, moderate effects: the Spearman correlation of $P(M^\star|R^\star)$ with $K$ is $\rho=-0.53$ (95\% cluster CI $[-0.59,-0.47]$, moderate-to-strong) and of $P(C^\star|M^\star)$ with $K$ is $\rho=+0.43$ (95\% cluster CI $[+0.37,+0.50]$, moderate). Both intervals exclude zero under cell-level resampling, so the bottleneck shift is not an artefact of the correlated run count; it is a moderate monotone trend, and we describe it as such rather than as a near-deterministic law.
 
-The interior optimum on mean time-to-success is robust in \emph{location} but shallow in \emph{margin}. Paired block bootstrap on the cell-level $t_{\mathrm{succ}}$ differences gives $t_{\mathrm{succ}}(K{=}8)$ below $t_{\mathrm{succ}}(K{=}16)$ by $0.40$ ticks (CI $[0.08,0.83]$) and below $K{=}64$ by $1.67$ ticks (CI $[0.75,2.83]$), both resolved; but its advantage over $K{=}4$ ($0.49$, CI $[-0.47,1.51]$) and $K{=}1$ ($0.27$, CI $[-0.43,0.97]$) is within noise.\footnote{This paired bootstrap and the effect-size Spearman correlations above are computed on the same sweep execution as Table~\ref{p1:tab:multi-agent-cond} ($25{,}920$ peer runs); the $t_{\mathrm{succ}}$ statistic is defined only over successful episodes, so the paired cell-level difference ($1.67$ for $K{=}8$ vs.\ $K{=}64$) is on that subpopulation and matches the marginal-mean difference in Table~\ref{p1:tab:multi-agent-cond} ($9.19{-}7.47{=}1.72$) to within rounding. The effect sizes are identical on the independent \texttt{paper1\_clean} execution ($-0.531$/$+0.434$), confirming they are not run-specific.} A success-weighted efficiency metric ($t_{\mathrm{succ}}$ divided by success rate) has the same interior $\arg\min$ at $K{=}8$, so the location of the optimum is robust to the efficiency definition even though its margin over the adjacent fast cadences is not resolved at this sample size. We read this as support for the \emph{shape} predicted by the M$\leftrightarrow$C trade-off, not for a sharply tuned optimal cadence. Two further cell-paired contrasts complete the picture. On $t_{\mathrm{succ}}$, $K{=}8$ is also resolved against the independent baseline ($-0.40$, CI $[-0.59,-0.24]$). On a censoring-aware expected time $\mathbb{E}[T] = s\,t_{\mathrm{succ}} + (1-s)\,T_{\max}$ (failed runs charged the step limit $T_{\max}{=}120$), the fast flank reverses: $K{=}8$ beats $K{=}4$ ($-2.10$, CI $[-3.61,-0.72]$) but loses to $K{=}16$ ($+0.69$ $[+0.09,+1.43]$) and to independent ($+0.32$ $[+0.05,+0.63]$). The interior optimum is thus a property of conditional speed among successes; on unconditional efficiency the completion collapse of fast sharing dominates, which is the gap the reservation-and-rollback protocol (companion paper \emph{The Song, Not the Pin}) closes.
+The interior optimum on mean time-to-success is robust in \emph{location} but shallow in \emph{margin}. Paired block bootstrap on the cell-level $t_{\mathrm{succ}}$ differences gives $t_{\mathrm{succ}}(K{=}8)$ below $t_{\mathrm{succ}}(K{=}16)$ by $0.40$ ticks (CI $[0.08,0.83]$) and below $K{=}64$ by $1.67$ ticks (CI $[0.75,2.83]$), both resolved; but its advantage over $K{=}4$ ($0.49$, CI $[-0.47,1.51]$) and $K{=}1$ ($0.27$, CI $[-0.43,0.97]$) is within noise.\footnote{This paired bootstrap and the effect-size Spearman correlations above are computed on the same sweep execution as Table~\ref{p1:tab:multi-agent-cond} ($25{,}920$ peer runs); the $t_{\mathrm{succ}}$ statistic is defined only over successful episodes, so the paired cell-level difference ($1.67$ for $K{=}8$ vs.\ $K{=}64$) is on that subpopulation and matches the marginal-mean difference in Table~\ref{p1:tab:multi-agent-cond} ($9.19{-}7.47{=}1.72$) to within rounding. The effect sizes are identical on the independent \texttt{paper1\_clean} execution ($-0.531$/$+0.434$), confirming they are not run-specific.} A success-weighted efficiency metric ($t_{\mathrm{succ}}$ divided by success rate) has the same interior $\arg\min$ at $K{=}8$, so the location of the optimum is robust to the efficiency definition even though its margin over the adjacent fast cadences is not resolved at this sample size. We read this as support for the \emph{shape} predicted by the M$\leftrightarrow$C trade-off, not for a sharply tuned optimal cadence. Two further cell-paired contrasts complete the picture. On $t_{\mathrm{succ}}$, $K{=}8$ is also resolved against the independent baseline ($-0.40$, CI $[-0.59,-0.24]$). On a censoring-aware expected time $\mathbb{E}[T] = s\,t_{\mathrm{succ}} + (1-s)\,T_{\max}$ (failed runs charged the step limit $T_{\max}{=}120$), the fast flank reverses: $K{=}8$ beats $K{=}4$ ($-2.10$, CI $[-3.61,-0.72]$) but loses to $K{=}16$ ($+0.69$ $[+0.09,+1.43]$) and to independent ($+0.32$ $[+0.05,+0.63]$). The interior optimum is thus a property of conditional speed among successes; on unconditional efficiency the completion collapse of fast sharing dominates, which is the gap the reservation-and-rollback protocol (companion route-transfer study \citep{songlines2}) closes.
+
+\subsection{Hierarchical mixed-effects robustness of the slopes}
+\label{p1:app:hierarchical}
+
+The cluster bootstrap above treats the 81 design cells as the unit of
+inference. A stricter reviewer concern is that the effective sample is
+smaller still --- runs share seeds, layouts, and world realizations
+--- and that a hierarchical model should absorb these components
+explicitly. We therefore refit the two slopes on the 40-seed
+execution ($16{,}200$ peer runs, $K \in \{1,2,4,8,16\}$; artifact
+\texttt{tmp/hierarchical\_stats/}) with two complementary models:
+(a) a linear mixed model on per-run conditional rates with crossed
+random intercepts for layout, seed, and design cell; and (b) a
+cluster-robust logistic GEE on the underlying Bernoulli events
+(exchangeable working correlation for the C-model; for the M-model
+the exchangeable estimate degenerates on saturated cells and we fall
+back to independence working correlation with sandwich standard
+errors, which remain cluster-robust). All four estimates agree in
+sign with the raw statistics and exclude zero: MixedLM
+$\beta_M = -0.086$ per doubling of $K$ (95\% CI $[-0.088, -0.084]$),
+$\beta_C = +0.079$ $[+0.076, +0.081]$; GEE (logit scale)
+$\beta_M = -0.82$ $[-0.97, -0.66]$, $\beta_C = +0.39$
+$[+0.34, +0.44]$; raw Spearman on this execution
+$-0.61$/$+0.42$ with cell-bootstrap CIs $[-0.67,-0.55]$ /
+$[+0.36,+0.49]$. The estimated seed variance component is
+near-zero ($2.5\times10^{-4}$, vs.\ $0.025$ for layout), which is
+direct evidence that seed-level pseudoreplication does not carry the
+effect; the MixedLM boundary warning this induces is recorded, and
+the GEE estimates, which do not depend on that component, agree.
+Stability under deletion: leave-one-layout-out and
+leave-one-seed-block-out (blocks of 10) refits move both coefficients
+by less than $4\%$ of their magnitude and never change sign. The
+slope signs are likewise invariant to the lock tolerance
+($\epsilon \in \{0.3, 0.6, 1.0, 1.5\}$; artifact
+\texttt{tmp/eps\_sensitivity/}), completing the threshold-robustness
+picture begun with $\theta$ in Appendix~\ref{p1:app:theta-robustness}.
 
 \subsection{Construct validity: task success $Y$ vs.\ semantic-path completion $C^\star$}
 \label{p1:app:y-vs-c}
@@ -1584,7 +1685,7 @@ $1.00$ (accept none) & 0.75 & --- \\
 \end{tabular}
 \end{table}
 
-The reading is decisive (Table~\ref{p1:tab:theta-robustness}). At $\theta{=}1.0$ nothing passes and the empty rate rises; at $\theta{=}0.0$ the required-tag gate accepts every node ($\mathrm{conf}\ge 0$ always holds), yet the empty rate falls only to $0.50$, its floor---meaning that at those decision points there is \emph{no candidate node of any confidence} to retrieve. Across the entire sane range $\theta\in[0.05,0.95]$ the rate is flat at $0.533$: loosening or tightening the threshold does not recover a candidate, because the required semantic place was never stored. This is exactly the ``absence of evidence, not contradiction'' regime named in \S\ref{p1:sec:event-semantics}, now shown to be threshold-invariant, so the memory-accumulation attribution is not an artefact of $\theta$. (Absolute rates here are on a small hazard-recovery / goal-region sweep and are not the headline $91\%$ of \S\ref{p1:sec:refined-attribution}, which is on the full benchmark; the point is the $\theta$-invariance, not the level.)
+The reading is decisive (Table~\ref{p1:tab:theta-robustness}). At $\theta{=}1.0$ nothing passes and the empty rate rises; at $\theta{=}0.0$ the required-tag gate accepts every node ($\mathrm{conf}\ge 0$ always holds), yet the empty rate falls only to $0.50$, its floor---meaning that at those decision points no candidate of any confidence yields a groundable plan (the oracle ladder of Appendix~\ref{p1:app:oracle-ladder} subsequently splits this floor into never-stored places and stored-but-ungroundable candidates). Across the entire sane range $\theta\in[0.05,0.95]$ the rate is flat at $0.533$: loosening or tightening the threshold does not recover a candidate, because the required semantic place was never stored. This is exactly the ``absence of evidence, not contradiction'' regime named in \S\ref{p1:sec:event-semantics}, now shown to be threshold-invariant, so the candidate-availability attribution is not an artefact of $\theta$. (Absolute rates here are on a small hazard-recovery / goal-region sweep and are not the headline $91\%$ of \S\ref{p1:sec:refined-attribution}, which is on the full benchmark; the point is the $\theta$-invariance, not the level.)
 
 \paragraph{The match/lock tolerance $\epsilon$.} The other free constant is
 $\epsilon$, the tolerance with which a materialized lock counts as ``within a
@@ -1598,13 +1699,83 @@ absolute $P(M^\star|R^\star)$ (more locks count as on-target) but does not flip
 either slope. So the bottleneck shift is robust to both free thresholds of the
 logger: $\theta$ (candidacy/gating, above) and $\epsilon$ (match/lock).
 
+\subsection{Stage-wise oracle ladder: locating the cause of empty candidate sets}
+\label{p1:app:oracle-ladder}
+
+The drill-down of \S\ref{p1:sec:refined-attribution} is closed by a
+seven-regime oracle ladder run on both hard task families ($10$ seeds
+$\times$ $8$ episodes per regime; artifact
+\texttt{tmp/oracle\_stage\_ladder\_full/}). Three regimes were added
+to the original R/M/C oracles: \emph{oracle write} (ground-truth
+semantic tags injected at every observation; tokenization,
+consolidation, and retrieval fully native), \emph{oracle grounding}
+(native retrieval and consolidation; when phrase-graph pathfinding to
+a retrieved candidate fails, a direct waypoint to the candidate's
+pose is issued instead), and \emph{oracle consolidation}
+(perfect-history retrieval: a candidate exists if the place was ever
+observed with satisfying raw tags). New instrumentation separates
+per-query candidate non-emptiness as logged (which includes plan
+grounding) from internal retrieval-stage non-emptiness.
+
+\begin{table}[h]
+\centering
+\caption{Oracle ladder ($10$ seeds $\times 8$ episodes; per-query and
+per-episode rates). ``Retr.\ nonempty'' is the internal retrieval
+stage; ``query nonempty'' is the logged event, which additionally
+requires successful phrase-graph grounding; ``grounding fail'' is the
+share of all queries where a retrieved candidate existed but no graph
+path to it was found.}
+\label{p1:tab:oracle-ladder}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llccccc}
+\toprule
+Task & Regime & Success & Empty (tax.) & Query non-$\emptyset$ & Retr.\ non-$\emptyset$ & Grounding fail \\
+\midrule
+hazard & base                & 0.388 & 0.450 & 0.107 & 0.903 & 0.796 \\
+hazard & oracle write        & 0.375 & 0.475 & 0.075 & 0.906 & 0.831 \\
+hazard & oracle consolidation& 0.325 & 0.050 & 0.877 & 0.899 & 0.022 \\
+hazard & oracle grounding    & 0.362 & 0.050 & 0.873 & 0.892 & 0.019 \\
+hazard & oracle retrieval    & \textbf{0.600} & 0.400 & 0.001 & 0.014 & 0.014 \\
+hazard & oracle materialization & 0.588 & 0.325 & 0.082 & 0.092 & 0.010 \\
+hazard & oracle controller   & 0.425 & 0.450 & 0.063 & 0.907 & 0.844 \\
+\midrule
+goal   & base                & 0.075 & 0.887 & 0.017 & 0.300 & 0.283 \\
+goal   & oracle write        & 0.075 & 0.912 & 0.016 & 0.300 & 0.284 \\
+goal   & oracle consolidation& 0.062 & 0.662 & 0.253 & 0.313 & 0.060 \\
+goal   & oracle grounding    & 0.062 & 0.662 & 0.276 & 0.311 & 0.035 \\
+goal   & oracle retrieval    & 0.075 & 0.925 & 0.000 & 0.000 & 0.000 \\
+goal   & oracle materialization & 0.075 & 0.887 & 0.016 & 0.016 & 0.000 \\
+goal   & oracle controller   & 0.075 & 0.887 & 0.013 & 0.300 & 0.287 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Four readings, stated without embellishment. (i) On hazard recovery
+the logged $89\%$ emptiness decomposes as: retrieval internally
+non-empty on $0.90$ of calls, grounding failure on $0.80$ --- the
+symptom is M-side, recorded under an R-side label. (ii) Oracle write
+changes nothing: perception and the write path are not the cause.
+(iii) Oracle grounding and oracle consolidation both remove the
+symptom (empty rate $0.45 \to 0.05$) and agree with each other ---
+consolidation loses no material information --- yet neither raises
+success; the causal lever is what oracle retrieval supplies, the
+semantic quality of the designated target ($+0.21$ success). (iv) On
+goal-region the retrieval stage is genuinely empty on $0.70$ of calls
+(coverage), and no memory-side oracle moves success --- the constraint
+sits downstream, in exploration and control, exactly as the main-text
+oracle analysis concluded. The ladder thus corrects the earlier
+reading of the taxonomy (grounding failures were counted as retrieval
+emptiness) while leaving the paper's oracle-level attributions
+unchanged.
+
 \subsection{Robustness to Assumption~1 violations}
 \label{p1:app:assumption1-stress}
 
-Definition~1 rests on the conditional stage-Markov property (Assumption~1). The two practically relevant violations---adaptive query rewrites not surfaced to the logger, and hidden between-stage memory updates---are exactly cases where an \emph{unlogged latent} couples non-adjacent stages. We quantify the resulting estimator bias with a controlled simulation ($4\!\times\!10^5$ episodes per setting; \method{experiments/big\_experiment/assumption1\_stress\_test.py}). Episodes are generated with known mechanism rates $P(M^\star|R^\star){=}0.70$, $P(C^\star|M^\star){=}0.65$, and a hidden binary latent $U$ that shifts \emph{both} the M-rate and the C-rate by $\pm\delta$; the naive estimator conditions only on the previous starred stage, not on $U$.
+The descriptive factorization (Proposition~1) holds identically; what an unlogged latent threatens is the \emph{mechanism-level reading} of the conditional rates (Assumption~1). The two practically relevant violations---adaptive query rewrites not surfaced to the logger, and hidden between-stage memory updates---are exactly cases where an unlogged latent couples non-adjacent stages, so that a conditional rate no longer reflects a stage-local mechanism. We quantify the resulting interpretive bias with a controlled simulation ($4\!\times\!10^5$ episodes per setting; \method{experiments/big\_experiment/assumption1\_stress\_test.py}). Episodes are generated with known mechanism rates $P(M^\star|R^\star){=}0.70$, $P(C^\star|M^\star){=}0.65$, and a hidden binary latent $U$ that shifts \emph{both} the M-rate and the C-rate by $\pm\delta$; the naive estimator conditions only on the previous starred stage, not on $U$.
 
 \begin{table}[h]
-\caption{Bias of the naive conditional estimators under an unlogged latent of strength $\delta$ that couples the M and C stages (violating Assumption~1). $P(M^\star|R^\star)$ stays unbiased; $P(C^\star|M^\star)$ is biased upward, materially only under strong coupling.}
+\caption{Bias of the mechanism-level reading of the conditional rates under an unlogged latent of strength $\delta$ that couples the M and C stages (violating the structural Assumption~1; the descriptive factorization of Proposition~1 is unaffected). $P(M^\star|R^\star)$ stays unbiased; $P(C^\star|M^\star)$ is biased upward, materially only under strong coupling.}
 \label{p1:tab:assumption1-stress}
 \centering
 \small
@@ -1744,7 +1915,7 @@ one.
 Four concrete questions follow directly from the measurements of \S\ref{p1:sec:refined-attribution} and \S\ref{p1:sec:multi-agent-results}.
 \textbf{(1) Adaptive cadence.} Empirical Claim~1 assumes a fixed $K$; the bottleneck-shift signature suggests an online controller $K_t$ that broadcasts when the (estimated) M-side gain exceeds the C-side occupancy cost.
 \textbf{(2) Selective consolidation.} Snapshot exchange merges everything; merge rules that prioritize evidence about under-represented semantic tags attack the candidate-generation starvation of \S\ref{p1:sec:refined-attribution} directly.
-\textbf{(3) Trust-weighted merging under occupancy.} The central aggregator already performs a trust-weighted merge but pays the C-collapse cost; decentralized trust rules that account for peer \emph{intent} (not only peer evidence) could decouple freshness from target racing. \emph{Since submission of the first draft, this problem has been addressed constructively}: a decentralized protocol in which an agent's target lock piggybacks a lightweight \emph{reservation} on its next scheduled broadcast (no coordinator, no extra channel) and locks dominated by an earlier reservation are retracted by an anti-$M^\star$ rollback with exponential backoff. On the scarcity cells this recovers the fast-cadence completion loss on \emph{unconditional} metrics --- success rate rises at every $K\in\{1,2,4\}$ with disjoint bootstrap CIs, and fast sharing with the protocol exceeds the $K{=}8$ optimum baseline ($0.614$--$0.620$ vs.\ $0.583$) --- with rollback latency bounded by ${\approx}K$ ticks. Details in a companion paper \emph{The Song, Not the Pin}; the open problem stands revised toward its harder variants (adaptive reservation scope, heterogeneous trust).
+\textbf{(3) Trust-weighted merging under occupancy.} The central aggregator already performs a trust-weighted merge but pays the C-collapse cost; decentralized trust rules that account for peer \emph{intent} (not only peer evidence) could decouple freshness from target racing. \emph{This problem is addressed constructively}: a decentralized protocol in which an agent's target lock piggybacks a lightweight \emph{reservation} on its next scheduled broadcast (no coordinator, no extra channel) and locks dominated by an earlier reservation are retracted by an anti-$M^\star$ rollback with exponential backoff. On the scarcity cells this recovers the fast-cadence completion loss on \emph{unconditional} metrics --- success rate rises at every $K\in\{1,2,4\}$ with disjoint bootstrap CIs, and fast sharing with the protocol exceeds the $K{=}8$ optimum baseline ($0.614$--$0.620$ vs.\ $0.583$) --- with rollback latency bounded by ${\approx}K$ ticks. Details in a companion route-transfer study \citep{songlines2}; the open problem stands revised toward its harder variants (adaptive reservation scope, heterogeneous trust).
 \textbf{(4) Substrate generality.} The decomposition transfers across MiniGrid, BabyAI, the custom grid, and a standard-MiniGrid multi-agent wrapper with identical operational definitions and verified slope signs of Empirical Claim~1 ($\S$~\ref{p1:sec:limitations}), and the continuous-state VMAS validation now confirms both registered slope directions across three scarcity cells with cluster-robust confidence intervals (Appendix~\ref{p1:app:vmas}). The decomposition is also coordinate-independent: under \emph{semantic}, frame-free place matching (agents in private frames, places matched by meaning) the stage events remain well-defined and expose the coordinate assumption's fail-open materialization (Appendix~\ref{p1:app:semantic-matching}). The remaining portability questions concern fully continuous memory representations (the bridge still discretises the store) and visually rich three-dimensional substrates such as Habitat and ProcTHOR~\citep{savva2019habitat,deitke2022procthor}.
 
 \subsection{Extended related work}
@@ -1780,7 +1951,7 @@ Symbolic per-agent + explicit interface & Q/R/M/C single-agent (\S\ref{p1:sec:si
 \end{table}
 
 \begin{table*}[h]
-\caption{SOTA coverage for Paper 1. ``Instrumented'' means the run emits the operational $Q^\star,R^\star,M^\star,C^\star$ events used by Definition~1.}
+\caption{SOTA coverage for Paper 1. ``Instrumented'' means the run emits the operational $Q^\star,R^\star,M^\star,C^\star$ events used by Proposition~1.}
 \label{p1:tab:sota-coverage}
 \centering
 \small
@@ -1830,6 +2001,8 @@ $K$ & Baseline & Oracle R & Oracle M & Oracle C \\
 
 \subsection{Oracle C: definition and reading}
 \label{p1:app:oracle-c-def}
+
+\paragraph{Replacement boundaries.} Each oracle substitutes exactly one module at its registered interface and leaves the rest of the pipeline native; each reads hidden world state (the ground-truth target set $\mathcal{W}$), which no non-oracle component may access. \emph{Oracle R}: the memory query is answered with ground-truth target positions; query emission, materialization, and control run natively, and the intervention is applied at every retrieval call from the start of the episode. \emph{Oracle M}: retrieval runs natively, but the planner locks onto the nearest real target (ignoring occupancy at lock time); control runs natively. \emph{Oracle C}: defined below. In all three cases the downstream stage receives data in the same format as in the baseline; timestamps are those of the intercepted call. Because a replaced module changes the downstream state distribution (\S\ref{p1:sec:oracle}), the reported contrasts are total module-replacement effects, not stage-isolated mediation effects.
 
 Oracle C is the completion-stage analogue of oracle R and oracle M, added to close the R/M/C triple symmetrically. The real Q/R/M pipeline runs unchanged (real memory query, real materialization), and once an agent has locked a target that is a genuine \texttt{water\_source}, the oracle guarantees arrival by placing the agent on that cell; scarcity is preserved because a cell already claimed or occupied is not available, so oracle C cannot make more than $T$ agents succeed. The runner is \method{experiments/big\_experiment/exp\_oracle\_interventions.py} (mode \method{oracle\_C}).
 
@@ -1906,7 +2079,7 @@ achieves only moderate precision at fixed recall. Instantaneous state
 features are insufficient to predict candidate eligibility downstream. This is
 the negative-but-informative finding referenced in \S\ref{p1:sec:refined-attribution}:
 the framework's ``retrieval-limited'' attribution refines to
-``memory-accumulation-limited'' rather than ``ranking-limited''.
+``candidate-availability-limited'' rather than ``ranking-limited''.
 
 \subsection{CommNet-style learned communication baseline (\S\ref{p1:sec:multi-agent-results})}
 
@@ -2073,6 +2246,14 @@ The experiments use MiniGrid~\citep{MinigridMiniworld23} and BabyAI~\citep{cheva
 
 
 \begin{thebibliography}{99}
+\bibitem[Anonymous(2026b)]{songlines2}
+Anonymous.
+\newblock The song, not the pin: Provenance-conditioned route transfer across private frames.
+\newblock Under review, 2026.
+\bibitem[Anonymous(2026c)]{songlines3}
+Anonymous.
+\newblock Utility-gated collective semantic memory: Formation, admission, and long-horizon coordination.
+\newblock Under review, 2026.
 \bibitem[Andrychowicz et~al.(2017)]{andrychowicz2017hindsight}
 M.~Andrychowicz, F.~Wolski, A.~Ray, J.~Schneider, R.~Fong, P.~Welinder, B.~McGrew, J.~Tobin, P.~Abbeel, and W.~Zaremba.
 \newblock Hindsight experience replay.

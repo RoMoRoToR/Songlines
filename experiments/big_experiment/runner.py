@@ -38,6 +38,7 @@ class RunConfig:
     hazard_density: float
     seed: int
     step_limit: int = 120
+    merge_threshold: float = 0.30  # CSM trust/inclusion threshold (csm arch only)
 
     def as_tag(self) -> str:
         k = f"k{self.broadcast_every_k}" if self.architecture == "peer" else "-"
@@ -67,6 +68,7 @@ def run_one_config(cfg: RunConfig) -> Dict[str, Any]:
     memory = build_memory(
         cfg.architecture, agent_ids, env_id,
         broadcast_every_k=cfg.broadcast_every_k if cfg.architecture in ("peer", "csm") else 4,
+        merge_threshold=cfg.merge_threshold,
     )
 
     planners = {aid: PlannerState(aid) for aid in agent_ids}

@@ -19,7 +19,7 @@
 
 \newcommand{\method}[1]{\texttt{#1}}
 
-\title{Utility-Certified Songline Memory:\\Consolidation as a
+\title{Utility-Gated Songline Memory:\\Consolidation as a
 Two-Axis Decision, Learned and Evolved}
 
 \begin{document}
@@ -776,6 +776,19 @@ threshold relax (recovering coverage) by catching the lone wrong
 anchors a consensus count cannot. Calibration was frozen on dev
 families ($5001{+}$); test seeds ($100{+}$) were never touched.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\linewidth]{figures/reviewer/fig1_noise_robustness}
+\caption{Fail-closed safety under sensor noise (measured N1 sweep, $24$
+seeds/cell, diagonal FN$=$FP). Removing the anchor-consensus mechanism
+(min-anchors $=1$) lets the fail-open rate climb above the $5\%$ bar as
+tag noise grows; anchor consensus $\ge 2$ and the full consensus
+$\ge 3$ + safe-prefix arm hold fail-open at $0.000$ across the whole
+sweep --- degrading into refusals (a coverage cost) rather than wrong
+commitments.}
+\label{fig:noise}
+\end{figure}
+
 \paragraph{External substrate (VMAS physics).}
 To answer the strongest reviewer objection --- that grid and
 synthetic-continuous worlds are the authors' own --- we transplanted
@@ -799,6 +812,20 @@ constellation geometry) was recalibrated; every mechanism flag is
 unchanged from the grid configuration. The effect and its
 fail-closed safety therefore survive a third, externally-authored
 substrate.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/reviewer/fig4_cross_substrate}
+\caption{The integrated runtime keeps its advantage across substrates
+(measured summaries): MiniGrid team cost and VMAS physics team steps
+(lower is better), and ALFWorld task grounding (single measured point;
+no convergence curve was measured). The fourth panel is the measured
+MAPPO baseline training curve, which plateaus at success
+$\approx0.65$ --- the symbolic-peer $K{=}8$ level --- confirming the
+multi-agent-RL baseline is trained to convergence, so the runtime's
+advantage is not an artefact of an undertrained baseline.}
+\label{fig:crosssub}
+\end{figure}
 
 \section{Related work}
 \label{sec:related}

@@ -75,11 +75,11 @@ def fig1_hero_overview():
     stages = [
         ("Q", "Query formation",
          "Build a semantic query\nfrom intent and state",
-         r"$Q^\star$: query has $\geq 1$ candidate",
+         r"$Q^\star$: semantic intent emitted",
          STAGE_COLORS["Q"]),
         ("R", "Retrieval",
          "Memory returns a candidate\nsatisfying the predicate",
-         r"$R^\star$: candidate satisfies predicate",
+         r"$R^\star$: correct candidate retrieved",
          STAGE_COLORS["R"]),
         ("M", "Materialization",
          "Planner locks onto a concrete\nreachable target cell",

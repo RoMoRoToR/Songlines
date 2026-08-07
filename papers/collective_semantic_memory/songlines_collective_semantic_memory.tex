@@ -36,7 +36,7 @@
 \begin{abstract}
 \textbf{Problem.} Collective memory is often treated as monotone: more shared information should help. In cooperative navigation with scarce semantic targets, this intuition fails. Fast global sharing improves target materialization but causes agents to race for the same targets; slow sharing avoids contention but leaves agents with stale or incomplete memories.
 \textbf{Approach.} We instantiate four memory topologies over the same symbolic-semantic substrate: independent private memories, a shared event bus, a central consensus aggregator, and peer-to-peer broadcast with cadence $K$. We then introduce a minimal \emph{collective semantic memory} (CSM): peer broadcast plus explicit \emph{merge}, \emph{trust}, and \emph{staleness} rules. Q/R/M/C stage rates are used only as measurement instrumentation, not as the contribution of this paper.
-\textbf{Findings.} On a 35{,}640-run multi-agent sweep, the fixed-cadence peer family exhibits a bottleneck shift: fast broadcast saturates materialization but collapses completion, while slow broadcast has the opposite profile. Mean time-to-success has an interior optimum at $K{=}8$. On a 3{,}240-run scarcity benchmark, the minimal CSM strictly dominates five fixed-cadence peer baselines on success rate: CSM reaches $0.617$ with 95\% CI $[0.610,0.624]$, above every peer-K upper CI.
+\textbf{Findings.} On a 35{,}640-run multi-agent sweep, the fixed-cadence peer family exhibits a bottleneck shift: fast broadcast saturates materialization but collapses completion, while slow broadcast has the opposite profile. Among successful episodes, mean time-to-success has a shallow interior minimum at $K{=}8$; under a censoring-aware expected cost the advantage disappears (companion Q/R/M/C study). On a 3{,}240-run scarcity benchmark, the minimal CSM strictly dominates five fixed-cadence peer baselines on success rate: CSM reaches $0.617$ with 95\% CI $[0.610,0.624]$, above every peer-K upper CI.
 \textbf{Scope.} Experiments are grid-world substrates. The claim is not that this is a complete theory of collective memory; it is a reproducible architecture split showing that merge/trust/staleness are the right explicit control surfaces after cadence alone is exhausted.
 \end{abstract}
 
@@ -137,8 +137,25 @@ summarizes the result.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/fig_conditional_rates.pdf}
-  \caption{Conditional rates and mean time-to-success from the 35{,}640-run sweep. Fast sharing improves target materialization but harms completion through contention; slow sharing has the opposite profile. Mean time-to-success has an interior optimum at $K{=}8$.}
+  \caption{Conditional rates and mean time-to-success from the 35{,}640-run sweep. Fast sharing improves target materialization but harms completion through contention; slow sharing has the opposite profile. Among successful episodes, mean time-to-success has a shallow interior minimum at $K{=}8$; under a censoring-aware expected cost the advantage disappears (companion Q/R/M/C study).}
   \label{fig:conditional-rates}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/reviewer/fig2_bottleneck_phase}
+\caption{(a) The materialization--completion bottleneck shift and the
+interior optimum of conditional (success-only) time-to-success at $K^\star{=}8$, measured on the
+same $35{,}640$-run peer-broadcast sweep (Fig.~\ref{fig:conditional-rates}):
+$P(M^\star|R^\star)$ falls and $P(C^\star|M^\star)$ rises with $K$,
+while mean $t_{\mathrm{succ}}$ has an interior minimum. (b) The measured
+CSM sweep over cadence $K$ and trust threshold $\tau$: mean
+$t_{\mathrm{succ}}$ is essentially $\tau$-invariant and only weakly
+$K$-dependent, and mission success is flat in $(K,\tau)$ (range
+$0.015$). The trust threshold is \emph{not} the active lever in this
+regime --- the interior operating point is the cadence effect of panel
+(a), not a two-dimensional optimum island.}
+\label{fig:ktrust}
 \end{figure}
 
 Fast peer broadcast and centralized sharing live in the

@@ -32,6 +32,9 @@ TASKS = {
 
 REGIMES = [
     ("base", {}),
+    ("oracle_write", {"oracle_write": True}),
+    ("oracle_consolidation", {"oracle_consolidation": True}),
+    ("oracle_grounding", {"oracle_grounding": True}),
     ("oracle_retrieval", {"oracle_retrieval": True}),
     ("oracle_materialization", {"oracle_materialization": True}),
     ("oracle_controller", {"oracle_controller": True}),
@@ -39,6 +42,9 @@ REGIMES = [
 
 PLOT_REGIME_LABELS = {
     "base": "Base",
+    "oracle_write": "Oracle write",
+    "oracle_consolidation": "Oracle consolidation",
+    "oracle_grounding": "Oracle grounding",
     "oracle_retrieval": "Oracle retrieval",
     "oracle_materialization": "Oracle materialization",
     "oracle_controller": "Oracle controller",
@@ -46,6 +52,9 @@ PLOT_REGIME_LABELS = {
 
 REGIME_COLORS = {
     "base": "#7a7a7a",
+    "oracle_write": "#38a169",
+    "oracle_consolidation": "#7d5ba6",
+    "oracle_grounding": "#1f9e9e",
     "oracle_retrieval": "#2f6db3",
     "oracle_materialization": "#e88d1c",
     "oracle_controller": "#b23a48",
@@ -144,6 +153,9 @@ def build_run_args(args, task_name, task_cfg, regime_name, regime_flags, seed):
         demo_episode=1,
         demo_frame_stride=1,
         demo_fps=3,
+        oracle_write=bool(regime_flags.get("oracle_write", False)),
+        oracle_consolidation=bool(regime_flags.get("oracle_consolidation", False)),
+        oracle_grounding=bool(regime_flags.get("oracle_grounding", False)),
         oracle_retrieval=bool(regime_flags.get("oracle_retrieval", False)),
         oracle_materialization=bool(regime_flags.get("oracle_materialization", False)),
         oracle_controller=bool(regime_flags.get("oracle_controller", False)),
@@ -162,6 +174,13 @@ def aggregate_seed_rows(seed_rows, num_bootstrap, bootstrap_seed):
         semantic_path_vals = [float(item["semantic_path_completion"]) for item in rows]
         retrieval_vals = [float(item["query_satisfaction_rate"]) for item in rows]
         materialized_vals = [float(item["semantic_target_materialization_rate"]) for item in rows]
+        empty_vals = [float(item["retrieval_failure_empty_rate"]) for item in rows]
+        nonempty_vals = [float(item["query_nonempty_rate"]) for item in rows]
+        retrieval_stage_nonempty_vals = [float(item["retrieval_stage_nonempty_rate"]) for item in rows]
+        grounding_failure_vals = [float(item["plan_grounding_failure_rate"]) for item in rows]
+        oracle_write_activation_vals = [float(item["oracle_write_activation_rate"]) for item in rows]
+        oracle_consolidation_activation_vals = [float(item["oracle_consolidation_activation_rate"]) for item in rows]
+        oracle_grounding_activation_vals = [float(item["oracle_grounding_activation_rate"]) for item in rows]
         oracle_retrieval_activation_vals = [float(item["oracle_retrieval_activation_rate"]) for item in rows]
         oracle_materialization_activation_vals = [float(item["oracle_materialization_activation_rate"]) for item in rows]
         oracle_controller_activation_vals = [float(item["oracle_controller_activation_rate"]) for item in rows]
@@ -183,6 +202,13 @@ def aggregate_seed_rows(seed_rows, num_bootstrap, bootstrap_seed):
                 "semantic_path_ci_high": path_ci_high,
                 "query_satisfaction_rate": safe_mean(retrieval_vals),
                 "semantic_target_materialization_rate": safe_mean(materialized_vals),
+                "retrieval_failure_empty_rate": safe_mean(empty_vals),
+                "query_nonempty_rate": safe_mean(nonempty_vals),
+                "retrieval_stage_nonempty_rate": safe_mean(retrieval_stage_nonempty_vals),
+                "plan_grounding_failure_rate": safe_mean(grounding_failure_vals),
+                "oracle_write_activation_rate": safe_mean(oracle_write_activation_vals),
+                "oracle_consolidation_activation_rate": safe_mean(oracle_consolidation_activation_vals),
+                "oracle_grounding_activation_rate": safe_mean(oracle_grounding_activation_vals),
                 "oracle_retrieval_activation_rate": safe_mean(oracle_retrieval_activation_vals),
                 "oracle_materialization_activation_rate": safe_mean(oracle_materialization_activation_vals),
                 "oracle_controller_activation_rate": safe_mean(oracle_controller_activation_vals),
@@ -318,7 +344,7 @@ def plot_oracle_interventions(rows, out_path):
     ]
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.8), sharey=True)
     x = np.arange(len(task_order))
-    width = 0.18
+    width = min(0.18, 0.9 / max(1, len(regime_order)))
     center = (len(regime_order) - 1) / 2.0
 
     for ax, (metric_key, title) in zip(axes, metrics):
@@ -366,7 +392,7 @@ def plot_oracle_interventions(rows, out_path):
         ax.grid(axis="y", alpha=0.2)
     axes[0].set_ylabel("Rate")
     handles, labels = axes[-1].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="upper center", ncol=4, frameon=False, bbox_to_anchor=(0.5, 1.04))
+    fig.legend(handles, labels, loc="upper center", ncol=min(4, max(1, len(regime_order))), frameon=False, bbox_to_anchor=(0.5, 1.04))
     fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.94))
     fig.savefig(out_path)
     plt.close(fig)
@@ -413,15 +439,26 @@ def main():
     parser.add_argument("--tokenizer_proj_dim", type=int, default=16)
     parser.add_argument("--num_bootstrap", type=int, default=4000)
     parser.add_argument("--bootstrap_seed", type=int, default=123)
+    parser.add_argument("--tasks", type=str, default="", help="Comma-separated task filter (default: all tasks)")
+    parser.add_argument("--regimes", type=str, default="", help="Comma-separated regime filter (default: all regimes)")
     args = parser.parse_args()
+
+    task_filter = {name.strip() for name in args.tasks.split(",") if name.strip()}
+    regime_filter = {name.strip() for name in args.regimes.split(",") if name.strip()}
+    selected_tasks = {
+        name: cfg for name, cfg in TASKS.items() if not task_filter or name in task_filter
+    }
+    selected_regimes = [
+        (name, flags) for name, flags in REGIMES if not regime_filter or name in regime_filter
+    ]
 
     ensure_dir(args.out_dir)
     seeds = list(range(int(args.seed_start), int(args.seed_start) + int(args.num_seeds)))
     seed_rows = []
     episode_rows = []
 
-    for task_name, task_cfg in TASKS.items():
-        for regime_name, regime_flags in REGIMES:
+    for task_name, task_cfg in selected_tasks.items():
+        for regime_name, regime_flags in selected_regimes:
             for seed in seeds:
                 run_args = build_run_args(args, task_name, task_cfg, regime_name, regime_flags, seed)
                 print(f"[oracle] task={task_name} regime={regime_name} seed={seed}")
@@ -438,6 +475,13 @@ def main():
                         "semantic_path_completion": float(summary["post_retrieval_completion_rate"]),
                         "query_satisfaction_rate": float(summary["query_satisfaction_rate"]),
                         "semantic_target_materialization_rate": float(summary["semantic_target_materialization_rate"]),
+                        "retrieval_failure_empty_rate": float(summary.get("retrieval_failure_empty_rate", 0.0)),
+                        "query_nonempty_rate": float(summary.get("query_nonempty_rate", 0.0)),
+                        "retrieval_stage_nonempty_rate": float(summary.get("retrieval_stage_nonempty_rate", 0.0)),
+                        "plan_grounding_failure_rate": float(summary.get("plan_grounding_failure_rate", 0.0)),
+                        "oracle_write_activation_rate": float(summary.get("oracle_write_activation_rate", 0.0)),
+                        "oracle_consolidation_activation_rate": float(summary.get("oracle_consolidation_activation_rate", 0.0)),
+                        "oracle_grounding_activation_rate": float(summary.get("oracle_grounding_activation_rate", 0.0)),
                         "oracle_retrieval_activation_rate": float(summary.get("oracle_retrieval_activation_rate", 0.0)),
                         "oracle_materialization_activation_rate": float(summary.get("oracle_materialization_activation_rate", 0.0)),
                         "oracle_controller_activation_rate": float(summary.get("oracle_controller_activation_rate", 0.0)),
@@ -483,6 +527,13 @@ def main():
             "semantic_path_ci_high",
             "query_satisfaction_rate",
             "semantic_target_materialization_rate",
+            "retrieval_failure_empty_rate",
+            "query_nonempty_rate",
+            "retrieval_stage_nonempty_rate",
+            "plan_grounding_failure_rate",
+            "oracle_write_activation_rate",
+            "oracle_consolidation_activation_rate",
+            "oracle_grounding_activation_rate",
             "oracle_retrieval_activation_rate",
             "oracle_materialization_activation_rate",
             "oracle_controller_activation_rate",

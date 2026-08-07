@@ -311,6 +311,186 @@ def make_oracle_path_plan(waypoint_xy, planner_query, source):
     }
 
 
+def oracle_ground_truth_semantic_tags(env, agent_xy, goal_xy=None, water_xy=None, rest_xy=None):
+    """Privileged, orientation-invariant semantic tags for the agent's current cell.
+
+    Mirrors the SceneTokenizer/SceneEncoder tag taxonomy but reads ground-truth
+    grid state, so every visited place is written to memory with its correct tags
+    (oracle_write regime). Only the write-time tags are oracled; tokenization,
+    graph updates, and consolidation downstream stay fully standard.
+    """
+    ax, ay = int(agent_xy[0]), int(agent_xy[1])
+    neighbor_codes = {}
+    for dir_idx in range(4):
+        dx, dy = _dir_to_delta(dir_idx)
+        neighbor_codes[dir_idx] = _grid_cell_code(env, ax + dx, ay + dy)
+    patch_codes = [
+        _grid_cell_code(env, ax + dx, ay + dy)
+        for dx in (-1, 0, 1)
+        for dy in (-1, 0, 1)
+        if not (dx == 0 and dy == 0)
+    ]
+    hazard_near = float(any(code == 3 for code in patch_codes))
+    lava_neighbor_count = int(sum(1 for code in neighbor_codes.values() if code == 3))
+    passable_dirs = [dir_idx for dir_idx, code in neighbor_codes.items() if _passable_cell_code(code)]
+    free_neighbor_count = int(sum(1 for code in neighbor_codes.values() if code == 0))
+    wall_count = int(sum(1 for code in patch_codes if code in (1, 99)))
+
+    hazard_recovery_route = 0.0
+    if hazard_near > 0.0 and goal_xy is not None:
+        goal_dx = int(goal_xy[0]) - ax
+        goal_dy = int(goal_xy[1]) - ay
+        for dir_idx in passable_dirs:
+            dx, dy = _dir_to_delta(dir_idx)
+            if ((dx * goal_dx) + (dy * goal_dy)) <= 0:
+                continue
+            left_code = neighbor_codes[(dir_idx - 1) % 4]
+            right_code = neighbor_codes[(dir_idx + 1) % 4]
+            lateral_hazard = bool(left_code == 3 or right_code == 3)
+            lateral_blocked = bool(left_code in (1, 3, 99) and right_code in (1, 3, 99))
+            if lateral_hazard or (lateral_blocked and lava_neighbor_count > 0):
+                hazard_recovery_route = 1.0
+                break
+
+    goal_region = float(goal_xy is not None and manhattan(agent_xy, goal_xy) <= 2)
+    hazard_edge = float(hazard_near > 0.0 and bool(passable_dirs))
+    safe_exit = float(hazard_near == 0.0 and bool(passable_dirs))
+    water_adjacent = float(water_xy is not None and manhattan(agent_xy, water_xy) <= 1)
+    water_near = float(water_xy is not None and manhattan(agent_xy, water_xy) <= 2)
+    rest_adjacent = float(rest_xy is not None and manhattan(agent_xy, rest_xy) <= 1)
+    rest_near = float(rest_xy is not None and manhattan(agent_xy, rest_xy) <= 2)
+    safe_rest_zone = float(rest_adjacent > 0.0 and hazard_near == 0.0)
+    return {
+        "safe_exit": safe_exit,
+        "hazard_recovery_route": hazard_recovery_route,
+        "goal_region": goal_region,
+        "hazard_edge": hazard_edge,
+        "room_center": float(free_neighbor_count >= 3 and wall_count <= 3),
+        "corridor": float(free_neighbor_count <= 2 and wall_count >= 4),
+        "water_source": water_adjacent,
+        "water_candidate": water_near,
+        "water_nearby": water_near,
+        "near_water": water_adjacent,
+        "safe_rest_zone": safe_rest_zone,
+        "rest_candidate": rest_near,
+        "rest_nearby": rest_near,
+        "open_safe_rest_zone": safe_rest_zone,
+        "adjacent_hazard": hazard_edge,
+        "post_hazard_goal_rejoin": float(min(1.0, (0.55 * hazard_recovery_route) + (0.45 * goal_region))),
+    }
+
+
+def perfect_history_required_tags(planner_query):
+    required_tags = dict(getattr(planner_query, "required_tags", {}) or {})
+    predicate = getattr(planner_query, "target_predicate", None)
+    if predicate is not None:
+        for tag_name, min_value in dict(predicate.required_tag_thresholds or {}).items():
+            required_tags.setdefault(str(tag_name), float(min_value))
+        required_tags.setdefault(str(predicate.tag_name), float(predicate.min_confidence))
+    return required_tags
+
+
+def _perfect_history_record_matches(record_tags, required_tags, match_mode, min_required_matches=1):
+    if not required_tags:
+        return True
+    satisfied = [
+        float(record_tags.get(str(tag_name), 0.0)) >= float(min_value)
+        for tag_name, min_value in required_tags.items()
+    ]
+    if match_mode == "any":
+        return any(satisfied)
+    if match_mode == "at_least":
+        return int(sum(1 for value in satisfied if value)) >= max(1, int(min_required_matches))
+    return all(satisfied)
+
+
+def select_perfect_history_waypoint(history_records, planner_query, source_xy=None, top_k=5):
+    """Perfect-history retrieval (oracle_consolidation regime).
+
+    A candidate exists iff the place was EVER observed (raw pre-action
+    observation, this or a previous episode) with tags satisfying the query's
+    required-tag thresholds — bypassing consolidated symbolic nodes entirely.
+    Perception/write stay standard: only raw perceived tags are searched, so a
+    tag never emitted by perception can never be retrieved here.
+    """
+    if planner_query is None or not history_records:
+        return None
+    required_tags = perfect_history_required_tags(planner_query)
+    predicate = getattr(planner_query, "target_predicate", None)
+    match_mode = str(
+        planner_query.metadata.get("required_match_mode")
+        or (None if predicate is None else predicate.metadata.get("required_match_mode"))
+        or "all"
+    )
+    min_required_matches = int(planner_query.metadata.get("min_required_matches", 1))
+    target_tag = None if predicate is None else str(predicate.tag_name)
+    source_arr = None if source_xy is None else np.asarray(source_xy, dtype=np.int32)
+
+    best_by_pose = {}
+    for record in history_records:
+        record_tags = dict(record.get("semantic_tags", {}) or {})
+        if not _perfect_history_record_matches(record_tags, required_tags, match_mode, min_required_matches):
+            continue
+        pose_xy = record.get("pose_xy")
+        if pose_xy is None:
+            continue
+        pose_key = (int(pose_xy[0]), int(pose_xy[1]))
+        if source_arr is not None and manhattan(pose_key, source_arr) == 0:
+            continue
+        target_conf = 0.0 if target_tag is None else float(record_tags.get(target_tag, 0.0))
+        score = (float(target_conf), int(record.get("step_idx", -1)))
+        previous = best_by_pose.get(pose_key)
+        if previous is None or score > previous[0]:
+            best_by_pose[pose_key] = (score, record)
+    if not best_by_pose:
+        return None
+
+    ranked = sorted(best_by_pose.items(), key=lambda item: item[1][0], reverse=True)
+    ranked = ranked[: max(1, int(top_k))]
+    best_pose, (best_score, best_record) = ranked[0]
+    waypoint_xy = np.asarray(best_pose, dtype=np.int32)
+
+    candidate_node_ids = []
+    candidate_tag_confidences = {}
+    for _, (score, record) in ranked:
+        graph_node_id = record.get("graph_node_id")
+        if graph_node_id is None or int(graph_node_id) in candidate_node_ids:
+            continue
+        candidate_node_ids.append(int(graph_node_id))
+        candidate_tag_confidences[str(int(graph_node_id))] = float(score[0])
+
+    selected_node_id = None if best_record.get("graph_node_id") is None else int(best_record["graph_node_id"])
+    return {
+        "waypoint_xy": waypoint_xy.copy(),
+        "target_node_id": selected_node_id,
+        "next_node_id": selected_node_id,
+        "graph_path_length": 0,
+        "utility": float(best_score[0]),
+        "token_sequence": [],
+        "maneuver_command": {
+            "command_type": "go_to_waypoint",
+            "waypoint_xy": tuple(int(v) for v in waypoint_xy),
+        },
+        "planner_debug": {
+            "next_node_id": selected_node_id,
+            "intent_type": str(getattr(planner_query.intent_type, "value", planner_query.intent_type)),
+            "query_tag_name": target_tag,
+            "used_intent_query": True,
+            "candidate_node_ids": list(candidate_node_ids),
+            "candidate_base_utilities": {},
+            "candidate_tag_confidences": dict(candidate_tag_confidences),
+            "candidate_intent_scores": dict(candidate_tag_confidences),
+            "selected_tag_confidence": float(best_score[0]),
+            "selected_intent_score": float(best_score[0]),
+            "selected_plan_utility": float(best_score[0]),
+            "selected_node_semantic_tag_confidence": dict(best_record.get("semantic_tags", {}) or {}),
+            "selected_history_step_idx": int(best_record.get("step_idx", -1)),
+            "selected_history_episode_id": int(best_record.get("episode_id", -1)),
+            "plan_source": "perfect_history",
+        },
+    }
+
+
 def local_resource_guidance(env, scene, active_intent_type, radius: int = 1):
     if scene is None or active_intent_type is None:
         return None
@@ -1543,6 +1723,8 @@ def compute_episode_query_metrics(memory, episode_id: int, success: int):
         return {
             "query_attempt_count": 0,
             "query_nonempty_rate": 0.0,
+            "retrieval_stage_nonempty_rate": 0.0,
+            "plan_grounding_failure_rate": 0.0,
             "retrieval_precision_at_k": 0.0,
             "query_satisfaction_rate": 0.0,
             "semantic_target_materialization_rate": 0.0,
@@ -1557,6 +1739,22 @@ def compute_episode_query_metrics(memory, episode_id: int, success: int):
             "failure_taxonomy": "no_retrieval_attempt",
         }
     nonempty = float(sum(1 for record in records if list(getattr(record, "candidate_node_ids", []))))
+    retrieval_stage_nonempty = float(
+        sum(
+            1
+            for record in records
+            if list(getattr(record, "candidate_node_ids", []))
+            or int(getattr(record, "metadata", {}).get("retrieval_stage_candidate_count", 0)) > 0
+        )
+    )
+    plan_grounding_failures = float(
+        sum(
+            1
+            for record in records
+            if not list(getattr(record, "candidate_node_ids", []))
+            and int(getattr(record, "metadata", {}).get("retrieval_stage_candidate_count", 0)) > 0
+        )
+    )
     retrieval_precision_vals = [
         float(getattr(record, "metadata", {}).get("retrieval_precision_at_k", 0.0))
         for record in records
@@ -1589,6 +1787,8 @@ def compute_episode_query_metrics(memory, episode_id: int, success: int):
     return {
         "query_attempt_count": int(attempts),
         "query_nonempty_rate": float(query_nonempty_rate),
+        "retrieval_stage_nonempty_rate": float(retrieval_stage_nonempty / max(1, attempts)),
+        "plan_grounding_failure_rate": float(plan_grounding_failures / max(1, attempts)),
         "retrieval_precision_at_k": float(retrieval_precision_at_k),
         "query_satisfaction_rate": float(query_satisfaction_rate),
         "semantic_target_materialization_rate": float(semantic_target_materialization_rate),
@@ -1683,6 +1883,8 @@ def summarise_run(run_summary, memory):
         "mean_max_phase_depth": float(np.mean(run_summary["max_phase_depth"])) if run_summary["max_phase_depth"] else 0.0,
         "query_attempt_count": float(np.mean(run_summary["query_attempt_count"])) if run_summary["query_attempt_count"] else 0.0,
         "query_nonempty_rate": float(np.mean(run_summary["query_nonempty_rate"])) if run_summary["query_nonempty_rate"] else 0.0,
+        "retrieval_stage_nonempty_rate": float(np.mean(run_summary["retrieval_stage_nonempty_rate"])) if run_summary["retrieval_stage_nonempty_rate"] else 0.0,
+        "plan_grounding_failure_rate": float(np.mean(run_summary["plan_grounding_failure_rate"])) if run_summary["plan_grounding_failure_rate"] else 0.0,
         "retrieval_precision_at_k": float(np.mean(run_summary["retrieval_precision_at_k"])) if run_summary["retrieval_precision_at_k"] else 0.0,
         "query_satisfaction_rate": float(np.mean(run_summary["query_satisfaction_rate"])) if run_summary["query_satisfaction_rate"] else 0.0,
         "semantic_target_materialization_rate": float(np.mean(run_summary["semantic_target_materialization_rate"])) if run_summary["semantic_target_materialization_rate"] else 0.0,
@@ -1697,6 +1899,9 @@ def summarise_run(run_summary, memory):
         "retrieval_failure_unsatisfied_rate": float(np.mean(run_summary["retrieval_failure_unsatisfied"])) if run_summary["retrieval_failure_unsatisfied"] else 0.0,
         "semantic_materialization_failure_rate": float(np.mean(run_summary["semantic_materialization_failure"])) if run_summary["semantic_materialization_failure"] else 0.0,
         "control_failure_after_retrieval_rate": float(np.mean(run_summary["control_failure_after_retrieval"])) if run_summary["control_failure_after_retrieval"] else 0.0,
+        "oracle_write_activation_rate": float(np.mean(run_summary["oracle_write_activated"])) if run_summary["oracle_write_activated"] else 0.0,
+        "oracle_consolidation_activation_rate": float(np.mean(run_summary["oracle_consolidation_activated"])) if run_summary["oracle_consolidation_activated"] else 0.0,
+        "oracle_grounding_activation_rate": float(np.mean(run_summary["oracle_grounding_activated"])) if run_summary["oracle_grounding_activated"] else 0.0,
         "oracle_retrieval_activation_rate": float(np.mean(run_summary["oracle_retrieval_activated"])) if run_summary["oracle_retrieval_activated"] else 0.0,
         "oracle_materialization_activation_rate": float(np.mean(run_summary["oracle_materialization_activated"])) if run_summary["oracle_materialization_activated"] else 0.0,
         "oracle_controller_activation_rate": float(np.mean(run_summary["oracle_controller_activated"])) if run_summary["oracle_controller_activated"] else 0.0,
@@ -1746,6 +1951,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
         "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
         "semantic_retrieval_mode": getattr(args, "semantic_retrieval_mode", "concept_recall_v1"),
+        "oracle_write_enabled": int(bool(getattr(args, "oracle_write", False))),
+        "oracle_consolidation_enabled": int(bool(getattr(args, "oracle_consolidation", False))),
+        "oracle_grounding_enabled": int(bool(getattr(args, "oracle_grounding", False))),
         "oracle_retrieval_enabled": int(bool(getattr(args, "oracle_retrieval", False))),
         "oracle_materialization_enabled": int(bool(getattr(args, "oracle_materialization", False))),
         "oracle_controller_enabled": int(bool(getattr(args, "oracle_controller", False))),
@@ -1791,6 +1999,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "max_phase_depth": [],
         "query_attempt_count": [],
         "query_nonempty_rate": [],
+        "retrieval_stage_nonempty_rate": [],
+        "plan_grounding_failure_rate": [],
         "retrieval_precision_at_k": [],
         "query_satisfaction_rate": [],
         "semantic_target_materialization_rate": [],
@@ -1802,6 +2012,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         "retrieval_failure_unsatisfied": [],
         "semantic_materialization_failure": [],
         "control_failure_after_retrieval": [],
+        "oracle_write_activated": [],
+        "oracle_consolidation_activated": [],
+        "oracle_grounding_activated": [],
         "oracle_retrieval_activated": [],
         "oracle_materialization_activated": [],
         "oracle_controller_activated": [],
@@ -1810,6 +2023,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
 
     total_step_idx = 0
     seen_songline_nodes = set()
+    # Raw pre-action observation log for the oracle_consolidation (perfect-history)
+    # regime; deliberately persists across episodes.
+    perfect_history_records = []
     debug_trace_rows = []
     demo_frames = []
     demo_frame_meta = []
@@ -1914,6 +2130,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "final_exit_maneuver": 0,
             "resume_to_goal": 0,
         }
+        oracle_write_activated = 0
+        oracle_consolidation_activated = 0
+        oracle_grounding_activated = 0
         oracle_retrieval_activated = 0
         oracle_materialization_activated = 0
         oracle_controller_activated = 0
@@ -2006,6 +2225,18 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                     scene_token = maybe_perturb_scene_token(scene_token, args=args, rng=rng)
                     token = scene_token_to_int(scene_token)
                     token_label = str(scene_token.token_type)
+                oracle_write_tags = None
+                if bool(getattr(args, "oracle_write", False)):
+                    oracle_write_tags = oracle_ground_truth_semantic_tags(
+                        env,
+                        agent_xy=agent_xy,
+                        goal_xy=goal_xy,
+                        water_xy=water_xy,
+                        rest_xy=rest_xy,
+                    )
+                    oracle_write_activated = 1
+                    if scene_token is not None:
+                        scene_token.semantic_tags = dict(oracle_write_tags)
                 observe_result = memory.observe(
                     scene_token=scene_token,
                     scene_state=scene,
@@ -2015,6 +2246,7 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                         "step_idx": int(total_step_idx),
                         "token_id": int(token),
                         "token_label": str(token_label),
+                        "semantic_tags": {} if oracle_write_tags is None else dict(oracle_write_tags),
                         "pose_xy": agent_xy,
                         "goal_xy": goal_xy,
                         "reward": 0.0,
@@ -2025,6 +2257,16 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                 )
                 prev_graph_node_id = observe_result.get("previous_graph_node_id")
                 current_graph_node_id = observe_result.get("current_graph_node_id")
+                if bool(getattr(args, "oracle_consolidation", False)):
+                    perfect_history_records.append(
+                        {
+                            "step_idx": int(total_step_idx),
+                            "episode_id": int(ep + 1),
+                            "pose_xy": (int(agent_xy[0]), int(agent_xy[1])),
+                            "graph_node_id": None if current_graph_node_id is None else int(current_graph_node_id),
+                            "semantic_tags": {} if scene_token is None else dict(getattr(scene_token, "semantic_tags", {}) or {}),
+                        }
+                    )
                 is_new_node = bool(observe_result.get("is_new_graph_node", False))
                 if is_new_node and memory.current_phrase_id is not None:
                     unique_songline_nodes_this_episode.add(memory.current_phrase_id)
@@ -2224,6 +2466,40 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                 if (
                                     path_plan is None
                                     and planner_query is not None
+                                    and bool(getattr(args, "oracle_grounding", False))
+                                ):
+                                    # Grounding bypass: retrieval and consolidation stay fully
+                                    # standard; when the phrase-graph rollout cannot ground a
+                                    # non-empty candidate set (no shortest_path), go directly
+                                    # to the best candidate's pose.
+                                    grounding_plan = select_semantic_waypoint_fallback(
+                                        memory,
+                                        planner_query=planner_query,
+                                        current_node_id=current_phrase_node(memory),
+                                        source_xy=agent_xy,
+                                        top_k=args.top_k_goals,
+                                    )
+                                    if grounding_plan is not None:
+                                        oracle_grounding_activated = 1
+                                        grounding_plan["planner_debug"]["plan_source"] = "oracle_grounding"
+                                        path_plan = grounding_plan
+                                if (
+                                    path_plan is None
+                                    and planner_query is not None
+                                    and bool(getattr(args, "oracle_consolidation", False))
+                                ):
+                                    history_plan = select_perfect_history_waypoint(
+                                        perfect_history_records,
+                                        planner_query=planner_query,
+                                        source_xy=agent_xy,
+                                        top_k=args.top_k_goals,
+                                    )
+                                    if history_plan is not None:
+                                        oracle_consolidation_activated = 1
+                                        path_plan = history_plan
+                                if (
+                                    path_plan is None
+                                    and planner_query is not None
                                     and bool(getattr(args, "oracle_materialization", False))
                                     and oracle_waypoint_xy is not None
                                 ):
@@ -2377,6 +2653,22 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
                                     "goal_rejoin_target_materialized": False,
                                     "goal_rejoin_target_source": "none",
                                 }
+                                # Probe the retrieval stage in isolation: the plan may have
+                                # failed at graph grounding (no path to a candidate) even
+                                # though candidate retrieval itself was non-empty.
+                                retrieval_stage_candidate_ids = []
+                                if hasattr(memory, "candidate_nodes_for_query"):
+                                    retrieval_stage_candidate_ids = [
+                                        int(node_id)
+                                        for node_id in memory.candidate_nodes_for_query(
+                                            planner_query,
+                                            top_k=args.top_k_goals,
+                                            current_node_id=current_graph_node_id,
+                                        )
+                                    ]
+                                active_planner_debug["retrieval_stage_candidate_node_ids"] = list(retrieval_stage_candidate_ids)
+                                active_planner_debug["retrieval_stage_candidate_count"] = int(len(retrieval_stage_candidate_ids))
+                                active_planner_debug["plan_grounding_failure"] = int(bool(retrieval_stage_candidate_ids))
                             elif trace_forced_goal_rejoin_replan:
                                 active_planner_debug = {
                                     "used_intent_query": bool(planner_query is not None),
@@ -3049,6 +3341,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "goal_rejoin_guard_mode": args.goal_rejoin_guard_mode,
             "goal_rejoin_target_mode": args.goal_rejoin_target_mode,
             "semantic_retrieval_mode": getattr(args, "semantic_retrieval_mode", "concept_recall_v1"),
+            "oracle_write_enabled": int(bool(getattr(args, "oracle_write", False))),
+            "oracle_consolidation_enabled": int(bool(getattr(args, "oracle_consolidation", False))),
+            "oracle_grounding_enabled": int(bool(getattr(args, "oracle_grounding", False))),
             "oracle_retrieval_enabled": int(bool(getattr(args, "oracle_retrieval", False))),
             "oracle_materialization_enabled": int(bool(getattr(args, "oracle_materialization", False))),
             "oracle_controller_enabled": int(bool(getattr(args, "oracle_controller", False))),
@@ -3067,6 +3362,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
             "rest_local_hold_threshold": float(getattr(args, "rest_local_hold_threshold", 0.0)),
             "local_resource_guidance_enabled": int(local_resource_guidance_enabled(args)),
             "goal_rejoin_fallback_assists_enabled": int(goal_rejoin_fallback_assists_enabled(args)),
+            "oracle_write_activated": int(oracle_write_activated),
+            "oracle_consolidation_activated": int(oracle_consolidation_activated),
+            "oracle_grounding_activated": int(oracle_grounding_activated),
             "oracle_retrieval_activated": int(oracle_retrieval_activated),
             "oracle_materialization_activated": int(oracle_materialization_activated),
             "oracle_controller_activated": int(oracle_controller_activated),
@@ -3142,6 +3440,8 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         run_summary["max_phase_depth"].append(int(max_phase_depth))
         run_summary["query_attempt_count"].append(int(episode_query_metrics["query_attempt_count"]))
         run_summary["query_nonempty_rate"].append(float(episode_query_metrics["query_nonempty_rate"]))
+        run_summary["retrieval_stage_nonempty_rate"].append(float(episode_query_metrics["retrieval_stage_nonempty_rate"]))
+        run_summary["plan_grounding_failure_rate"].append(float(episode_query_metrics["plan_grounding_failure_rate"]))
         run_summary["retrieval_precision_at_k"].append(float(episode_query_metrics["retrieval_precision_at_k"]))
         run_summary["query_satisfaction_rate"].append(float(episode_query_metrics["query_satisfaction_rate"]))
         run_summary["semantic_target_materialization_rate"].append(float(episode_query_metrics["semantic_target_materialization_rate"]))
@@ -3153,6 +3453,9 @@ def run_songline_experiment(args, export_outputs=True, verbose=True):
         run_summary["retrieval_failure_unsatisfied"].append(int(episode_query_metrics["retrieval_failure_unsatisfied"]))
         run_summary["semantic_materialization_failure"].append(int(episode_query_metrics["semantic_materialization_failure"]))
         run_summary["control_failure_after_retrieval"].append(int(episode_query_metrics["control_failure_after_retrieval"]))
+        run_summary["oracle_write_activated"].append(int(oracle_write_activated))
+        run_summary["oracle_consolidation_activated"].append(int(oracle_consolidation_activated))
+        run_summary["oracle_grounding_activated"].append(int(oracle_grounding_activated))
         run_summary["oracle_retrieval_activated"].append(int(oracle_retrieval_activated))
         run_summary["oracle_materialization_activated"].append(int(oracle_materialization_activated))
         run_summary["oracle_controller_activated"].append(int(oracle_controller_activated))
@@ -3353,6 +3656,9 @@ def parse_args():
     parser.add_argument("--commit_to_corridor", action="store_true")
     parser.add_argument("--disable_local_resource_guidance", action="store_true")
     parser.add_argument("--disable_goal_rejoin_fallback_assists", action="store_true")
+    parser.add_argument("--oracle_write", action="store_true")
+    parser.add_argument("--oracle_consolidation", action="store_true")
+    parser.add_argument("--oracle_grounding", action="store_true")
     parser.add_argument("--oracle_retrieval", action="store_true")
     parser.add_argument("--oracle_materialization", action="store_true")
     parser.add_argument("--oracle_controller", action="store_true")

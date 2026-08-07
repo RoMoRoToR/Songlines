@@ -1,0 +1,46 @@
+This is BibTeX, Version 0.99d (TeX Live 2025)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: qrmc_tae_2026.aux
+The style file: plainnat.bst
+Database file #1: qrmc_tae_2026.bib
+You've used 15 entries,
+            2773 wiz_defined-function locations,
+            661 strings with 8108 characters,
+and the built_in function-call counts, 8893 in all, are:
+= -- 654
+> -- 869
+< -- 2
++ -- 291
+- -- 276
+* -- 810
+:= -- 1449
+add.period$ -- 45
+call.type$ -- 15
+change.case$ -- 133
+chr.to.int$ -- 15
+cite$ -- 30
+duplicate$ -- 334
+empty$ -- 561
+format.name$ -- 291
+if$ -- 1780
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 17
+newline$ -- 83
+num.names$ -- 60
+pop$ -- 306
+preamble$ -- 1
+purify$ -- 120
+quote$ -- 0
+skip$ -- 272
+stack$ -- 0
+substring$ -- 61
+swap$ -- 24
+text.length$ -- 1
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 155
+warning$ -- 0
+while$ -- 47
+width$ -- 0
+write$ -- 189

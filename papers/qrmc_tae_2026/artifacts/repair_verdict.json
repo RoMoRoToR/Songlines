@@ -1,0 +1,1360 @@
+{
+  "per_method": {
+    "success_only": {
+      "repair_gain": 0.0,
+      "repair_regret": 0.354,
+      "picks": [
+        {
+          "fw": "openai_sdk",
+          "variant": "c_budget",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "c_flaky_goto",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "c_take_broken",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "m_ambiguous",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "M",
+          "gain": 0.0
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "m_duplicate",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "q_no_tool",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_corrupted",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_flaky",
+          "pred": "none",
+          "chosen": "none",
+          "best": "R",
+          "gain": 0.0
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_starved",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "R",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_budget",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_flaky_goto",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_take_broken",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "m_ambiguous",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "m_duplicate",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "q_no_tool",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_corrupted",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "R",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_flaky",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "R",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_starved",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "R",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_budget",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_flaky_goto",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_take_broken",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "m_ambiguous",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "m_duplicate",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "q_no_tool",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_corrupted",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "R",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_flaky",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "R",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_starved",
+          "pred": "failure",
+          "chosen": "none",
+          "best": "R",
+          "gain": 0.0
+        }
+      ]
+    },
+    "progress": {
+      "repair_gain": 0.219,
+      "repair_regret": 0.135,
+      "picks": [
+        {
+          "fw": "openai_sdk",
+          "variant": "c_budget",
+          "pred": "M",
+          "chosen": "M",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "c_flaky_goto",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.1
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "c_take_broken",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.6
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "m_ambiguous",
+          "pred": "C",
+          "chosen": "C",
+          "best": "M",
+          "gain": 0.4
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "m_duplicate",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.45
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "q_no_tool",
+          "pred": "Q",
+          "chosen": "Q",
+          "best": "C",
+          "gain": 0.25
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_corrupted",
+          "pred": "R",
+          "chosen": "R",
+          "best": "C",
+          "gain": 0.1
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_flaky",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.2
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_starved",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.35
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_budget",
+          "pred": "M",
+          "chosen": "M",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_flaky_goto",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_take_broken",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.6
+        },
+        {
+          "fw": "langgraph",
+          "variant": "m_ambiguous",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "m_duplicate",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "q_no_tool",
+          "pred": "Q",
+          "chosen": "Q",
+          "best": "C",
+          "gain": -0.1
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_corrupted",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.2
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_flaky",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.25
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_starved",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.35
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_budget",
+          "pred": "M",
+          "chosen": "M",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_flaky_goto",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.35
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_take_broken",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.65
+        },
+        {
+          "fw": "autogen",
+          "variant": "m_ambiguous",
+          "pred": "M",
+          "chosen": "M",
+          "best": "C",
+          "gain": 0.1
+        },
+        {
+          "fw": "autogen",
+          "variant": "m_duplicate",
+          "pred": "M",
+          "chosen": "M",
+          "best": "C",
+          "gain": 0.25
+        },
+        {
+          "fw": "autogen",
+          "variant": "q_no_tool",
+          "pred": "Q",
+          "chosen": "Q",
+          "best": "C",
+          "gain": 0.05
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_corrupted",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.15
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_flaky",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.25
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_starved",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.35
+        }
+      ]
+    },
+    "two_stage": {
+      "repair_gain": 0.28,
+      "repair_regret": 0.074,
+      "picks": [
+        {
+          "fw": "openai_sdk",
+          "variant": "c_budget",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.75
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "c_flaky_goto",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.1
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "c_take_broken",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.6
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "m_ambiguous",
+          "pred": "C",
+          "chosen": "C",
+          "best": "M",
+          "gain": 0.4
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "m_duplicate",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.45
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "q_no_tool",
+          "pred": "R",
+          "chosen": "R",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_corrupted",
+          "pred": "R",
+          "chosen": "R",
+          "best": "C",
+          "gain": 0.1
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_flaky",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.2
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_starved",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.35
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_budget",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.5
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_flaky_goto",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_take_broken",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.6
+        },
+        {
+          "fw": "langgraph",
+          "variant": "m_ambiguous",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "m_duplicate",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "q_no_tool",
+          "pred": "R",
+          "chosen": "R",
+          "best": "C",
+          "gain": -0.1
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_corrupted",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.2
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_flaky",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.25
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_starved",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.35
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_budget",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.55
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_flaky_goto",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.35
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_take_broken",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.65
+        },
+        {
+          "fw": "autogen",
+          "variant": "m_ambiguous",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.2
+        },
+        {
+          "fw": "autogen",
+          "variant": "m_duplicate",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.3
+        },
+        {
+          "fw": "autogen",
+          "variant": "q_no_tool",
+          "pred": "R",
+          "chosen": "R",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_corrupted",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.15
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_flaky",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.25
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_starved",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.35
+        }
+      ]
+    },
+    "conformance": {
+      "repair_gain": 0.25,
+      "repair_regret": 0.104,
+      "picks": [
+        {
+          "fw": "openai_sdk",
+          "variant": "c_budget",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.75
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "c_flaky_goto",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.1
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "c_take_broken",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.6
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "m_ambiguous",
+          "pred": "C",
+          "chosen": "C",
+          "best": "M",
+          "gain": 0.4
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "m_duplicate",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.45
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "q_no_tool",
+          "pred": "Q",
+          "chosen": "Q",
+          "best": "C",
+          "gain": 0.25
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_corrupted",
+          "pred": "R",
+          "chosen": "R",
+          "best": "C",
+          "gain": 0.1
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_flaky",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.2
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_starved",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.35
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_budget",
+          "pred": "M",
+          "chosen": "M",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_flaky_goto",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_take_broken",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.6
+        },
+        {
+          "fw": "langgraph",
+          "variant": "m_ambiguous",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "m_duplicate",
+          "pred": "M",
+          "chosen": "M",
+          "best": "C",
+          "gain": 0.2
+        },
+        {
+          "fw": "langgraph",
+          "variant": "q_no_tool",
+          "pred": "Q",
+          "chosen": "Q",
+          "best": "C",
+          "gain": -0.1
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_corrupted",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.2
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_flaky",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.25
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_starved",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.35
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_budget",
+          "pred": "M",
+          "chosen": "M",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_flaky_goto",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.35
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_take_broken",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.65
+        },
+        {
+          "fw": "autogen",
+          "variant": "m_ambiguous",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "autogen",
+          "variant": "m_duplicate",
+          "pred": "M",
+          "chosen": "M",
+          "best": "C",
+          "gain": 0.25
+        },
+        {
+          "fw": "autogen",
+          "variant": "q_no_tool",
+          "pred": "Q",
+          "chosen": "Q",
+          "best": "C",
+          "gain": 0.05
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_corrupted",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.15
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_flaky",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.25
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_starved",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.35
+        }
+      ]
+    },
+    "qrmc": {
+      "repair_gain": 0.293,
+      "repair_regret": 0.061,
+      "picks": [
+        {
+          "fw": "openai_sdk",
+          "variant": "c_budget",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.75
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "c_flaky_goto",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.1
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "c_take_broken",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.6
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "m_ambiguous",
+          "pred": "C",
+          "chosen": "C",
+          "best": "M",
+          "gain": 0.4
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "m_duplicate",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.45
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "q_no_tool",
+          "pred": "Q",
+          "chosen": "Q",
+          "best": "C",
+          "gain": 0.25
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_corrupted",
+          "pred": "R",
+          "chosen": "R",
+          "best": "C",
+          "gain": 0.1
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_flaky",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.2
+        },
+        {
+          "fw": "openai_sdk",
+          "variant": "r_starved",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.35
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_budget",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.5
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_flaky_goto",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "c_take_broken",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.6
+        },
+        {
+          "fw": "langgraph",
+          "variant": "m_ambiguous",
+          "pred": "none",
+          "chosen": "none",
+          "best": "C",
+          "gain": 0.0
+        },
+        {
+          "fw": "langgraph",
+          "variant": "m_duplicate",
+          "pred": "M",
+          "chosen": "M",
+          "best": "C",
+          "gain": 0.2
+        },
+        {
+          "fw": "langgraph",
+          "variant": "q_no_tool",
+          "pred": "Q",
+          "chosen": "Q",
+          "best": "C",
+          "gain": -0.1
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_corrupted",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.2
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_flaky",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.25
+        },
+        {
+          "fw": "langgraph",
+          "variant": "r_starved",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.35
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_budget",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.55
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_flaky_goto",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.35
+        },
+        {
+          "fw": "autogen",
+          "variant": "c_take_broken",
+          "pred": "C",
+          "chosen": "C",
+          "best": "C",
+          "gain": 0.65
+        },
+        {
+          "fw": "autogen",
+          "variant": "m_ambiguous",
+          "pred": "M",
+          "chosen": "M",
+          "best": "C",
+          "gain": 0.1
+        },
+        {
+          "fw": "autogen",
+          "variant": "m_duplicate",
+          "pred": "M",
+          "chosen": "M",
+          "best": "C",
+          "gain": 0.25
+        },
+        {
+          "fw": "autogen",
+          "variant": "q_no_tool",
+          "pred": "Q",
+          "chosen": "Q",
+          "best": "C",
+          "gain": 0.05
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_corrupted",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.15
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_flaky",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.25
+        },
+        {
+          "fw": "autogen",
+          "variant": "r_starved",
+          "pred": "R",
+          "chosen": "R",
+          "best": "R",
+          "gain": 0.35
+        }
+      ]
+    }
+  },
+  "arms": {
+    "openai_sdk|control": {
+      "none": 0.75,
+      "Q": 0.75,
+      "R": 0.75,
+      "M": 0.75,
+      "C": 0.6
+    },
+    "openai_sdk|r_starved": {
+      "none": 0.4,
+      "Q": 0.4,
+      "R": 0.75,
+      "M": 0.4,
+      "C": 0.65
+    },
+    "openai_sdk|m_ambiguous": {
+      "none": 0.3,
+      "Q": 0.3,
+      "R": 0.3,
+      "M": 0.75,
+      "C": 0.7
+    },
+    "openai_sdk|c_budget": {
+      "none": 0.0,
+      "Q": 0.0,
+      "R": 0.0,
+      "M": 0.0,
+      "C": 0.75
+    },
+    "openai_sdk|q_no_tool": {
+      "none": 0.5,
+      "Q": 0.75,
+      "R": 0.5,
+      "M": 0.5,
+      "C": 0.95
+    },
+    "openai_sdk|q_misleading": {
+      "none": 0.5,
+      "Q": 0.75,
+      "R": 0.5,
+      "M": 0.5,
+      "C": 0.65
+    },
+    "openai_sdk|r_corrupted": {
+      "none": 0.3,
+      "Q": 0.3,
+      "R": 0.4,
+      "M": 0.4,
+      "C": 0.45
+    },
+    "openai_sdk|r_flaky": {
+      "none": 0.55,
+      "Q": 0.55,
+      "R": 0.75,
+      "M": 0.55,
+      "C": 0.55
+    },
+    "openai_sdk|m_duplicate": {
+      "none": 0.4,
+      "Q": 0.4,
+      "R": 0.4,
+      "M": 0.75,
+      "C": 0.85
+    },
+    "openai_sdk|c_flaky_goto": {
+      "none": 0.5,
+      "Q": 0.5,
+      "R": 0.5,
+      "M": 0.5,
+      "C": 0.6
+    },
+    "openai_sdk|c_take_broken": {
+      "none": 0.0,
+      "Q": 0.0,
+      "R": 0.0,
+      "M": 0.0,
+      "C": 0.6
+    },
+    "langgraph|control": {
+      "none": 0.55,
+      "Q": 0.5,
+      "R": 0.5,
+      "M": 0.5,
+      "C": 0.6
+    },
+    "langgraph|r_starved": {
+      "none": 0.15,
+      "Q": 0.15,
+      "R": 0.5,
+      "M": 0.15,
+      "C": 0.3
+    },
+    "langgraph|m_ambiguous": {
+      "none": 0.6,
+      "Q": 0.6,
+      "R": 0.6,
+      "M": 0.5,
+      "C": 0.65
+    },
+    "langgraph|c_budget": {
+      "none": 0.0,
+      "Q": 0.0,
+      "R": 0.0,
+      "M": 0.0,
+      "C": 0.5
+    },
+    "langgraph|q_no_tool": {
+      "none": 0.6,
+      "Q": 0.5,
+      "R": 0.5,
+      "M": 0.5,
+      "C": 0.85
+    },
+    "langgraph|q_misleading": {
+      "none": 0.25,
+      "Q": 0.5,
+      "R": 0.25,
+      "M": 0.25,
+      "C": 0.7
+    },
+    "langgraph|r_corrupted": {
+      "none": 0.1,
+      "Q": 0.1,
+      "R": 0.3,
+      "M": 0.15,
+      "C": 0.2
+    },
+    "langgraph|r_flaky": {
+      "none": 0.25,
+      "Q": 0.3,
+      "R": 0.5,
+      "M": 0.3,
+      "C": 0.4
+    },
+    "langgraph|m_duplicate": {
+      "none": 0.3,
+      "Q": 0.3,
+      "R": 0.3,
+      "M": 0.5,
+      "C": 0.6
+    },
+    "langgraph|c_flaky_goto": {
+      "none": 0.3,
+      "Q": 0.3,
+      "R": 0.3,
+      "M": 0.3,
+      "C": 0.6
+    },
+    "langgraph|c_take_broken": {
+      "none": 0.0,
+      "Q": 0.0,
+      "R": 0.0,
+      "M": 0.0,
+      "C": 0.6
+    },
+    "autogen|control": {
+      "none": 0.65,
+      "Q": 0.55,
+      "R": 0.55,
+      "M": 0.55,
+      "C": 0.65
+    },
+    "autogen|r_starved": {
+      "none": 0.2,
+      "Q": 0.2,
+      "R": 0.55,
+      "M": 0.2,
+      "C": 0.4
+    },
+    "autogen|m_ambiguous": {
+      "none": 0.45,
+      "Q": 0.45,
+      "R": 0.45,
+      "M": 0.55,
+      "C": 0.65
+    },
+    "autogen|c_budget": {
+      "none": 0.0,
+      "Q": 0.0,
+      "R": 0.0,
+      "M": 0.0,
+      "C": 0.55
+    },
+    "autogen|q_no_tool": {
+      "none": 0.5,
+      "Q": 0.55,
+      "R": 0.5,
+      "M": 0.5,
+      "C": 0.95
+    },
+    "autogen|q_misleading": {
+      "none": 0.15,
+      "Q": 0.55,
+      "R": 0.15,
+      "M": 0.15,
+      "C": 0.35
+    },
+    "autogen|r_corrupted": {
+      "none": 0.15,
+      "Q": 0.15,
+      "R": 0.3,
+      "M": 0.2,
+      "C": 0.25
+    },
+    "autogen|r_flaky": {
+      "none": 0.3,
+      "Q": 0.3,
+      "R": 0.55,
+      "M": 0.3,
+      "C": 0.45
+    },
+    "autogen|m_duplicate": {
+      "none": 0.3,
+      "Q": 0.3,
+      "R": 0.3,
+      "M": 0.55,
+      "C": 0.6
+    },
+    "autogen|c_flaky_goto": {
+      "none": 0.3,
+      "Q": 0.3,
+      "R": 0.3,
+      "M": 0.3,
+      "C": 0.65
+    },
+    "autogen|c_take_broken": {
+      "none": 0.0,
+      "Q": 0.0,
+      "R": 0.0,
+      "M": 0.0,
+      "C": 0.65
+    }
+  },
+  "random_repair": {
+    "repair_gain": 0.113,
+    "repair_regret": 0.24
+  },
+  "oracle_best": {
+    "repair_gain": 0.354,
+    "repair_regret": 0.0
+  },
+  "P_REP_1_matched_recovery_min": 0.222,
+  "P_REP_1_pass_ge_050_all": false,
+  "P_REP_3_max_control_harm": 0.15,
+  "P_REP_3_pass_le_015": false,
+  "P_REP_2_pass": true
+}

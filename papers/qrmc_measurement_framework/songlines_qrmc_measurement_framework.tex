@@ -1742,6 +1742,23 @@ regime that produces the shift is the natural next integration.
 \subsection{Conditional-product detail and the Jensen gap}
 \label{app:phi-detail}
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.72\linewidth]{figures/reviewer/fig3_qrmc_forensic}
+\caption{Forensic Q/R/M/C failure decomposition across configurations
+(share of episode failures, computed from the measured conditional
+stage rates of the $35{,}640$-run sweep: $R^\star$ failure
+$=1{-}P(R^\star|Q^\star)$, $M^\star$ failure
+$=P(R^\star|Q^\star)(1{-}P(M^\star|R^\star))$, $C^\star$ failure
+$=P(R^\star|Q^\star)P(M^\star|R^\star)(1{-}P(C^\star|M^\star))$,
+normalised over failures). Fast sharing (shared bus, $K{=}1$) never
+fails at retrieval but its completions collapse under occupancy
+contention ($C^\star$); independent and slow-cadence peers instead
+starve at materialization ($M^\star$). The decomposition localises the
+cadence bottleneck by failure type.}
+\label{fig:forensic}
+\end{figure}
+
 \begin{table*}[h]
 \caption{Per-architecture conditional Q/R/M/C rates from the 35{,}640-run sweep (40 seeds). $P(R^\star|Q^\star)$ is saturated. POM = product-of-means; MOP = mean-of-products (the proper per-configuration expected product). The two summaries disagree systematically at small/intermediate $K$ because the within-cadence correlation between $P(M^\star|R^\star)$ and $P(C^\star|M^\star)$ is strongly negative there (last column) --- the bottleneck-shift signature. \textbf{Bold}: MOP-best of the peer cadences. Mean $t_{\mathrm{succ}}$ (last column) is the practically relevant efficiency measure; its interior minimum at $K=8$ is the predicted-shape result, robust in location but shallow in margin (adjacent fast cadences not resolved; Appendix~\ref{app:effect-sizes}).}
 \label{tab:multi-agent-cond}

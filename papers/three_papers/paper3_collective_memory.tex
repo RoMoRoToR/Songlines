@@ -4,7 +4,7 @@
 % equations, tables, labels, references, and reported numerical results.
 \documentclass{article}
 
-\usepackage[preprint]{neurips_2026}
+\usepackage{neurips_2026}
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -35,7 +35,7 @@
 
 \setcounter{tocdepth}{2}
 
-\title{Utility-Certified Collective Semantic Memory:\\Formation, Admission, and Long-Horizon Coordination}
+\title{Utility-Gated Collective Semantic Memory:\\Formation, Admission, and Long-Horizon Coordination}
 
 \begin{document}
 \maketitle
@@ -52,22 +52,25 @@ distinct, better region of the materialization--completion plane, and
 the benefit comes from selective admissibility, not communication
 volume. Removing the shared-frame assumption through semantic place
 fingerprints preserves this behaviour across private frames; an
-order-theoretic and coalgebraic account (developed compactly in
-dedicated sections a reader may skip) interprets the merged memory as a coherent
-gluing of local views whose consensus-spanning is a measured,
-trust--cadence-dependent property. The second half studies how records
+order-theoretic account (deferred to the appendix) interprets the
+merged memory as a coherent gluing of local views whose
+consensus-spanning is a measured, trust--cadence-dependent property. The second half studies how records
 are \emph{formed} and \emph{admitted}. Retention is a two-axis decision
 --- counterfactual marginal utility (worth retaining) times structural
 analogy (how to integrate) --- realised by five operations (merge,
 exception, new schema, repeat, drop) over an immutable episodic store.
 The formation policy is learnable (a contextual bandit beats the
 hand-designed rule) and a utility estimator matches exact
-counterfactual replay on held-out worlds (Spearman $0.989$), so the
-runtime survives without an oracle. On long horizons, unregulated
-exchange is harmful, a world-clock is necessary but insufficient, and
-receiver-side admission --- validating foreign testimony on the
-recipient's own visit --- reverses the sign, beating independent memory
-by roughly $20\%$ for both roles. An integrated single runtime combines
+counterfactual replay on held-out worlds (Spearman $0.989$), so at
+deployment the runtime requires no online counterfactual replay ---
+after calibration on replay-accessible training environments. On long
+horizons, unregulated exchange is harmful, explicit cross-agent
+temporal comparability (here, a world-clock) is necessary but
+insufficient in the evaluated drift setting, and receiver-side
+admission --- validating foreign testimony on the recipient's own
+visit --- reverses the sign: mean cumulative cost falls below
+independent memory on both roles (fragile $118$ vs.\ $148$, robust
+$134$ vs.\ $171$; ${\approx}20\%$ relative). An integrated single runtime combines
 formation, quarantine, admission, private-frame alignment, route
 execution, reservation, and rollback; at equal memory and communication
 budgets it dominates raw history and independent memory, survives
@@ -75,18 +78,27 @@ perception noise and adversarial provenance, and transfers to
 synthetic-continuous and VMAS substrates with fail-closed safety.
 Controlled LLM experiments show a consolidated Songlines graph resolves
 freshness and cross-frame identity at a fraction of the raw-context
-cost. The result is a complete research prototype of utility-certified,
-provenance-aware collective memory; it does not establish open-world
+cost. The result is an end-to-end research prototype of utility-gated,
+provenance-aware collective memory within the evaluated controlled
+substrates; it does not establish open-world
 symbol grounding, a general category-theoretic theory of agent
 cognition, broad social-LLM generality, or real-robot validity.
-\par\medskip\noindent\textbf{We claim.} Long-term collective
-memory is not a shared archive but a distributed formation-and-admission
-process. Counterfactual marginal utility determines whether an
-experience should be retained; structural analogy determines whether it
-should be merged, stored as an exception, or promoted to a new schema;
-and foreign records become action-authoritative only after
-receiver-side admission under explicit merge, trust, staleness, and
-coordination constraints.
+\par\medskip\noindent\textbf{We claim.} In the evaluated class of
+non-stationary, resource-scarce multi-agent settings with
+heterogeneous roles and potentially stale foreign testimony,
+long-term collective memory functions not as a shared archive but as
+a distributed formation-and-admission process. Estimated
+counterfactual marginal utility governs whether an experience is
+retained; structural analogy governs whether it is merged, stored as
+an exception, or promoted to a new schema; and foreign records gain
+\emph{durable} action authority only after receiver-side admission
+under explicit merge, trust, staleness, and coordination constraints
+--- while bounded provisional use for transport remains available
+under the validity contract (companion route-transfer study). Utility
+gating certifies decision usefulness, not truth: retention reflects a
+record's measured contribution to task outcome, and the epistemic
+burden is carried by the provenance and validity contracts, not by
+the utility estimate.
 \end{abstract}
 
 \section{Introduction}
@@ -127,7 +139,10 @@ the accepted correspondence graph determines whether one consensus
 component spans the population or whether several sub-consensuses
 remain. Second, a coalgebraic reading represents agents as continuing
 processes that emit actions and messages over time, complementing the
-static algebraic description of memory content.
+static algebraic description of memory content. Both readings are
+interpretations of the implemented system, developed in the
+appendices; neither is load-bearing for the empirical claims, and
+neither appears among the contributions.
 
 The contributions of this paper are as follows:
 \begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
@@ -135,18 +150,20 @@ The contributions of this paper are as follows:
 and staleness rules, evaluated against four communication topologies
 and shown to gain from selective admissible consumption rather than
 communication volume --- including semantic place correspondence that
-removes the shared-frame assumption (with order-theoretic and
-coalgebraic interpretations kept to skippable sections).
+removes the shared-frame assumption (formal interpretations deferred
+to appendices).
 \item A two-axis memory-formation rule --- counterfactual marginal
 utility times structural analogy --- realized by five operations
 (merge, exception, new schema, repeat, drop) over an immutable episodic
 store.
 \item A learned formation controller that outperforms the
-hand-designed rule, and an oracle-free utility estimator that matches
-exact counterfactual replay (Spearman $0.989$).
+hand-designed rule, and a utility estimator that matches exact
+counterfactual replay (Spearman $0.989$) and requires no oracle at
+deployment (it is calibrated on replay-accessible training worlds).
 \item Quarantine and receiver-side admission that turn long-horizon
-social exchange from harmful into net-positive (roughly $20\%$ below
-independent memory), resolving the social ladder exchange $\to$
+social exchange from harmful into net-positive (mean cumulative cost
+$118$ vs.\ $148$ and $134$ vs.\ $171$ against independent memory,
+${\approx}20\%$ relative), resolving the social ladder exchange $\to$
 world-clock $\to$ admission.
 \item A single integrated equal-budget runtime combining formation,
 admission, private-frame alignment, route execution, reservation, and
@@ -174,9 +191,9 @@ shared archive, with the order-theoretic and coalgebraic accounts
 deferred to appendices. The second (from
 Section~\ref{p5:sec:intro} onward) asks how records are \emph{formed}
 and \emph{admitted}: the two-axis formation decision and its five
-operations, a learnable controller and an oracle-free utility
+operations, a learnable controller and a replay-calibrated utility
 estimator, the long-horizon social ladder (exchange harmful $\to$
-world-clock necessary-but-insufficient $\to$ receiver-side admission),
+world-clock necessary-but-insufficient in the evaluated drift setting 	o-side admission),
 and a single integrated runtime evaluated under equal budgets,
 adversarial provenance, and continuous and VMAS substrates. The narrative
 is one arc: a shared archive fails, minimal admissibility mechanics
@@ -245,15 +262,37 @@ which that primitive is instantiated:
 \section{Cadence-dependent materialization--completion trade-off}
 \label{p4:sec:cadence}
 
-The peer topology has one explicit parameter: broadcast cadence $K$.
-The main sweep crosses four architectures and eight peer cadences
-$K{\in}\{1,2,4,8,16,32,48,64\}$ for 35{,}640 runs. Figure~\ref{p4:fig:conditional-rates}
-summarizes the result.
+This section restates, for self-containedness, the cadence result
+established in the companion Q/R/M/C study \citep{songlines1}; the
+sweep and its bottleneck-shift finding are that paper's contribution,
+and here they serve as the established starting point that motivates
+the CSM design. The peer topology has one explicit parameter:
+broadcast cadence $K$. The main sweep crosses four architectures and
+eight peer cadences $K{\in}\{1,2,4,8,16,32,48,64\}$ for 35{,}640
+runs. Figure~\ref{p4:fig:conditional-rates} summarizes the result.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/reviewer/fig2_bottleneck_phase}
+\caption{(a) The materialization--completion bottleneck shift and the
+interior optimum of conditional (success-only) time-to-success at $K^\star{=}8$, measured on the
+$35{,}640$-run peer-broadcast sweep of the companion Q/R/M/C
+study~\citep{songlines1}: $P(M^\star|R^\star)$ falls and
+$P(C^\star|M^\star)$ rises with $K$, while mean $t_{\mathrm{succ}}$ has
+an interior minimum. (b) The measured CSM sweep over cadence $K$ and
+trust threshold $\tau$: mean $t_{\mathrm{succ}}$ is essentially
+$\tau$-invariant and only weakly $K$-dependent, and mission success is
+flat in $(K,\tau)$ (range $0.015$). The trust threshold is
+\emph{not} the active lever in this regime --- the interior operating
+point is the cadence effect of panel (a), not a two-dimensional
+optimum island.}
+\label{p4:fig:ktrust}
+\end{figure}
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/fig_conditional_rates.pdf}
-  \caption{Conditional rates and mean time-to-success from the 35{,}640-run sweep. Fast sharing improves target materialization but harms completion through contention; slow sharing has the opposite profile. Mean time-to-success has an interior optimum at $K{=}8$.}
+  \caption{Conditional rates and mean time-to-success from the 35{,}640-run sweep. Fast sharing improves target materialization but harms completion through contention; slow sharing has the opposite profile. Among successful episodes, mean time-to-success has a shallow interior minimum at $K{=}8$; under a censoring-aware expected cost the advantage disappears (companion Q/R/M/C study).}
   \label{p4:fig:conditional-rates}
 \end{figure}
 
@@ -354,8 +393,7 @@ a discrete trust-flip: $\mathrm{trust}\le\tau/c$ zeroes
 foreign-evidence commitments entirely. Fixed-cadence peers have no
 such gate --- their foreign evidence never expires --- which is
 precisely why their completion collapses when sharing is fast. The
-full provenance-conditioned analysis appears in the companion paper
-\emph{The Song, Not the Pin}; here it serves as the mechanistic reading of
+full provenance-conditioned analysis appears in the companion route-transfer study \citep{songlines2}; here it serves as the mechanistic reading of
 Table~\ref{p4:tab:csm-results}.
 
 
@@ -388,7 +426,7 @@ places the receiver has never seen --- is then transported through
 the recovered frame.
 
 \paragraph{Results.} Registered before execution; full protocol in
-the companion route-transfer paper \emph{The Song, Not the Pin}.
+the companion route-transfer study \citep{songlines2}.
 \begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
 \item \textbf{Exact recovery.} Witness--traveler: the secret offset is
   recovered exactly in $100\%$ of landmark-world runs, and under
@@ -418,8 +456,8 @@ the companion route-transfer paper \emph{The Song, Not the Pin}.
   gate and frame recovery are independent layers.
 \end{enumerate}
 
-The stronger claim promised in earlier drafts' limitations is
-therefore discharged constructively: place identity can be carried by
+These results constructively address the previously stated
+shared-frame limitation: place identity can be carried by
 meaning alone, it composes with merge/trust/staleness unchanged, and
 --- unlike the coordinate convention it replaces --- it knows when it
 does not know.
@@ -518,7 +556,7 @@ formation decision additionally affects communication cost,
 cross-agent transfer, and the possibility of propagating stale or
 misleading evidence.
 
-We formulate memory formation through two independent axes. The first
+We formulate memory formation through two conceptually distinct decision dimensions (they are not claimed to be statistically independent). The first
 is counterfactual marginal utility: the expected change in task or
 team cost produced by adding a candidate record to the current memory.
 The second is structural assimilability: the cost of mapping the
@@ -528,21 +566,36 @@ Analogy answers whether it should update an existing schema or create
 a distinct one. A single importance, novelty, or similarity score
 cannot represent both questions.
 
-The resulting controller selects among five operations:
+The resulting controller selects among five operations. The decision
+table below is \emph{formal}: its rows are the mutually exclusive,
+exhaustive branches of the implemented rule (utility threshold
+$U_{\mathrm{thr}}$; signature-overlap threshold; decision-distortion
+threshold $D_{\mathrm{thr}}$), so every incoming record falls into
+exactly one row:
 \begin{center}
 \small
-\begin{tabular}{lll}
+\begin{tabular}{llll}
 \toprule
-Utility & Structural relation & Operation \\
+Utility & Analogy & Conflict & Operation \\
 \midrule
-high & compatible with an existing schema & \textbf{MERGE} \\
-high & similar but decision-conflicting & \textbf{EXCEPTION} \\
-high & not assimilable & \textbf{NEW\_SCHEMA} \\
-low & redundant with stored evidence & \textbf{REPEAT} \\
-low & unsupported and non-redundant & \textbf{DROP} \\
+high & none (no matching schema) & --- & \textbf{NEW\_SCHEMA} \\
+high & complex (overlap below threshold) & --- & \textbf{NEW\_SCHEMA} \\
+high & simple & consistent ($D{<}D_{\mathrm{thr}}$) & \textbf{MERGE} \\
+high & simple & conflicting ($D{\ge}D_{\mathrm{thr}}$) & \textbf{EXCEPTION} \\
+low & none & --- & \textbf{DROP} \\
+low & complex & --- & \textbf{DROP} \\
+low & simple & consistent & \textbf{REPEAT} \\
+low & simple & conflicting & \textbf{REPEAT} \\
 \bottomrule
 \end{tabular}
 \end{center}
+Two consequences of the implemented rule are worth making explicit.
+The conflict predicate is evaluated only when utility is high: a
+conflicting but useless candidate updates statistics (REPEAT) rather
+than earning an exception --- EXCEPTION is reserved for evidence worth
+acting on. And conflict presupposes a simple analogy (distortion is
+measured against a matched schema), so the cell
+``complex $\wedge$ conflicting'' is unreachable by construction.
 
 The exception operation is essential. A useful observation that
 contradicts a stored schema should not overwrite the original evidence,
@@ -588,6 +641,11 @@ LLM context reconstruction, adversarial provenance, and fail-closed
 safety on discrete, continuous, and VMAS substrates.
 \end{enumerate}
 
+Throughout, \emph{receiver-side admission} means that a foreign
+certificate remains quarantined until its utility is evaluated under
+the receiver's current role and world version on the receiver's own
+visit; only records that pass this local check gain action authority.
+
 The scope is that of an end-to-end research prototype. The utility
 estimator is calibrated against exact counterfactual replay in
 controlled environments; its validity in external stochastic systems
@@ -613,14 +671,18 @@ on/off.'' Utility is contextual (per agent and intent) and marginal
 (relative to what is already stored): a duplicate of a stored schema
 has $U = 0$ \emph{by construction}, so repeats are detected without
 any similarity heuristic. The team-level version subtracts collision,
-communication and false-transfer costs.
+communication and false-transfer costs. Exact replay is used as an
+oracle only during controlled calibration; at runtime the deployed
+controller uses the estimator $\widehat U$
+(Section~\ref{p5:sec:acceptance}, UE1) rather than any simulator
+oracle.
 
 \paragraph{Analogy cost.} A new episode $e$ maps onto a stored schema
-$s$ through $\phi$ with cost
+$s$ through an analogical map $\psi$ with cost
 \[
-C_{\mathrm{analog}}(e,s) = L(\phi) + \lambda_d\,
-D_{\mathrm{decision}}(e,s) + \lambda_a \operatorname{Defect}(\phi),
-\qquad A(e,s) = e^{-C_{\mathrm{analog}}},
+C_{\mathrm{analog}}(e,s;\psi) = L(\psi) + \lambda_d\,
+D_{\mathrm{decision}}(e,s) + \lambda_a \operatorname{Defect}(\psi),
+\qquad \mathrm{assim}(e,s) = e^{-C_{\mathrm{analog}}},
 \]
 where $L$ counts structure outside the correspondence (here: couplets
 outside the signature LCS), $D_{\mathrm{decision}}$ measures how
@@ -642,16 +704,17 @@ with $G$ the relational graph/song, $C$ applicability conditions, $E$
 expected effects, $U$ the role-conditioned utility profile, $P$
 provenance (references to immutable source episodes), $T$ observation
 and world time, $F$ failures and exceptions, $A$ admission and
-authority state, and $H$ alignment requirements (and any temporary
-alignment hypotheses). Two things are deliberately \emph{not} stored
-fields: the known analogical maps $\mathcal{A}_m$ and the concrete
-inter-frame correspondence $\Gamma_{ij,t}$ are both re-derived at
-consumption (from $G$ and the receiver's own observations) rather than
-carried in the record --- $H$ records only what a valid correspondence
-would have to satisfy, not a fixed transform. On
-exchange, a schema travels with a \textbf{utility certificate}
-$(\text{conditions}, \Delta V, \text{uncertainty},
-\text{evidence ids}, \mathcal{A}_m, \text{failures})$; the
+authority state, and $H$ alignment requirements (what a valid
+correspondence would have to satisfy). Here $A$ denotes admission and
+authority state; it must not be confused with the temporary analogical
+map $\psi_m$ (below), which is reconstructed during consumption and
+never stored. Indeed, the concrete analogical map $\psi_m$ and the
+inter-frame correspondence $\Gamma_{ij,t}$ are reconstructed by the
+receiver at consumption time and are not transmitted as authoritative
+state. On exchange, a schema travels with a \textbf{utility
+certificate} containing applicability conditions, observed $\Delta V$,
+uncertainty, evidence identifiers, alignment requirements $H$, and
+recorded failures; the
 receiver transports the song through its own mapping and recomputes
 its own utility. For heterogeneous embodiments this is essential: a
 route through a hazard field can have $U_{\mathrm{robust}} > 0$ and
@@ -719,13 +782,12 @@ $=\arg\min_e \mathrm{trust}\cdot e^{-\alpha\,\mathrm{age}(e)}<\tau$;
 objective $w_s\,\mathrm{succ}+w_t(-t)-w_b\,\mathrm{bits}
 -w_c\,\mathrm{collisions}$ (weights $w_s,w_t,w_b,w_c$ distinct from
 the staleness rate $\alpha$ above and from the conditional product
-$\Phi$ of the companion evaluation study).
+$\Phi$ of the companion Q/R/M/C evaluation study \citep{songlines1}).
 
 \paragraph{Hyperparameters (frozen; test seeds never used to tune).}
 utility threshold $U_{\mathrm{thr}}{=}5$ (validation, U1); analogy
 share $\ge0.4$ and distortion $\ge3$ (validation, U1); staleness
-$\alpha{=}0.05$, $\tau{=}0.30$ (fixed; the trust--staleness constants
-of the companion route-transfer paper); song budget
+$\alpha{=}0.05$, $\tau{=}0.30$ (fixed; the trust--staleness constants of the companion route-transfer study \citep{songlines2}); song budget
 $v_{\max}{=}10$ (\emph{evolved}, U3); anchor consensus $k{=}3$ and
 safe-prefix depth $5$ (safety design, N1/C1). Selection method and
 per-parameter sensitivity are tabulated in
@@ -1026,12 +1088,11 @@ vs.\ $221$ items) whose world-referents drift stale faster than
 role-gating or recency can filter --- broadcast time is not world
 time. Three of four registered predictions failed on this; the one
 that passed is reservations (S1.3: duplicate commitments to zero at
-no cost). This is the series' central law --- \emph{the gate, not the
+no cost). This is the central empirical pattern of this paper --- \emph{the gate, not the
 exchange, carries the value of collective memory} --- re-derived in
 the formation substrate: certificates without a world-clock
 staleness contract are not merely insufficient, they are net harmful
-at horizon, exactly as raw exchange was for the LLM collective in
-the companion route-transfer paper.
+at horizon, exactly as raw exchange was for the LLM collective in the companion route-transfer study \citep{songlines2}.
 
 
 \paragraph{The world-clock contract (S2) --- necessary, not
@@ -1082,6 +1143,26 @@ the program is thereby measured end to end: exchange without
 contracts is harmful (S1), world-clock staleness is necessary but
 insufficient (S2), and admission by demonstrated utility on one's own
 visits --- testimony is not evidence --- resolves the evaluated social-memory setting (S3).
+
+\paragraph{The authority ladder, and why quarantine is not a
+deadlock.} A foreign record here passes through four authority states
+shared with the companion route-transfer study \citep{songlines2}:
+\emph{observed} (the sender's local evidence), \emph{received}
+(quarantined: present, version metadata circulating, but inert),
+\emph{provisionally executable} (permitted to guide bounded,
+reversible transport under an explicit validity-and-coordination
+contract), and \emph{admitted} (durable authority after receiver-side
+validation). Quarantine restricts the \emph{fourth} state, not the
+third. In this paper's long-horizon setting, agents revisit families
+in the course of their roles, so quarantined testimony is validated on
+visits that occur anyway and strict quarantine suffices; the apparent
+circularity --- validation requires a visit, a visit seems to require
+acting on the record --- does not arise. Where visits do not recur
+naturally, the companion study supplies the missing rung: bounded
+provisional transport (staleness gate, reservation, rollback, rupture
+boundary) carries the receiver into validation range without granting
+durable authority. The two papers describe two rungs of one ladder,
+not two competing principles.
 
 
 \section{One method: the integrated runtime and its benchmark}
@@ -1149,6 +1230,30 @@ $0.97$ against the true counterfactual on held-out worlds, and the
 full controller driven by $\widehat U$ alone matches the oracle
 version (cost ratio $0.965/0.977$) --- the critical
 experiment: the system survives estimation.
+
+\paragraph{Beyond rank correlation (UE1, extended).} Because a high
+Spearman alone does not certify decision quality, the estimator is
+also evaluated on error, calibration, and regret (same frozen
+$\lambda$ and thresholds; test seeds $100+$ untouched during any
+tuning; artifact \texttt{tmp/song\_grammar/ue1\_eval/}). On the
+held-out split: MAE $12.3$ and RMSE $15.9$ against
+$\mathrm{std}(U^\star){=}89$ --- so absolute values carry
+${\approx}14\%$ error even where ranking is near-perfect; sign
+accuracy $0.98$ (precision $0.978$, recall $1.0$ for $U^\star{>}0$);
+top-$5/10/20$ recall $0.82/0.88/0.90$; calibration monotone with
+weighted error $8.7$, the main defect an over-estimate of weak
+records near the retention threshold. The decision-level metric is
+\emph{policy regret}: retaining the top-$B$ records by $\widehat U$
+instead of by exact replay loses $\le 0.3\%$ of the achievable value
+at every tested budget. Out-of-distribution slices: layout-variant
+and horizon shifts preserve all metrics (regret $\le 0.7\%$);
+the honest weakness is the \emph{role} shift (calibrated on the
+robust role, evaluated on fragile-role utilities): magnitudes are
+systematically under-predicted (MAE $33.8$, calibration error $30$),
+ranking survives ($\rho{=}0.97$, regret $\le 2.3\%$) but top-$5$
+recall drops to $0.60$ --- per-role calibration is required where
+absolute utility thresholds matter, and we record this as a
+limitation rather than average it away.
 
 \paragraph{The margin lesson (N1).} Under independent false-negative
 $\times$ false-positive perception noise, coverage degrades
@@ -1246,6 +1351,19 @@ threshold relax (recovering coverage) by catching the lone wrong
 anchors a consensus count cannot. Calibration was frozen on dev
 families ($5001{+}$); test seeds ($100{+}$) were never touched.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\linewidth]{figures/reviewer/fig1_noise_robustness}
+\caption{Fail-closed safety under sensor noise (measured N1 sweep, $24$
+seeds/cell, diagonal FN$=$FP). Removing the anchor-consensus mechanism
+(min-anchors $=1$) lets the fail-open rate climb above the $5\%$ bar as
+tag noise grows; anchor consensus $\ge 2$ and the full consensus
+$\ge 3$ + safe-prefix arm hold fail-open at $0.000$ across the whole
+sweep --- degrading into refusals (a coverage cost) rather than wrong
+commitments.}
+\label{p5:fig:noise}
+\end{figure}
+
 \paragraph{External substrate (VMAS physics).}
 To test whether the effect depends on the authors' own grid and synthetic-continuous substrates, we transplanted
 not the diagnostic logger but the \emph{whole runtime}
@@ -1269,6 +1387,21 @@ unchanged from the grid configuration. The effect and its
 fail-closed safety therefore transfer to a third, externally implemented
 substrate.
 
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/reviewer/fig4_cross_substrate}
+\caption{The integrated runtime keeps its advantage across substrates
+(measured summaries): MiniGrid team cost and VMAS physics team steps
+(lower is better), and ALFWorld task grounding (single measured point;
+no convergence curve was measured). The fourth panel is the measured
+MAPPO baseline training curve, which plateaus at success
+$\approx0.65$ --- the symbolic-peer $K{=}8$ level --- confirming the
+multi-agent-RL baseline is trained to convergence, so the runtime's
+advantage is not an artefact of an undertrained baseline. MAPPO
+baseline from the companion Q/R/M/C study~\citep{songlines1}.}
+\label{p5:fig:crosssub}
+\end{figure}
 
 \section{Related work}
 \label{p5:sec:related}
@@ -1300,6 +1433,20 @@ loop.
 
 \section{Limitations and open problems}
 \label{p5:sec:limits}
+
+\paragraph{Evidence classes.} As in the companion studies, results
+are marked by causal strength rather than presented uniformly: the
+cadence bottleneck shift is the companion study's contribution,
+restated as background; CSM dominance and the equal-budget runtime
+comparisons are \emph{controlled system comparisons}; the formation
+matrix (U1) is a \emph{deterministic replay measurement}; the bandit
+and estimator results are \emph{held-out learning comparisons}; the
+S1$\to$S2$\to$S3 social ladder is a sequence of \emph{registered
+paired interventions}; the LLM active-context result is a
+\emph{systems comparison} of one consolidation pipeline against raw
+context, not evidence of a fundamental long-context limitation; and
+the order-theoretic and coalgebraic accounts are \emph{interpretations},
+with no empirical weight.
 
 The present results establish an integrated prototype, but several
 limitations remain. First, the utility estimator is trained and
@@ -1376,8 +1523,9 @@ rollback. Under the tested equal-budget conditions, it outperforms raw
 history and independent memory, and the safety gates reduce fail-open
 behavior below the predefined threshold on the controlled substrates.
 
-The current result is therefore a complete research prototype of
-utility-certified, provenance-aware collective memory. It should not
+The current result is therefore an end-to-end research prototype of
+utility-gated, provenance-aware collective memory within the
+evaluated controlled substrates. It should not
 be interpreted as a universal solution to long-context memory for all
 LLM or robotic systems. Open-ended concept formation, richer causal
 analogy, broad social LLM evaluation, and real-world robotic
@@ -1435,14 +1583,14 @@ correspondence is solvable from co-observation, and predicate
 correspondence is genuinely open. The same triple reappears one level
 up, at the evaluator: scoring retrieval and materialization
 presupposes a correspondence between memory entities and world
-referents (see the companion measurement paper's limitations), and
+referents (see the companion Q/R/M/C study's limitations \citep{songlines1}), and
 grounding \emph{that} correspondence by the mechanisms of
 Section~\ref{p4:sec:semantic-identity} is future work.
 
 Parameter (i) has, in addition, a measurable \emph{interior}: within a
 fixed $\Sigma$, which tag classes actually carry place correspondence
 is an empirical property, not a modelling choice. A registered
-vocabulary ablation in the companion route-transfer paper makes the
+vocabulary ablation in the companion route-transfer study \citep{songlines2} makes the
 alphabet itself the treatment and finds the identity machinery
 \emph{fail-safe in $\Sigma$}: impoverishing the vocabulary down to a
 single content class converts frame recovery into refusal, never into
@@ -1607,11 +1755,9 @@ concepts. This reading gives three useful constraints.
 \item \textbf{Decay is not a morphism.} Staleness is kept as a weight field outside the alignment morphisms. Otherwise age-then-merge and merge-then-age need not commute, breaking the clean interpretation of broadcast snapshots as one diagram.
 \end{enumerate}
 
-In earlier drafts this section ended by conceding that the model does
-not answer which perceptual features should identify two places ---
-the alignment maps were assumed, not constructed. That gap is now
-closed by Section~\ref{p4:sec:semantic-identity}, and the closure gives
-the colimit reading its missing scientific function:
+The colimit reading requires the alignment maps of the diagram; rather
+than assume them, Section~\ref{p4:sec:semantic-identity} constructs them,
+which gives the colimit reading its scientific function:
 \begin{enumerate}[leftmargin=20pt,itemsep=2pt,topsep=2pt]
 \item \textbf{The alignment morphisms are constructed, not assumed.}
   Fingerprint consensus IS an algorithm that produces the alignment
@@ -2245,6 +2391,14 @@ The experiments use MiniGrid and MiniWorld~\citep{MinigridMiniworld23}. Locally 
 \clearpage
 
 \begin{thebibliography}{99}
+\bibitem[Anonymous(2026a)]{songlines1}
+Anonymous.
+\newblock Q/R/M/C: Stage-decomposed evaluation of memory-grounded agents.
+\newblock Under review, 2026.
+\bibitem[Anonymous(2026b)]{songlines2}
+Anonymous.
+\newblock The song, not the pin: Provenance-conditioned route transfer across private frames.
+\newblock Under review, 2026.
 \bibitem[Chevalier-Boisvert et~al.(2023)]{MinigridMiniworld23}
 M.~Chevalier-Boisvert, B.~Lahlou, S.~Willems, and P.~S. Castro.
 \newblock MiniGrid and MiniWorld: Modular reinforcement learning environments.
