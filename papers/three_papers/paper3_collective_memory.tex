@@ -64,13 +64,17 @@ hand-designed rule) and a utility estimator matches exact
 counterfactual replay on held-out worlds (Spearman $0.989$), so at
 deployment the runtime requires no online counterfactual replay ---
 after calibration on replay-accessible training environments. On long
-horizons, unregulated exchange is harmful, explicit cross-agent
-temporal comparability (here, a world-clock) is necessary but
-insufficient in the evaluated drift setting, and receiver-side
-admission --- validating foreign testimony on the recipient's own
-visit --- reverses the sign: mean cumulative cost falls below
-independent memory on both roles (fragile $118$ vs.\ $148$, robust
-$134$ vs.\ $171$; ${\approx}20\%$ relative). An integrated single runtime combines
+horizons, unregulated exchange is harmful; temporal decay of foreign
+testimony is necessary but insufficient in the evaluated drift setting
+--- and a clock-alternatives study shows the operative signal is
+receiver-relative (age since own corroboration beats a world clock,
+while ordering-only Lamport/vector clocks are worse than no clock);
+receiver-side admission --- validating foreign testimony on the
+recipient's own visit --- reverses the sign: mean cumulative cost
+falls below independent memory on both roles (fragile $118$ vs.\
+$148$, robust $134$ vs.\ $171$; ${\approx}20\%$ relative), and a
+staged component ladder attributes the reversal to quarantine plus
+admission, with reservations adding duplicate hygiene at no cost. An integrated single runtime combines
 formation, quarantine, admission, private-frame alignment, route
 execution, reservation, and rollback; at equal memory and communication
 budgets it dominates raw history and independent memory, survives
@@ -78,7 +82,10 @@ perception noise and adversarial provenance, and transfers to
 synthetic-continuous and VMAS substrates with fail-closed safety.
 Controlled LLM experiments show a consolidated Songlines graph resolves
 freshness and cross-frame identity at a fraction of the raw-context
-cost. The result is an end-to-end research prototype of utility-gated,
+cost; a fixed-budget comparison against five stronger context-management
+baselines attributes the freshness gain to structured consolidation as
+such (a programmatic latest-state table suffices), while cross-frame
+identity remains specific to the graph's alignment machinery. The result is an end-to-end research prototype of utility-gated,
 provenance-aware collective memory within the evaluated controlled
 substrates; it does not establish open-world
 symbol grounding, a general category-theoretic theory of agent
@@ -164,7 +171,8 @@ deployment (it is calibrated on replay-accessible training worlds).
 social exchange from harmful into net-positive (mean cumulative cost
 $118$ vs.\ $148$ and $134$ vs.\ $171$ against independent memory,
 ${\approx}20\%$ relative), resolving the social ladder exchange $\to$
-world-clock $\to$ admission.
+temporal decay $\to$ admission --- with a clock-alternatives study and
+a staged component ladder attributing the effect.
 \item A single integrated equal-budget runtime combining formation,
 admission, private-frame alignment, route execution, reservation, and
 rollback, with adversarial-provenance, perception-noise, and
@@ -193,7 +201,8 @@ Section~\ref{p5:sec:intro} onward) asks how records are \emph{formed}
 and \emph{admitted}: the two-axis formation decision and its five
 operations, a learnable controller and a replay-calibrated utility
 estimator, the long-horizon social ladder (exchange harmful $\to$
-world-clock necessary-but-insufficient in the evaluated drift setting 	o-side admission),
+temporal decay necessary-but-insufficient, with the receiver-relative
+form strongest among tested clocks $\to$ receiver-side admission),
 and a single integrated runtime evaluated under equal budgets,
 adversarial provenance, and continuous and VMAS substrates. The narrative
 is one arc: a shared archive fails, minimal admissibility mechanics
@@ -604,6 +613,34 @@ context-dependent counterexample and resolved during later retrieval
 or schema splitting. This design is supported by an immutable
 episodic layer and by provenance links from schemas to their source
 episodes.
+
+\paragraph{Necessity of the operations, by ablation.} Each operation
+was removed in turn and the ablated memory run on paired two-world
+streams --- an original world A and a corrupted variant V --- on $48$
+worlds from seed blocks fully disjoint from every development seed
+(registered predictions written before the run; artifact
+\texttt{tmp/cluster/operation\_ablations/}). Removing EXCEPTION in
+favour of last-write-wins merging destroys the original world
+(cost$_A$ $54$--$58$ vs.\ full's $12$--$13$; success$_A$
+$1.0 \to 0.0$; corrupt-merge events in every world); removing it in
+favour of DROP destroys the corrupted world instead (cost$_V$
+$63$--$74$ vs.\ $19$--$20$): the exception cell is exactly what holds
+the two-world Pareto point. A binary merge-or-drop policy is
+catastrophic on transfer worlds B/C ($100$--$119$ vs.\ $12$--$16$).
+Removing REPEAT leaves costs untouched while bloating memory and
+erasing support statistics; removing NEW\_SCHEMA leaves cost intact
+but corrupts structure --- schemas collapse into a single parent whose
+certificate accumulates false failure entries, the damage surfacing in
+trust bookkeeping rather than in path cost. Honest accounting of the
+registered verdicts: the population-level effects above are large and
+stable across all three seed blocks, but the \emph{per-world
+universal} form of the exception prediction (strictly lower two-world
+max-regret in every single world) fails in $2$ of $48$ worlds, where
+last-write-wins happened to carry lower regret ($8$ vs.\ $10$; $5$
+vs.\ $8$) --- and one seed block's streams contained too few novel
+events to exercise the NEW\_SCHEMA verdict at all. We retain the
+universal predictions as registered, report them as $46/48$ and
+$2/3$ blocks, and state the necessity claims at the population level.
 
 The empirical program proceeds in four stages. First, deterministic
 replay tests the five-way formation rule under controlled conflicts.
@@ -1119,6 +1156,28 @@ foreign knowledge only where it has demonstrated utility on one's own
 visits --- the certificate is testimony, and testimony, the two
 negatives jointly say, is not admissible evidence.
 
+\paragraph{Is a world clock actually necessary? Clock alternatives,
+measured.} ``Necessary'' deserved a direct test against the standard
+alternatives, and the answer revises our own earlier phrasing
+($12$ seeds, $300$ episodes, paired streams; artifact
+\texttt{tmp/cluster/song\_grammar/ca/}). Ordering-only logical clocks
+do \emph{not} substitute: Lamport ($194.9/258.8$ fragile/robust) and
+vector clocks ($195.0/258.9$) are \emph{worse than no clock at all}
+($169.8/238.1$) --- they order testimony but never age it out, and the
+extra admissible volume amplifies the aliasing failure. Family
+version numbers alone ($162.5/220.4$) approximate the world clock
+($159.2/211.8$). The strongest temporal gate is \emph{age since the
+receiver's own last corroboration} ($129.1/154.5$) --- a purely local
+signal requiring no cross-agent time at all, which beats the world
+clock and even the independent baseline ($148.2/170.8$) in this
+setting, and which is precisely a weak form of receiver-side
+admission. The correct statement of S2 is therefore not ``a world
+clock is necessary'' but: \emph{temporal decay of foreign testimony
+relative to the receiver's own evidence is necessary; a world clock
+is one adequate carrier of it, ordering-only clocks are not, and the
+receiver-relative form both outperforms global time and anticipates
+S3}. All arms here still lose to full admission (S3: $118/134$).
+
 
 \paragraph{Admission control (S3) --- the reversal reverses.} The
 principle the two negatives pointed at was implemented: every foreign
@@ -1143,6 +1202,46 @@ the program is thereby measured end to end: exchange without
 contracts is harmful (S1), world-clock staleness is necessary but
 insufficient (S2), and admission by demonstrated utility on one's own
 visits --- testimony is not evidence --- resolves the evaluated social-memory setting (S3).
+
+\paragraph{The component ladder, measured.} The S1$\to$S3 narrative is
+closed by a registered staged ablation on paired assignment streams
+($12$ seeds, $300$ episodes; artifact
+\texttt{tmp/cluster/song\_grammar/cl/}): each rung adds one component,
+and every headline claim of this section re-derives as a rung
+difference. Mean cumulative cost (fragile/robust):
+
+\begin{center}
+\small
+\begin{tabular}{llcc}
+\toprule
+Rung & Configuration & fragile & robust \\
+\midrule
+1 & independent & 135.5 & 143.6 \\
+2 & + raw exchange & 151.3 & 192.2 \\
+3 & + world-time staleness & 142.2 & 172.6 \\
+4 & + provenance/trust & 141.7 & 172.9 \\
+5 & + quarantine (hold, no validation) & 133.7 & 135.8 \\
+6 & + receiver-side admission & 118.7 & 124.3 \\
+7 & + reservations (full) & 118.5 & 123.8 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Exchange hurts (rung 2), staleness gating recovers part (rung 3),
+quarantine-without-validation collapses to $\approx$independence
+(rung 5, as the theory of admission predicts: held-forever testimony
+is inert), admission produces the reversal (rung 6), and reservations
+add duplicate hygiene at no cost (rung 7: duplicate rate
+$0.015 \to 0.000$). Leave-one-component-out from the full runtime
+confirms the attribution and yields one honest negative: removing
+admission or quarantine breaks the system back to rung-3/4 costs
+($141.4/171.7$ and $139.6/167.8$), removing staleness costs
+moderately ($119.6/132.1$), removing reservations returns duplicates
+without a cost change --- and removing \emph{provenance tracking}
+changes nothing measurable ($118.4/123.8$): in this substrate the
+trust weights are carried by admission itself, and provenance's value
+(auditability, adversarial attribution) is not visible in the cost
+metric. We report the null rather than claim otherwise.
 
 \paragraph{The authority ladder, and why quarantine is not a
 deadlock.} A foreign record here passes through four authority states
@@ -1253,7 +1352,11 @@ systematically under-predicted (MAE $33.8$, calibration error $30$),
 ranking survives ($\rho{=}0.97$, regret $\le 2.3\%$) but top-$5$
 recall drops to $0.60$ --- per-role calibration is required where
 absolute utility thresholds matter, and we record this as a
-limitation rather than average it away.
+limitation rather than average it away. All headline metrics
+replicate on a widened split ($30$ pools: MAE $10.7$, $\rho{=}0.991$,
+regret $0.2\%$) and on a completely fresh seed block ($200$--$230$,
+never touched by any experiment in the program: MAE $10.7$,
+$\rho{=}0.990$, sign accuracy $0.976$, regret $0.3\%$).
 
 \paragraph{The margin lesson (N1).} Under independent false-negative
 $\times$ false-positive perception noise, coverage degrades
@@ -1282,6 +1385,30 @@ cost in every substrate --- a mechanism whose value is shown in a
 specialized experiment (corruption for provenance, gossip for the
 immutable layer) need not also move the integration benchmark. We
 report each clause below.
+
+\paragraph{Full resource accounting.} Equal memory and communication
+budgets do not by themselves equalize \emph{compute}, so every arm of
+the benchmark was re-run under full metering ($30$ test seeds,
+$e{=}300$, paired with the utility benchmark; artifact
+\texttt{tmp/cluster/song\_grammar/resource\_accounting/}): stored
+bytes, transmitted bytes (protocol metadata included), memory-update
+time, query latency, process CPU-seconds, and amortized formation
+cost per use. The utility-winning arm is not buying its advantage
+with hidden compute: the full runtime sits on the joint
+(cost $\times$ all six resources) Pareto frontier and even has
+\emph{lower} query latency than independent memory ($79$ vs.\
+$97$\,ms mean), because consolidation keeps the queried store small.
+Its real premiums are storage ($624$\,KB/agent vs.\ $181$ independent)
+and wire traffic ($54$\,KB), reported as such. The compute-expensive
+arms are the unconsolidated retrieval-scan baselines (query
+$345$--$653$\,ms, CPU $1.6$--$2.9\times$ the full runtime), while the
+top-3-capped graph baseline is the CPU-cheapest arm of all ($30$
+CPU-s) at much worse task cost --- structure is not intrinsically
+expensive; scanning is. One metering gap is disclosed: the
+learned-formation arm's counterfactual probes made its shards exceed
+the walltime ($8$ of $10$ seeds per shard completed; its update cost,
+${\sim}870$\,s per seed, is itself the finding), and reservation
+traffic in this substrate is estimated, not carried on the wire.
 
 \paragraph{Statistical footing.} On the integration benchmark the
 full method beats independent on \textbf{$12/12$ paired test seeds}
@@ -1443,8 +1570,11 @@ matrix (U1) is a \emph{deterministic replay measurement}; the bandit
 and estimator results are \emph{held-out learning comparisons}; the
 S1$\to$S2$\to$S3 social ladder is a sequence of \emph{registered
 paired interventions}; the LLM active-context result is a
-\emph{systems comparison} of one consolidation pipeline against raw
-context, not evidence of a fundamental long-context limitation; and
+\emph{systems comparison} against raw context and five stronger
+context-management baselines (Appendix~\ref{p4:app:ctx-vs-structure},
+Axis~4) --- it certifies the value of structured consolidation as
+such, with graph-specific value only on cross-frame identity, and is
+not evidence of a fundamental long-context limitation; and
 the order-theoretic and coalgebraic accounts are \emph{interpretations},
 with no empirical weight.
 
@@ -2270,16 +2400,82 @@ as fingerprints accumulate (the exact\% curve of the growth study); the raw arm
 envelope-valid cell. Cross-frame identity is precisely what a context window
 cannot represent and the gluing structure can.
 
+\paragraph{Axis 4: stronger baselines at a fixed token budget.}
+The raw transcript is a weak opponent, so we re-ran the freshness and
+(single-log) identity questions against five stronger context-management
+baselines under one budget accounting (identical model, evidence stream,
+questions, and scoring; token counts by one tokenizer; payload $\le$ budget
+enforced; artifact \texttt{tmp/llm\_context\_baselines/}; $12$ layouts per
+cell, Llama-3.1-8B local): \textbf{raw+instructions} (transcript plus explicit
+conflict-resolution guidance, preamble charged to the budget),
+\textbf{rolling summary} (incremental LLM summarization; its extra calls are
+logged as build cost), \textbf{retrieval} (top-$k$ TF--IDF chunks),
+\textbf{table} (a \emph{programmatic} latest-state-per-place table, no LLM,
+no graph), and the Songlines \textbf{graph}.
+
+\begin{table}[h]
+\caption{Fixed-budget comparison, Llama-3.1-8B, long logs
+(${\approx}2{,}000$-token transcripts), freshness / identity accuracy at
+representative budgets; ``tok'' = measured payload, ``bc'' = summary build
+calls. The uncapped column reproduces the published raw degradation
+($0.08$).}
+\label{p4:tab:ctx-baselines}
+\centering
+\small
+\begin{tabular}{l cc c cc c cc}
+\toprule
+ & \multicolumn{2}{c}{uncapped} & & \multicolumn{2}{c}{budget 192} & & \multicolumn{2}{c}{budget 96} \\
+Arm & fresh & tok & & fresh & tok & & fresh & tok \\
+\midrule
+raw            & 0.08 & 1979 & & 0.58 & 182 & & 0.58 & 87 \\
+raw+instr      & 0.42 & 2097 & & \textbf{1.00} & 176 & & 0.00 & 96 \\
+summary        & 0.83 & 97 (bc 144)  & & 0.92 & 90 & & 0.75 & 70 \\
+retrieval      & 0.08 & 2001 & & 0.08 & 176 & & 0.17 & 81 \\
+table          & \textbf{1.00} & 76 & & \textbf{1.00} & 76 & & \textbf{1.00} & 76 \\
+graph          & \textbf{1.00} & 117 & & \textbf{1.00} & 117 & & 0.33 & 58 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three honest readings. (i) The strongest baseline is the cheapest one: the
+programmatic latest-state \emph{table} matches the graph on freshness at
+every budget (and on the single-log identity question), at $61$--$76$
+tokens. What these two question families certify is therefore the value of
+\emph{external structured consolidation as such}, not of the graph
+representation specifically. (ii) The failure modes of the other baselines
+are informative: TF--IDF retrieval fails freshness at every budget
+($0.08$--$0.17$) because lexical similarity preferentially returns the
+\emph{stale} sightings; rolling summary is competitive on freshness but
+carries a hidden compute cost ($144$ extra LLM calls per log) and loses the
+identity question; instructions rescue the raw transcript at moderate
+budgets ($1.00$ at $192$) but not at full length ($0.42$ uncapped) --- the
+conflict-resolution failure is attentional, not informational. (iii) The
+graph's \emph{differential} value over a flat table does not live on these
+two axes: it lives on Axis~3, cross-frame identity, where a
+latest-state table in one agent's private frame cannot express the merge at
+all --- that is the axis that requires the alignment machinery. At the
+tightest budget ($96$) the graph serialization is truncated and degrades
+($0.33$) while the more compact table survives; representation overhead is
+a real cost and is reported as such. The same seven-arm grid on a
+second model family (Qwen2.5-3B, cluster GPU, same budgets and
+scoring) reproduces the ordering: table and graph at the top of
+freshness at every budget, TF--IDF retrieval weakest
+($0.42$--$0.58$ on long logs), and the flat table again matching or
+beating the graph on the single-log identity question --- the
+structured-consolidation attribution is not model-specific.
+
 \paragraph{Summary.}
 The same model, given the same evidence, preserves long, drifting, multi-agent
-context when --- and only when --- the evidence reaches it as the consolidated
-Songlines structure: flat-cost prompts, freshness resolved, frames glued.
-Given the raw stream instead, it fails on integration at $1.3$\,kB, on
-freshness at $19$\,kB with full ingestion, and on cross-frame identity at every
-tested size. Scope: two model families, one task family per axis, and the
-compute-envelope cells are reported as such; the graph arm's consolidation
-here is the deterministic Songlines rule --- LLM-driven consolidation is the
-roadmap's next stage.
+context when the evidence reaches it in consolidated structured form ---
+the Songlines graph, or, for the single-frame freshness and identity
+questions, even a flat latest-state table (Axis~4): flat-cost prompts,
+freshness resolved. Given the raw stream instead, it fails on integration at
+$1.3$\,kB, on freshness at $19$\,kB with full ingestion, and on cross-frame
+identity at every tested size. The graph-specific value concentrates where
+flat structure cannot follow: cross-frame gluing (Axis~3). Scope: two model
+families, one task family per axis, and the compute-envelope cells are
+reported as such; the graph arm's consolidation here is the deterministic
+Songlines rule --- LLM-driven consolidation is the roadmap's next stage.
 
 
 \section{Reproducibility commands}

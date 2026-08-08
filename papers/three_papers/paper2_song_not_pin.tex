@@ -61,14 +61,22 @@ own-evidence completions were preceded by a foreign-evidence transport
 chain (a descriptive chain statistic; the causal contribution is
 estimated separately by masked replay). The closed-form admissibility
 boundary derived from the trust--staleness gate predicts the latest
-admissible intention time exactly on the registered $6/6$ hold-out ---
-a contract-level prediction validated against the implementation, not
-an empirical law of the environment. The same analysis identifies target contention, rather
+admissible intention time exactly on the registered $6/6$ hold-out and
+on a second, parameter-disjoint $75$-cell hold-out ($75/75$ exact,
+including delayed snapshot delivery, whose breakpoint shift the closed
+form predicts tick-for-tick) --- a contract-level prediction validated
+against the implementation, not an empirical law of the environment. The same analysis identifies target contention, rather
 than incorrect evidence, as the principal completion cost of fast
-sharing. We therefore introduce a decentralized reservation and
-rollback protocol that increases success at every tested fast cadence
-and exceeds the strongest fixed-cadence baseline ($0.614$--$0.620$
-versus $0.583$). A controlled LLM experiment further demonstrates
+sharing --- a diagnosis confirmed by intervention: restoring
+coordination alone (unique target assignment, evidence untouched)
+restores foreign-evidence completion from $0.000$ to $0.48$--$0.56$,
+whereas perfect evidence without coordination does not help. We
+therefore introduce a decentralized reservation and rollback protocol
+that increases success at every tested fast cadence, exceeds the
+strongest fixed-cadence baseline ($0.614$--$0.620$ versus $0.583$),
+and, against five standard decentralized coordination baselines on
+equal information, is best or statistically tied on success while
+uniquely minimizing duplicate commitments at every cadence. A controlled LLM experiment further demonstrates
 cross-session use of foreign memory. Extending provenance from target
 records to route edges then reveals a structural boundary between
 place-only and route-level transfer: place-only guidance fails at the
@@ -79,7 +87,11 @@ all $110$ tested validity regimes and all $21$ intermediate failure
 indices exactly, and a traveler on a foreign route preserves the
 witness's measured risk profile up to the predicted rupture. Semantic landmark constellations recover
 correspondence across translations and quarter-turn rotations in $80/80$
-tests and fail closed under ambiguity. Landmarks and edges provide
+tests, remain fail-closed across a $5{,}280$-trial stress surface of
+tag noise, landmark deletion, and constructed ambiguity, and expose
+one systematic fail-open channel --- silent vocabulary mismatch
+($2.5$--$5\%$ wrong-transform acceptance under permuted tag alphabets)
+--- which makes the shared-ontology assumption explicit. Landmarks and edges provide
 complementary identity and transport functions; their composition
 reaches an unseen target at $6.4\%$ of the full-snapshot bit cost before
 protocol metadata. These results indicate that the
@@ -442,6 +454,24 @@ the predicted sign but negligible magnitude (Spearman $+0.033$,
 $p{=}0.018$, $n{=}5{,}117$); we report it as exploratory rather than
 as a confirmed predictor.
 
+\paragraph{Contention, established by intervention.} The claim that
+target contention --- not incorrect evidence --- is the principal
+completion cost of fast sharing is closed by a $2{\times}2$
+evidence-quality $\times$ coordination intervention grid plus an
+abundance control ($800$ episodes, $20$ seeds, identical seeds across
+modes; artifact \texttt{tmp/cluster/contention\_interv/}). With
+evidence untouched and coordination fixed by a unique-assignment
+oracle, foreign-evidence completion is \emph{restored}:
+$P(\cstar|\wstar_{0.8})$ rises from $0.000$ to $0.478$ at $K{=}1$ and
+$0.559$ at $K{=}4$, with duplicate locking eliminated. Removing
+scarcity ($T{=}N$) lifts success from $0.60$ to $0.80$--$0.83$
+without any coordination. Conversely, perfect evidence \emph{without}
+coordination (oracle retrieval, no protocol) leaves success within
+noise of baseline and duplicate locking high. The completion penalty
+of foreign evidence is therefore a coordination failure, not an
+information failure --- the direct interventional counterpart of the
+descriptive co-lock statistics above.
+
 
 \section{The warp admissibility boundary}
 \label{p2:sec:law}
@@ -542,6 +572,26 @@ reinterprets the companion result \citep{songlines3} that CSM dominates fixed-ca
 peers: trust$\times$staleness is a \emph{warp gate} --- CSM does not
 share better, it \emph{refuses to warp on a stale or untrusted song}.
 
+\paragraph{Parameter-disjoint hold-out ($75$ cells).} Because six
+cells are a thin validation, the boundary was re-tested on a second
+registered hold-out in which \emph{every} gate parameter takes values
+never used in any prior experiment: trust
+$\tau_i \in \{0.35, \dots, 0.95\}$, decay
+$\alpha \in \{0.03, 0.15, 0.25\}$ (all prior runs used $0.05$),
+inclusion threshold $\tau \in \{0.2, 0.4\}$, confidence
+$c \in \{0.9, 0.99\}$, distances $d \in \{5,\dots,17\}$, cadences
+$K \in \{2,4,8\}$, plus a new mechanism axis --- snapshot delivery
+delayed by $L \in \{0,2,5\}$ ticks, for which the closed form
+predicts a breakpoint shift of exactly $L$. Predictions for all $75$
+cells (including $12$ never-cells and $4$ cells where the pruning
+horizon must beat the exponential gate) were written to disk with a
+UTC timestamp before any episode ran. Result: $\mathbf{75/75}$ exact
+integer matches, $0$ off-by-one, $0$ misses; the delay shift is
+$L$ tick-for-tick; all completion curves are monotone steps (artifact
+\texttt{tmp/cluster/warp/boundary\_holdout\_v2/}). The boundary is a
+contract-level prediction, and the contract now holds across the
+parameter space, not at six points.
+
 \paragraph{Portability to continuous dynamics.} All three registered
 predictions survive on a continuous VMAS substrate through the same
 continuous$\to$grid bridge used by the portability test of the companion Q/R/M/C study \citep{songlines1}:
@@ -611,6 +661,31 @@ resolved \emph{preventively}: C's reservation arrives before A ever
 locks $(3,8)$; A completes on another target. In the sweep, rollback
 latency of dominated locks is finite and ${\approx}K$: $1.0/1.5/2.7$
 ticks at $K{=}1/2/4$ (baseline: until end of episode).
+
+\paragraph{Against standard coordination baselines.} Reservation is a
+natural remedy for duplicate claims, so Warp Drive is also compared
+against five decentralized alternatives operating on the same
+broadcast information at the same cadences ($2{,}520$ episodes, $20$
+seeds, identical seeds across arms; per-arm message bytes accounted,
+including the reservation metadata; artifact
+\texttt{tmp/cluster/coord\_baselines/}): random tie-break (transitive
+per-target priority), nearest-agent-wins, decentralized greedy
+assignment, exponential backoff without reservations, and a soft
+occupancy penalty. The honest summary: on \emph{success rate} Warp
+Drive is best or statistically tied at every cadence ($0.611$--$0.620$
+vs.\ no-protocol $0.570$--$0.587$), and single alternatives reach it
+at single cadences (backoff $0.627$ at $K{=}1$; greedy
+$0.612$--$0.615$) --- no arm dominates it, but reservation is not
+uniquely capable of recovering the success loss. What distinguishes
+Warp Drive is the combination: the lowest duplicate-commitment count
+at every cadence ($2.8$--$5.2$ events; the success-competitive arms
+sit at $11$--$16$ at $K{=}1$, and only random tie-break approaches it
+at $K{=}4$ ($3.2$) at the price of lower success), the lowest
+censored time-to-success, and a message cost ($593$--$1050$\,B)
+comparable to or below the assignment-style alternatives
+(nearest/greedy $423$--$2053$\,B). The occupancy penalty and random
+tie-break fail to separate from the unprotected baseline at $K{=}1$.
+We report this as a bounded advantage, not dominance.
 
 \begin{figure}[t]
 \centering
@@ -1191,6 +1266,36 @@ coordinates}, with alignment onset in $100\%$ of episodes and clean
 regressions on all earlier experiments
 (Figure~\ref{p3:fig:identity}).
 
+\paragraph{A stress surface instead of a unit test.} Because
+``$80/80$ exact'' certifies only the constructed worlds, the matcher
+was subjected to a $5{,}280$-trial stress sweep ($20$ seeds
+$\times$ $4$ transforms per level; artifact
+\texttt{tmp/cluster/warp/frame\_stress\_full/}), separating
+\emph{fail-open} (wrong transform accepted) from \emph{false-reject}
+(coverage cost) throughout. Under per-observation tag noise the
+matcher is strictly fail-closed across the entire grid
+(FN $\le 0.6$, FP $\le 0.3$, and their products: fail-open $= 0$ in
+all $42$ noise levels; degradation is pure refusal, with FP more
+damaging than FN --- $0.975$ refusal at FP$=0.3$ vs.\ $0.45$ at
+FN$=0.6$). Deleting landmarks ($k$ of $21$) is a coverage cost up to
+$k{=}7$ (exact $\ge 0.86$, fail-open $0$), with \emph{rare} fail-open
+appearing under heavy deletion ($1/80$ at
+$k \in \{8, 9, 13, 14\}$). Deliberately ambiguous worlds (repeated
+interior constellations, $C \in \{2,3,4\}$) are refused $240/240$
+with the ambiguity signal raised in $100\%$ of trials; a
+border-anchored variant leaks $2/80$ (the void-context of the border
+acts as an implicit landmark and can betray). The one systematic
+fail-open channel is \emph{silent vocabulary mismatch}: under a
+permuted tag alphabet the matcher accepts a wrong transform in
+$2.5$--$5\%$ of trials ($5$ derangements $\times$ $80$), because
+mutual-uniqueness consensus can lock onto a coincidental
+correspondence. Synonym renaming with a partial translator, missing
+concepts, and one-to-many coarsening all remain fail-closed at every
+tested level (monotone refusal, fail-open $0$). The identity claims
+are therefore conditional on a shared (or explicitly aligned)
+vocabulary --- \S\ref{p2:sec:limits} --- and the symbol-alignment
+layer is the natural companion mechanism.
+
 \subsection{Causal contribution of the landmark vocabulary}
 \label{p3:sec:ablation}
 
@@ -1389,9 +1494,14 @@ and a predefined semantic vocabulary. Place correspondence is tested
 under translations and quarter-turn rotations; this setting should be
 described as discrete frame recovery rather than arbitrary continuous
 $SE(2)$ estimation. The semantic fingerprints are sufficiently rich
-to support exact correspondence in the reported environments, but
-open-world appearance variation, perceptual uncertainty, and learned
-symbol alignment remain unresolved. The rupture boundary is exact for the
+to support exact correspondence in the reported environments and
+degrade fail-closed under tag noise, landmark deletion, and
+constructed ambiguity (\S\ref{p3:sec:identity}); the measured
+exception is silent vocabulary mismatch, where a permuted tag
+alphabet induces $2.5$--$5\%$ wrong-transform acceptance --- so the
+fail-closed guarantee is conditional on a shared or explicitly
+aligned ontology, and open-world appearance variation, perceptual
+uncertainty, and learned symbol alignment remain unresolved. The rupture boundary is exact for the
 specified edge-wise trust--staleness mechanism and does not by itself
 provide a universal safety guarantee. The claim concerning risk is
 therefore restricted to preservation of the witness's measured hazard

@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1786091196.58273 "paper3_collective_memory.tex" "paper3_collective_memory.pdf" "paper3_collective_memory" 1786091197.70839 0
+["pdflatex"] 1786145680.35715 "paper3_collective_memory.tex" "paper3_collective_memory.pdf" "paper3_collective_memory" 1786145681.61195 0
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -224,9 +224,9 @@
   "figures/reviewer/fig2_bottleneck_phase.pdf" 1786050743.3979 30166 fa4a06f1d9f81a9b0f6bab163e515200 ""
   "figures/reviewer/fig4_cross_substrate.pdf" 1786050744.0378 30060 05f9d1ee3767c5e7d7f4431507bdf879 ""
   "neurips_2026.sty" 1785964901.27288 13462 818d80447f57703e59b8270885421e82 ""
-  "paper3_collective_memory.aux" 1786091197.56928 28276 05482537d33bdc3efce5a4b593e1946a "pdflatex"
-  "paper3_collective_memory.out" 1786091197.57118 8622 b225bd46d30770e055af191c7a845df0 "pdflatex"
-  "paper3_collective_memory.tex" 1786091156.64309 136948 56c4f75ab5a314d92585b3b677751a13 ""
+  "paper3_collective_memory.aux" 1786145681.46437 29637 78a7938563c55a63a27ec0e545636fba "pdflatex"
+  "paper3_collective_memory.out" 1786145681.46607 8622 b225bd46d30770e055af191c7a845df0 "pdflatex"
+  "paper3_collective_memory.tex" 1786145659.72024 148466 379e11537cc6aa672854ad6d080b1512 ""
   (generated)
   "paper3_collective_memory.aux"
   "paper3_collective_memory.log"
